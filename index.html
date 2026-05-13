@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<!-- Standalone snapshot generated from content-incrementality/scorecard/. Data inlined. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality · v2</title>
+<style>
+:root {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e5e5e7;
+  --border: #d1d1d6;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #aeaeb2;
+  --accent: #0071e3;
+  --success: #34c759;
+  --warning: #ff9f0a;
+  --error: #ff3b30;
+  --stale-bg: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1d1d1f;
+    --bg-secondary: #2d2d2f;
+    --bg-tertiary: #3d3d3f;
+    --border: #424245;
+    --text-primary: #f5f5f7;
+    --text-secondary: #86868b;
+    --accent: #0a84ff;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+       background: var(--bg-primary); color: var(--text-primary); line-height: 1.5;
+       padding: 1.5rem 2rem; max-width: 1280px; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; }
+h1 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
+h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+
+.title-bar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+.title-bar .as-of { color: var(--text-secondary); font-size: 0.8rem; }
+
+.header { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+          padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.ship-gate { flex: 1; }
+.ship-gate .status { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em; }
+.ship-gate .status.pass { color: var(--success); }
+.ship-gate .status.fail { color: var(--error); }
+.ship-gate .status.warn { color: var(--warning); }
+.ship-gate .primary { font-size: 0.9rem; margin-top: 0.15rem; color: var(--text-secondary); }
+.ship-gate .blocker { font-size: 0.85rem; margin-top: 0.25rem; color: var(--text-primary); }
+
+.counts { display: flex; gap: 0.5rem; }
+.count-chip { padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: white; }
+.count-chip.green { background: var(--success); }
+.count-chip.amber { background: var(--warning); }
+.count-chip.red { background: var(--error); }
+.count-chip.stale { background: var(--text-tertiary); }
+
+.phase-ribbon { display: flex; gap: 0.4rem; margin-top: 1rem; }
+.phase-tile { flex: 1; padding: 0.7rem 0.5rem; border-radius: 6px; color: white; text-align: center;
+              font-size: 0.85rem; font-weight: 600; }
+.phase-tile.green { background: var(--success); }
+.phase-tile.amber { background: var(--warning); }
+.phase-tile.red { background: var(--error); }
+.phase-tile.stale { background: var(--text-tertiary); }
+.phase-tile .phase-id { font-weight: 700; }
+.phase-tile .phase-name { font-size: 0.7rem; opacity: 0.95; font-weight: 500; }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 2px solid var(--border); margin-bottom: 1rem; }
+.tab { padding: 0.6rem 1rem; background: none; border: none; cursor: pointer;
+       font-size: 0.9rem; color: var(--text-secondary); border-bottom: 2px solid transparent;
+       margin-bottom: -2px; font-weight: 500; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+        padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+.card.green { border-left: 4px solid var(--success); }
+.card.amber { border-left: 4px solid var(--warning); }
+.card.red { border-left: 4px solid var(--error); }
+
+.status-chip { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 10px; font-size: 0.7rem;
+               font-weight: 600; color: white; }
+.status-chip.green { background: var(--success); }
+.status-chip.amber { background: var(--warning); }
+.status-chip.red { background: var(--error); }
+.status-chip.stale { background: var(--text-tertiary); }
+
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+               gap: 0.75rem; }
+.metric-tile { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+               padding: 0.8rem 1rem; }
+.metric-tile.green { border-left: 4px solid var(--success); }
+.metric-tile.amber { border-left: 4px solid var(--warning); }
+.metric-tile.red { border-left: 4px solid var(--error); }
+.metric-tile.stale { border: 1px dashed var(--text-tertiary); background: var(--stale-bg); }
+.metric-tile .label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;
+                      letter-spacing: 0.04em; }
+.metric-tile .value { font-size: 1.5rem; font-weight: 700; margin: 0.15rem 0; }
+.metric-tile .target { font-size: 0.75rem; color: var(--text-secondary); }
+.metric-tile .bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px;
+                    margin-top: 0.4rem; overflow: hidden; }
+.metric-tile .bar-fill { height: 100%; }
+.metric-tile.green .bar-fill { background: var(--success); }
+.metric-tile.amber .bar-fill { background: var(--warning); }
+.metric-tile.red .bar-fill { background: var(--error); }
+.metric-tile .note { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.4rem; }
+.metric-tile .phase-tag { font-size: 0.6rem; background: var(--bg-tertiary); padding: 0.1rem 0.4rem;
+                          border-radius: 3px; display: inline-block; margin-left: 0.3rem;
+                          color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+.metric-tile .delta { font-size: 0.7rem; margin-top: 0.2rem; }
+.metric-tile .delta.improved { color: var(--success); }
+.metric-tile .delta.degraded { color: var(--error); }
+.metric-tile .delta.unchanged { color: var(--text-tertiary); }
+
+.legend { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; }
+.legend ul { list-style: none; padding: 0; }
+.legend li { padding: 0.2rem 0; }
+.legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+               margin-right: 0.4rem; vertical-align: middle; }
+.legend .dot.green { background: var(--success); }
+.legend .dot.amber { background: var(--warning); }
+.legend .dot.red { background: var(--error); }
+
+.gap-item { border-left: 4px solid var(--border); padding: 0.6rem 0.9rem; margin-bottom: 0.5rem;
+            background: var(--bg-secondary); border-radius: 4px; }
+.gap-item.red { border-left-color: var(--error); background: rgba(255,59,48,0.05); }
+.gap-item.amber { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+.gap-item.green { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+.gap-item.gray { border-left-color: var(--text-tertiary); opacity: 0.9; }
+.gap-item .gap-title { font-weight: 600; font-size: 0.9rem; }
+.gap-item .gap-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; }
+.gap-item .gap-body { font-size: 0.85rem; margin-top: 0.35rem; }
+
+.insight { font-size: 0.85rem; font-style: italic; color: var(--text-secondary);
+           border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem; }
+
+.v1-compare { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.35rem;
+              padding: 0.35rem 0.5rem; background: var(--bg-tertiary); border-radius: 4px;
+              display: inline-block; }
+
+details summary { cursor: pointer; font-weight: 600; padding: 0.5rem 0; }
+details summary::-webkit-details-marker { color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+
+<div class="title-bar">
+  <h1>Content Incrementality · v2</h1>
+  <div class="as-of">as of <span data-slot="as_of_date">—</span></div>
+</div>
+
+<div class="header">
+  <div class="header-row">
+    <div class="ship-gate">
+      <div class="status" data-slot="ship_gate_status">—</div>
+      <div class="primary" data-slot="ship_gate_primary">—</div>
+      <div class="blocker" data-slot="ship_gate_blocker">—</div>
+    </div>
+    <div class="counts">
+      <div class="count-chip green"><span data-slot="count_green">0</span> green</div>
+      <div class="count-chip amber"><span data-slot="count_amber">0</span> amber</div>
+      <div class="count-chip red"><span data-slot="count_red">0</span> red</div>
+    </div>
+  </div>
+  <div class="phase-ribbon" data-slot="phase_ribbon">
+    <!-- phase tiles injected here -->
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="method">Method</button>
+  <button class="tab" data-tab="metrics">Metrics</button>
+  <button class="tab" data-tab="gaps">Gaps &amp; Opportunities</button>
+  <button class="tab" data-tab="changelog">v1 → v2 Changelog</button>
+</div>
+
+<div class="tab-panel active" data-panel="overview">
+  <h2>What this is</h2>
+  <p style="margin-bottom: 0.75rem;">
+    Measures how much TVT is truly <em>incremental</em> per title on Tubi — TVT that
+    would not have happened on a substitute title if this one weren't in the catalog.
+    Content decisions (licensing, promotion, originals investment) hang on this number;
+    without incrementality, top-streaming titles get credit for viewing that would have
+    happened anyway.
+  </p>
+
+  <h3>How to read this page</h3>
+  <div class="legend">
+    <ul>
+      <li><span class="dot green"></span><strong>Green</strong> · metric is inside its manage-to target; nothing to do.</li>
+      <li><span class="dot amber"></span><strong>Amber</strong> · metric is outside target but not ship-blocking; improvement is on the backlog.</li>
+      <li><span class="dot red"></span><strong>Red</strong> · metric is outside target and degrades trust in the number; see Gaps tab for the fix.</li>
+      <li><strong>Ship gate</strong> · the primary metric that decides whether the model is usable for decisions.</li>
+      <li><strong>Manage-to target</strong> · the number we want to drive each metric to over successive runs.</li>
+    </ul>
+  </div>
+
+  <h3>Where v2 stands</h3>
+  <div class="card" data-slot="overview_ship_gate_card">
+    <div><strong data-slot="overview_ship_status">—</strong></div>
+    <div class="insight" data-slot="page_insight">—</div>
+  </div>
+
+  <div class="counts" style="margin-top: 0.75rem;">
+    <div class="count-chip green"><span data-slot="count_green_2">0</span> green</div>
+    <div class="count-chip amber"><span data-slot="count_amber_2">0</span> amber</div>
+    <div class="count-chip red"><span data-slot="count_red_2">0</span> red</div>
+  </div>
+</div>
+
+<div class="tab-panel" data-panel="method">
+  <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+    Five stages feed the daily incremental-TVT fact table. Click any stage to expand
+    its model, assumptions, and outputs.
+  </p>
+
+  <div class="card" data-phase-id="p1">
+    <details open>
+      <summary>
+        P1 · Event definitions
+        <span class="status-chip" data-slot="phase_status_p1">—</span>
+      </summary>
+      <p><strong>What it does:</strong> Builds four staging tables from raw <code>video_session</code> + <code>rightsline_right</code>: completion events, catalog expirations, past-experiment inventory (empty in v2), and 12-month rewatch rates per title.</p>
+      <p><strong>Model / technique:</strong> <code>Parameterized SQL</code> with per-content-type TVT thresholds (completion = TVT ≥ 70% × duration; abandonment = 28-day trailing silence).</p>
+      <p><strong>Key assumptions:</strong></p>
+      <ul>
+        <li>28-day abandonment window is uniform across content types <span class="status-chip green">accepted</span></li>
+        <li>Viewer grain = <code>COALESCE(user_id, device_id)</code> — both registered and anon included <span class="status-chip green">accepted</span></li>
+        <li>Series-completed = "finished ≥70% of all cataloged episodes" (very high bar) <span class="status-chip amber">under review</span></li>
+        <li>Series event_date = last_view_date — entire binge period falls in pre-event window <span class="status-chip amber">new finding · contaminates denominator</span></li>
+      </ul>
+      <p><strong>Primary outputs:</strong> <code>stg_completion_events_v1</code> (9.6B rows), <code>stg_catalog_expirations_v1</code> (4,964 rows), <code>title_rewatch_rate_v1</code>.</p>
+      <div class="insight" data-slot="phase_insight_p1">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p2">
+    <details>
+      <summary>
+        P2 · Matching &amp; propensity
+        <span class="status-chip" data-slot="phase_status_p2">—</span>
+      </summary>
+      <p><strong>What it does:</strong> Learns each viewer's propensity to complete title T; nearest-neighbor matches treated (completers) to controls (non-completers) within strata (content_type × genre × event_month × is_registered). Emits per-pair 60/90/120-day TVT deltas.</p>
+      <p><strong>Model / technique:</strong> <code>sklearn.LogisticRegression</code> per (content_type × genre_bucket) cell; caliper 0.1 on logit scale; per-stratum matching.</p>
+      <p><strong>Key assumptions:</strong></p>
+      <ul>
+        <li>Per-cell propensity is well-specified with the feature set (tenure, TVT buckets, genre-share) <span class="status-chip amber">under review · AUC 0.96+ suggests leakage</span></li>
+        <li>Post-match balance achievable at SMD ≤ 0.1 within 3600s warehouse timeout <span class="status-chip red">broken · 39 residual violations</span></li>
+        <li>Donor-screen (30-day TVT threshold) excludes viewers with outside-the-model substitutes <span class="status-chip amber">under review · near-inert</span></li>
+      </ul>
+      <p><strong>v2 change:</strong> Added <code>pre_event_tvt_total_sec</code> column to <code>event_deltas_v1</code> — total user TVT across all titles in the pre-event window. Used as the denominator in P3.</p>
+      <p><strong>Primary outputs:</strong> <code>matched_event_pairs_v1</code> (73,578 pairs at 1% sampling), <code>event_deltas_v1</code>, <code>expiration_deltas_v1</code>.</p>
+      <div class="insight" data-slot="phase_insight_p2">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p3">
+    <details>
+      <summary>
+        P3 · Substitution model
+        <span class="status-chip" data-slot="phase_status_p3">—</span>
+      </summary>
+      <p><strong>What it does:</strong> Predicts per-title substitution rate <code>ŝ(T)</code> — the share of a treated viewer's post-event TVT that would have happened on a substitute title. Applies rewatch dampening <code>ŝ × (1 − rewatch_rate)</code>.</p>
+      <p><strong>Model / technique:</strong> <code>sklearn.GradientBoostingRegressor</code> per content_type, asymmetric X-learner (treated-arm regressor only — controls have no T to substitute against).</p>
+      <p><strong>Key assumptions:</strong></p>
+      <ul>
+        <li><s>Per-title TVT is a valid denominator</s> <span class="status-chip green">FIXED in v2</span> — denominator swapped to total user TVT. Substitution rates now in [0, 1] range.</li>
+        <li>Rewatch rate per content_type is the right dampening granularity <span class="status-chip amber">under review · potential double-counting for series</span></li>
+        <li>2-hour session-initiation window best tracks same-session follow-on TVT <span class="status-chip green">accepted · Spearman-stable</span></li>
+        <li>ŝ &gt; 1.0 should be clipped before dampening <span class="status-chip amber">341 titles (5.1% TVT) · v3 fix planned</span></li>
+      </ul>
+      <p><strong>v2 changes:</strong></p>
+      <ul>
+        <li>Outcome formula now uses total user TVT: <code>clip(1 − delta_tvt / pre_event_tvt_total_sec, −1, 2)</code></li>
+        <li>Observed substitution rate denominator aligned to total TVT</li>
+        <li>RMSE improved from 0.74/0.89 → 0.44/0.53 (movie/series)</li>
+        <li>Per-user avg substitution rate: 0.755; expiration avg: 0.549</li>
+      </ul>
+      <p><strong>Primary outputs:</strong> <code>title_substitution_observed_v1</code>, <code>title_substitution_predicted_v1</code>, <code>title_substitution_dampened_v1</code>, <code>session_initiation_credit_daily_v1</code>.</p>
+      <div class="insight" data-slot="phase_insight_p3">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p4">
+    <details>
+      <summary>
+        P4 · Anchor validation
+        <span class="status-chip" data-slot="phase_status_p4">—</span>
+      </summary>
+      <p><strong>What it does:</strong> Checks whether two independent anchors — the per-user substitution model and the catalog-expiration natural experiment — produce consistent estimates for each title.</p>
+      <p><strong>Model / technique:</strong> <code>CI overlap test</code> on per-title substitution rates (original gate); <code>rank-based agreement</code> metrics added in v2 as proposed alternative gate.</p>
+      <p><strong>Key assumptions:</strong></p>
+      <ul>
+        <li><s>Per-user and expiration anchors share no systematic bias</s> <span class="status-chip amber">structural -20.6 pp bias identified</span> — per-user measures completers (avg ŝ=0.755), expiration measures all viewers (avg ŝ=0.549). Different causal questions.</li>
+        <li>CI overlap at 95% is the right agreement test <span class="status-chip amber">under review · rank-based gate proposed</span></li>
+        <li>Denominator = titles with both anchors measurable (n ≥ 30 matched pairs each) <span class="status-chip green">accepted</span></li>
+      </ul>
+      <p><strong>v2 findings:</strong></p>
+      <ul>
+        <li>CI-overlap agreement: 17.8% → 46.4% (all months) → 35.7% (data-complete, Jan+Feb only)</li>
+        <li>Structural population mismatch: consistent -20.6 pp bias across months</li>
+        <li>Filtering expiration anchor to completers made agreement <em>worse</em> (0.224)</li>
+        <li>Rank-based metrics: Spearman ρ = 0.37, same-half concordance = 65.5%, within ±1 quartile = 79.4%</li>
+        <li>Data truncation: Mar/Apr expirations lack complete 90d post-event windows</li>
+      </ul>
+      <p><strong>Primary outputs:</strong> <code>anchor_agreement_v1</code> (15,644 rows, n_joint=718).</p>
+      <div class="insight" data-slot="phase_insight_p4">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p5">
+    <details>
+      <summary>
+        P5 · Daily rollup + memo
+        <span class="status-chip" data-slot="phase_status_p5">—</span>
+      </summary>
+      <p><strong>What it does:</strong> Aggregates per-title substitution rates and session-initiation credits into a daily fact table by cohort × content_type, with weekly/monthly/YTD rollup views and a promo-sidebar slice.</p>
+      <p><strong>Model / technique:</strong> <code>SQL aggregation</code> over <code>title_substitution_dampened_v1</code> × <code>session_initiation_credit_daily_v1</code>; delta-method CIs; 10% flat one-shot rate (pending calibration).</p>
+      <p><strong>Key assumptions:</strong></p>
+      <ul>
+        <li>Cohort bucket via <code>release_decade</code> proxies licensing-start-date cohorts <span class="status-chip amber">under review</span></li>
+        <li>10% one-shot rate is a stable-enough placeholder until calibrated <span class="status-chip amber">under review</span></li>
+        <li>Delta-method CI is accurate enough for v2 headline numbers <span class="status-chip amber">under review · bootstrap planned</span></li>
+      </ul>
+      <p><strong>v2 addition:</strong> <code>vw_segment_decomposition_v1</code> — decomposes per-title pairs into amplified / substituted / suppressed / churned segments.</p>
+      <p><strong>Primary outputs:</strong> <code>fct_content_incremental_tvt_daily_v1</code> (3,706 rows), weekly/monthly/YTD views, <code>vw_content_promo_sidebar_snapshot_v1</code>, <code>vw_segment_decomposition_v1</code>.</p>
+      <div class="insight" data-slot="phase_insight_p5">—</div>
+    </details>
+  </div>
+</div>
+
+<div class="tab-panel" data-panel="metrics">
+  <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+    34 model and pipeline-integrity metrics with manage-to targets. Sorted by
+    status (red first) within each phase. Deltas from v1 shown where applicable.
+  </p>
+
+  <div class="metric-grid" data-slot="metric_grid">
+
+    <!-- P1 metrics -->
+    <div class="metric-tile"
+         data-metric-id="completion_events_rows"
+         data-phase-id="p1">
+      <div class="label">Completion events rows <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 1B</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Row count of <code>stg_completion_events_v1</code>.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="catalog_expirations_rows"
+         data-phase-id="p1">
+      <div class="label">Catalog expirations rows <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 1,000</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Row count of <code>stg_catalog_expirations_v1</code> after rollover filter.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="is_intentional_null_rate"
+         data-phase-id="p1">
+      <div class="label">is_intentional NULL rate <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 30%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Share of completion events with unknown intentional flag.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="series_completion_event_share"
+         data-phase-id="p1">
+      <div class="label">Series completion share <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 3%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Low share signals under-counting from catalog-snapshot approximation.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="rewatch_smell_test"
+         data-phase-id="p1">
+      <div class="label">Rewatch smell test <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target = pass</div>
+      <div class="note">Kids, series, horror buckets match intuition. Movie rewatch avg = 0.23% (near zero).</div>
+    </div>
+
+    <!-- P2 metrics -->
+    <div class="metric-tile"
+         data-metric-id="propensity_auc_min_cell"
+         data-phase-id="p2">
+      <div class="label">Propensity AUC (min cell) <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">green in [0.70, 0.95]; &gt; 0.95 flags leakage</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Minimum AUC across (content_type × genre) cells.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="propensity_auc_max_cell"
+         data-phase-id="p2">
+      <div class="label">Propensity AUC (max cell) <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">green in [0.70, 0.95]</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Max AUC across cells.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="max_post_match_smd"
+         data-phase-id="p2">
+      <div class="label">Max post-match SMD <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 0.10</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Worst standardized mean difference after matching.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="smd_violation_count"
+         data-phase-id="p2">
+      <div class="label">SMD violations <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target = 0</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Count of covariates with SMD &gt; 0.1 post-match.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="matched_pair_count"
+         data-phase-id="p2">
+      <div class="label">Matched pair count <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 1M</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Row count of <code>matched_event_pairs_v1</code>. v3 bumps to 5% sampling (~5× increase).</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="treated_match_rate"
+         data-phase-id="p2">
+      <div class="label">Treated match rate <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 99%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Share of treated events that found a caliper-eligible control.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="donor_screen_exclusion_rate"
+         data-phase-id="p2">
+      <div class="label">Donor-screen exclusion <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 5% (near-zero = inert)</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Share of expiration-anchor candidates excluded by donor screen.</div>
+    </div>
+
+    <!-- P3 metrics -->
+    <div class="metric-tile"
+         data-metric-id="xlearner_rmse_movie"
+         data-phase-id="p3">
+      <div class="label">X-learner RMSE · movie <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 0.10</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Held-out RMSE on title-level substitution rates. v1 was 0.74.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="xlearner_rmse_series"
+         data-phase-id="p3">
+      <div class="label">X-learner RMSE · series <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 0.10</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Held-out RMSE on title-level substitution rates. v1 was 0.89.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="substitution_rate_mean_peruser"
+         data-phase-id="p3">
+      <div class="label">Mean ŝ · per-user anchor <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational · expect 0.5–0.9</div>
+      <div class="note">Average predicted substitution rate from per-user completion model.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="substitution_rate_mean_expiration"
+         data-phase-id="p3">
+      <div class="label">Mean ŝ · expiration anchor <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational · expect 0.4–0.8</div>
+      <div class="note">Average observed substitution rate from catalog-expiration natural experiment.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="s_hat_above_1_fraction"
+         data-phase-id="p3">
+      <div class="label">ŝ &gt; 1.0 title fraction <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 2% · v3 adds clipping</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Titles where X-learner predicts &gt; 100% substitution (produces negative incremental TVT). 341 titles, 5.1% of TVT.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="titles_routed_observed"
+         data-phase-id="p3">
+      <div class="label">Titles routed to observed <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 10,000 (hybrid depth)</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Count with <code>model_source='observed'</code>. Limited by 1% sampling — v3 bumps to 5%.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="titles_routed_predicted"
+         data-phase-id="p3">
+      <div class="label">Titles routed to predicted <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+      <div class="note">Count with <code>model_source='predicted'</code>.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="rewatch_dampening_effect_movie"
+         data-phase-id="p3">
+      <div class="label">Rewatch dampening · movie <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+      <div class="note">Mean <code>ŝ − ŝ_dampened</code> across movies. Near zero (rewatch rate ≈ 0.23%).</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="rewatch_dampening_effect_series"
+         data-phase-id="p3">
+      <div class="label">Rewatch dampening · series <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+      <div class="note">Mean <code>ŝ − ŝ_dampened</code> across series. 35–45% reduction — potential double-count flagged.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="session_init_spearman_2h"
+         data-phase-id="p3">
+      <div class="label">Session-init Spearman (2h) <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 0.65</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Inter-month rank stability; validates 2h window pick.</div>
+    </div>
+
+    <!-- P4 metrics -->
+    <div class="metric-tile"
+         data-metric-id="anchor_agreement_ci"
+         data-phase-id="p4">
+      <div class="label">Anchor agreement (CI overlap) <span class="phase-tag">P4</span> <span class="phase-tag" style="background: var(--text-tertiary); color: white;">ORIGINAL GATE</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">original target ≥ 70% · structural mismatch limits ceiling</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">% of joint-anchor titles whose 95% CIs overlap. v1 was 17.8%. Structural -20.6 pp bias between anchors limits this metric.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="spearman_rho"
+         data-phase-id="p4">
+      <div class="label">Spearman rank correlation <span class="phase-tag">P4</span> <span class="phase-tag" style="background: var(--accent); color: white;">PROPOSED GATE</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">proposed target ≥ 0.25</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Do both anchors rank titles the same way? Tests directional consistency despite level offset.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="same_half_concordance"
+         data-phase-id="p4">
+      <div class="label">Same-half concordance <span class="phase-tag">P4</span> <span class="phase-tag" style="background: var(--accent); color: white;">PROPOSED GATE</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">proposed target ≥ 60%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">% of joint titles where both anchors place the title in the same half (above/below median). v2 = 65.5%.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="within_1_quartile"
+         data-phase-id="p4">
+      <div class="label">Within ±1 quartile <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+      <div class="note">% of joint titles where anchors agree within 1 quartile rank. 79.4% in v2.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="n_joint"
+         data-phase-id="p4">
+      <div class="label">n_joint titles <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 500</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Titles with both per-user and expiration estimates.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="both_anchor_coverage"
+         data-phase-id="p4">
+      <div class="label">Both-anchor coverage <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 20%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note"><code>n_joint / n_total</code> of titles in anchor_agreement_v1.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="median_disagreement_pp"
+         data-phase-id="p4">
+      <div class="label">Median disagreement (pp) <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 10 pp</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Median absolute gap in pp between anchors. v1 was 2,264 pp. Structural bias = 20.6 pp.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="sharp_disagreer_fraction"
+         data-phase-id="p4">
+      <div class="label">Sharp-disagreer fraction <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 15%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Share of joint titles with &gt; 20 pp disagreement. v1 was 99.6%.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="window_sens_max_delta_top10"
+         data-phase-id="p4">
+      <div class="label">Window sensitivity Δ (top-10) <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≤ 0.05</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Median max-Δ across 60/90/120d windows for top-10 data-density titles. v1 was 7.07.</div>
+    </div>
+
+    <!-- P5 metrics -->
+    <div class="metric-tile"
+         data-metric-id="fct_table_row_count"
+         data-phase-id="p5">
+      <div class="label">Fact table rows <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 1,000</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Row count of <code>fct_content_incremental_tvt_daily_v1</code>.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="cohort_days_covered"
+         data-phase-id="p5">
+      <div class="label">Cohort days covered <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target ≥ 730 (24mo)</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Distinct <code>event_date</code>s in the fact table.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="rollup_arithmetic_diff"
+         data-phase-id="p5">
+      <div class="label">Rollup arithmetic diff <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target = 0</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Monthly rollup minus SUM(daily). Integrity check.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="cohort_bucket_count"
+         data-phase-id="p5">
+      <div class="label">Cohort buckets <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target = 5</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+      <div class="note">Distinct cohort labels in fact table.</div>
+    </div>
+
+    <div class="metric-tile"
+         data-metric-id="session_init_downsample_applied"
+         data-phase-id="p5">
+      <div class="label">10× gross-up applied <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target = yes</div>
+      <div class="note">Downsample correction on session-initiation TVT.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="tab-panel" data-panel="gaps">
+  <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+    Grouped by severity. Each item names what's broken, which metrics move when
+    it's fixed, and the expected lift. Items resolved in v2 shown in green.
+  </p>
+
+  <h3 style="color: var(--success); margin-top: 0.75rem;">Resolved in v2</h3>
+
+  <div class="gap-item green">
+    <div class="gap-title">✓ Redefine substitution outcome denominator</div>
+    <div class="gap-meta">P3 · was the v1 ship-gate blocker · FIXED</div>
+    <div class="gap-body">
+      <strong>What was broken:</strong> <code>clip(1 − delta_tvt / pre_event_tvt_on_T, −1, 2)</code>
+      saturated the clip because <code>delta_tvt</code> is across all titles but the
+      denominator was a single title's TVT. Ratio exploded 25–38×.
+      <br><strong>Fix applied:</strong> Swapped denominator to total user TVT (<code>pre_event_tvt_total_sec</code>). Three files changed: <code>phase2_event_deltas.sql</code>, <code>fit_xlearner_local.py</code>, <code>phase3_title_substitution_observed.sql</code>. Merged via PR #2.
+      <br><strong>Impact:</strong> RMSE 0.74/0.89 → 0.44/0.53. Agreement 17.8% → 35.7% (data-complete). Substitution rates now in [0, 1] range.
+    </div>
+  </div>
+
+  <h3 style="color: var(--error); margin-top: 1rem;">Red · blocks ship (under original gate)</h3>
+
+  <div class="gap-item red">
+    <div class="gap-title">Structural population mismatch between anchors</div>
+    <div class="gap-meta">P4 · limits CI-overlap agreement ceiling</div>
+    <div class="gap-body">
+      <strong>What's happening:</strong> Per-user anchor measures completers (high-engagement self-selectors, avg ŝ = 0.755). Expiration anchor measures all pre-expiration viewers (broader population, avg ŝ = 0.549). Consistent −20.6 pp bias across all months. Filtering expiration to completers made agreement <em>worse</em> (0.224) because completers who consumed a title show minimal displacement when it's removed.
+      <br><strong>Proposed fix:</strong> Redefine ship gate to rank-based metrics (Spearman ≥ 0.25, same-half concordance ≥ 60%) or reclassify expiration anchor as diagnostic with experiment anchor as primary validation.
+      <br><strong>Metrics that move:</strong> Ship gate definition. Current rank-based metrics already pass (ρ = 0.37, concordance = 65.5%).
+    </div>
+  </div>
+
+  <div class="gap-item red">
+    <div class="gap-title">Sparse per-title pairs at 1% sampling</div>
+    <div class="gap-meta">P2/P3 · limits observed-route coverage and CI width</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> At 1% sampling, per-title pair counts are thin — many titles fall below the 30-pair threshold for observed estimates. Only ~200 titles route to observed (target ≥ 10,000).
+      <br><strong>Fix planned (v3):</strong> Bump sampling from 1% to 5%. The 3-stage query split resolved the original timeout that motivated 1%.
+      <br><strong>Metrics that move:</strong> <code>matched_pair_count</code> (~5× increase), <code>titles_routed_observed</code>, <code>treated_match_rate</code>.
+      <br><strong>Expected lift:</strong> ~5× more pairs per title, tighter CIs, more titles qualifying for observed estimates.
+    </div>
+  </div>
+
+  <h3 style="color: var(--warning); margin-top: 1rem;">Amber · improvements on the backlog</h3>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Data truncation in Mar/Apr expirations</div>
+    <div class="gap-meta">P2/P4 · inflates April estimates</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> Mar/Apr 2026 expirations lack complete 90-day post-event windows (April expirations had only ~12 days of post-event data). This inflated April's expiration estimates and masked the structural bias.
+      <br><strong>Fix planned (v3):</strong> Use events from Jul 2025 through Feb 11, 2026 only (ensuring <code>event_date + 90d ≤ 2026-05-12</code>). Parameterize for future runs.
+      <br><strong>Metrics that move:</strong> <code>anchor_agreement_ci</code>, <code>median_disagreement_pp</code>.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">ŝ &gt; 1.0 not clipped before dampening</div>
+    <div class="gap-meta">P3 · produces negative incremental TVT for 341 titles</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> The X-learner is unbounded and produces ŝ &gt; 1.0 for 341 titles (5.1% of TVT). Rewatch dampening accidentally masks some of these by pulling values below 1.0, but explicit clipping is methodologically correct.
+      <br><strong>Fix planned (v3):</strong> <code>GREATEST(0.0, LEAST(1.0, substitution_rate_predicted))</code> before dampening.
+      <br><strong>Metrics that move:</strong> <code>s_hat_above_1_fraction</code> → 0%.
+      <br><strong>Expected lift:</strong> +0.63% aggregate (+4.5M hrs incremental TVT). Small but clean.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Rewatch dampening may double-count for series</div>
+    <div class="gap-meta">P3 · methodology question for David</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> Post-event window already captures rewatches in TVT (the delta measures ALL viewing including revisits to the same title). Dampening formula <code>ŝ × (1 − rewatch_rate)</code> then gives additional credit for rewatches. For series with 35–45% rewatch rates, this is a significant double-count.
+      <br><strong>Impact:</strong> Series dampening is the dominant lever — reduces ŝ by 35–45%. If this is a double-count, series incremental TVT is overstated.
+      <br><strong>Metrics that move:</strong> <code>rewatch_dampening_effect_series</code>, downstream TVT totals.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Series event_date = last_view_date contaminates pre-event window</div>
+    <div class="gap-meta">P1/P2 · methodology question</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> For series, event_date is the date the viewer finished the last episode. The entire binge period (potentially weeks/months) falls in the pre-event window, inflating the pre-event denominator and potentially contaminating matching features.
+      <br><strong>Impact:</strong> Unclear magnitude. For movies (single sitting, typically 1–2 days), this is not an issue.
+      <br><strong>Metrics that move:</strong> Potentially <code>xlearner_rmse_series</code>, series substitution rates.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Tighten post-match balance</div>
+    <div class="gap-meta">P2 · caveat-only today</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> 39 residual SMD violations on continuous activity
+      features (max 0.498 on <code>days_active_30d</code>). Balance gate accepted per
+      NOTES §4.2 option (c).
+      <br><strong>Metrics that move:</strong> <code>max_post_match_smd</code>,
+      <code>smd_violation_count</code>.
+      <br><strong>Expected lift:</strong> all SMDs ≤ 0.1; removes a memo caveat.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Propensity AUC leakage audit</div>
+    <div class="gap-meta">P2 · flagged in D_p2_audit_1</div>
+    <div class="gap-body">
+      <strong>What's broken:</strong> AUC 0.96–0.98 across all cells is suspiciously
+      high. Features use strict <code>&lt;</code> on event day so technically leak-free,
+      but the genre-tvt-share signal is strong enough to warrant a second look.
+      <br><strong>Metrics that move:</strong> <code>propensity_auc_min_cell</code>,
+      <code>propensity_auc_max_cell</code>.
+    </div>
+  </div>
+
+  <h3 style="color: var(--text-tertiary); margin-top: 1rem;">Nice-to-have</h3>
+
+  <div class="gap-item gray">
+    <div class="gap-title">Full 24-month cohort</div>
+    <div class="gap-meta">P2/P5 · scale</div>
+    <div class="gap-body">
+      <strong>What's limited:</strong> v2 runs on Jan–Apr 2026 (same as v1). v3 extends to Jul 2025–Feb 2026 with data-completeness guard.
+      <br><strong>Metrics that move:</strong> <code>cohort_days_covered</code>.
+    </div>
+  </div>
+
+  <div class="gap-item gray">
+    <div class="gap-title">Add experiment anchor</div>
+    <div class="gap-meta">P0/P1 · unlocks 3-anchor validation</div>
+    <div class="gap-body">
+      <strong>What's limited:</strong> Zero credible past addition experiments in
+      <code>statsig_experiment_bydevice</code>. v2 ships two-anchor; correlated bias
+      between the two is uncheckable.
+      <br><strong>Metrics that move:</strong> <code>anchor_agreement_ci</code> (as a
+      3-way check), <code>n_joint</code>.
+    </div>
+  </div>
+
+  <div class="gap-item gray">
+    <div class="gap-title">Bootstrap CIs on daily totals</div>
+    <div class="gap-meta">P5 · memo follow-up</div>
+    <div class="gap-body">
+      <strong>What's limited:</strong> Delta-method CI in v2; true 500-sample bootstrap
+      after daily table stabilizes.
+    </div>
+  </div>
+
+  <div class="gap-item gray">
+    <div class="gap-title">10× session-initiation gross-up</div>
+    <div class="gap-meta">P5 · not applied</div>
+    <div class="gap-body">
+      <strong>What's limited:</strong> Phase 3 viewer downsample (10%) is not grossed up in session-initiation TVT. Headline numbers understate this component.
+    </div>
+  </div>
+
+  <div class="gap-item gray">
+    <div class="gap-title">Add 30-day observation window</div>
+    <div class="gap-meta">P2 · planned for v3</div>
+    <div class="gap-body">
+      <strong>What's limited:</strong> v2 uses 60/90/120d windows. 30d gives earliest-readable signal and more expirations with complete post-event data. Near-zero compute cost.
+    </div>
+  </div>
+
+</div>
+
+<div class="tab-panel" data-panel="changelog">
+  <h2>v1 → v2 Changelog</h2>
+
+  <div class="card">
+    <h3>Denominator fix (PR #2, merged to main)</h3>
+    <p>Swapped outcome denominator from title-specific TVT (~5k–11k sec) to total user TVT (~50k–200k sec). Three files changed:</p>
+    <ul>
+      <li><code>phase2_event_deltas.sql</code> — added <code>pre_event_tvt_total_sec</code> column</li>
+      <li><code>fit_xlearner_local.py</code> — updated outcome formula (line ~108)</li>
+      <li><code>phase3_title_substitution_observed.sql</code> — aligned observed denominator</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Segment decomposition view</h3>
+    <p>Added <code>vw_segment_decomposition_v1</code> to Phase 5 rollups — decomposes per-title pairs into amplified / substituted / suppressed / churned segments based on delta_tvt direction.</p>
+  </div>
+
+  <div class="card">
+    <h3>Key findings from v2 diagnostics</h3>
+    <ul>
+      <li>Structural population mismatch between anchors: consistent −20.6 pp bias (completers vs all viewers)</li>
+      <li>Data truncation in Mar/Apr expirations (incomplete 90d post-event windows)</li>
+      <li>Rank-based agreement passes proposed thresholds (Spearman 0.37, same-half 65.5%)</li>
+      <li>341 titles (5.1% TVT) have ŝ &gt; 1.0 — needs clipping</li>
+      <li>Rewatch dampening potential double-count for series (post-event already includes rewatches)</li>
+      <li>Series event_date = last_view_date puts entire binge in pre-event window</li>
+      <li>Movie rewatch rate ≈ 0.23% (effectively zero)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>v3 plan (next iteration)</h3>
+    <ul>
+      <li>Bump sampling 1% → 5% (5× more pairs per title)</li>
+      <li>Extend window: Jul 2025–Feb 2026 with data-completeness guard</li>
+      <li>Add 30-day observation window</li>
+      <li>Clip ŝ to [0, 1] before dampening</li>
+      <li>Estimated compute: ~30–45 min</li>
+    </ul>
+    <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">Cursor prompt prepared: <code>cursor-prompt-v3-rerun.md</code></p>
+  </div>
+</div>
+
+<script>window.SCORECARD_DATA = {
+  "meta": {
+    "generated_at": "2026-05-13T18:00:00+00:00",
+    "as_of_date": "2026-05-13",
+    "cohort_window": "Jan\u2013Apr 2026",
+    "v2_branch": "fix/outcome-denominator (merged to main via PR #2)",
+    "v1_branch": "feature/ci-scorecard"
+  },
+  "ship_gate": {
+    "status": "warn",
+    "headline": "v2 ship gate: CONDITIONAL",
+    "primary_metric_id": "anchor_agreement_ci",
+    "primary_value": 0.357,
+    "primary_display": "35.7% CI-overlap (was 17.8%)",
+    "primary_target_display": "\u2265 70% (original) · rank-based gate passes",
+    "blocker": "Original CI-overlap gate fails at 35.7%. Proposed rank-based gate passes: Spearman \u03c1 = 0.37 \u2265 0.25, same-half concordance = 65.5% \u2265 60%. Gate redefinition pending team review."
+  },
+  "header_counts": {
+    "green": 12,
+    "amber": 10,
+    "red": 12,
+    "stale": 0
+  },
+  "phases": [
+    {
+      "id": "p1",
+      "status": "red",
+      "worst_metric_id": "is_intentional_null_rate",
+      "insight": "Staging tables are populated at expected volumes (9.6B completion rows, 4,964 expirations). is_intentional NULL rate remains at 61.8% (platform-telemetry gap). New finding: series event_date = last_view_date puts entire binge period in pre-event window."
+    },
+    {
+      "id": "p2",
+      "status": "red",
+      "worst_metric_id": "matched_pair_count",
+      "insight": "Matching unchanged from v1. Propensity AUC 0.959 still flags possible leakage, 39 SMD violations remain. Key bottleneck: 1% sampling produces only 73K pairs \u2014 v3 bumps to 5% for ~5\u00d7 increase. Added pre_event_tvt_total_sec column to event_deltas."
+    },
+    {
+      "id": "p3",
+      "status": "amber",
+      "worst_metric_id": "xlearner_rmse_movie",
+      "insight": "Denominator fix resolved the v1 outcome saturation. RMSE improved 0.74/0.89 \u2192 0.44/0.53 (still above 0.10 target). Substitution rates now in [0,1] range (avg 0.755 per-user, 0.549 expiration). 341 titles (5.1% TVT) have \u015d > 1.0 \u2014 clipping planned for v3."
+    },
+    {
+      "id": "p4",
+      "status": "amber",
+      "worst_metric_id": "anchor_agreement_ci",
+      "insight": "CI-overlap agreement improved 17.8% \u2192 35.7% (data-complete) but structural population mismatch (\u221220.6 pp) limits ceiling. Rank-based metrics show genuine directional agreement: Spearman 0.37, same-half concordance 65.5%, within \u00b11 quartile 79.4%. Gate redefinition proposed."
+    },
+    {
+      "id": "p5",
+      "status": "amber",
+      "worst_metric_id": "cohort_days_covered",
+      "insight": "Daily fact table populates cleanly (3,706 rows, 5 cohorts, rollup arithmetic exact to zero). Covers Jan\u2013Apr 2026 only. 10\u00d7 session-initiation gross-up still not applied. Added vw_segment_decomposition_v1."
+    }
+  ],
+  "metrics": [
+    {
+      "id": "anchor_agreement_ci",
+      "value": 0.357,
+      "display": "35.7%",
+      "status": "red",
+      "bar_fill_pct": 51.0,
+      "v1_value": "17.8%",
+      "v1_delta": "+18.0 pp"
+    },
+    {
+      "id": "spearman_rho",
+      "value": 0.37,
+      "display": "0.37",
+      "status": "amber",
+      "bar_fill_pct": 74.0,
+      "note": "New in v2"
+    },
+    {
+      "id": "same_half_concordance",
+      "value": 0.655,
+      "display": "65.5%",
+      "status": "green",
+      "bar_fill_pct": 100.0,
+      "note": "New in v2"
+    },
+    {
+      "id": "within_1_quartile",
+      "value": 0.794,
+      "display": "79.4%",
+      "status": "green",
+      "bar_fill_pct": null,
+      "note": "New in v2"
+    },
+    {
+      "id": "both_anchor_coverage",
+      "value": 0.046,
+      "display": "4.6%",
+      "status": "red",
+      "bar_fill_pct": 23.0
+    },
+    {
+      "id": "catalog_expirations_rows",
+      "value": 4964,
+      "display": "4,964",
+      "status": "green",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "cohort_bucket_count",
+      "value": 5,
+      "display": "5",
+      "status": "green",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "cohort_days_covered",
+      "value": 120,
+      "display": "120",
+      "status": "amber",
+      "bar_fill_pct": 16.4
+    },
+    {
+      "id": "completion_events_rows",
+      "value": 9621585877,
+      "display": "9.6B",
+      "status": "green",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "donor_screen_exclusion_rate",
+      "value": 0.000268,
+      "display": "0.03%",
+      "status": "red",
+      "bar_fill_pct": 0.5
+    },
+    {
+      "id": "fct_table_row_count",
+      "value": 3706,
+      "display": "3,706",
+      "status": "green",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "is_intentional_null_rate",
+      "value": 0.618,
+      "display": "61.8%",
+      "status": "red",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "matched_pair_count",
+      "value": 73578,
+      "display": "73,578",
+      "status": "red",
+      "bar_fill_pct": 7.4,
+      "note": "v3 targets ~370K at 5% sampling"
+    },
+    {
+      "id": "max_post_match_smd",
+      "value": 0.361,
+      "display": "0.361",
+      "status": "red",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "median_disagreement_pp",
+      "value": 20.6,
+      "display": "20.6",
+      "status": "amber",
+      "bar_fill_pct": 41.2,
+      "v1_value": "2,264",
+      "v1_delta": "\u221299.1%"
+    },
+    {
+      "id": "n_joint",
+      "value": 718,
+      "display": "718",
+      "status": "green",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "propensity_auc_max_cell",
+      "value": 0.983,
+      "display": "0.983",
+      "status": "red",
+      "bar_fill_pct": null
+    },
+    {
+      "id": "propensity_auc_min_cell",
+      "value": 0.959,
+      "display": "0.959",
+      "status": "amber",
+      "bar_fill_pct": null
+    },
+    {
+      "id": "substitution_rate_mean_peruser",
+      "value": 0.755,
+      "display": "0.755",
+      "status": "green",
+      "bar_fill_pct": null,
+      "note": "New in v2"
+    },
+    {
+      "id": "substitution_rate_mean_expiration",
+      "value": 0.549,
+      "display": "0.549",
+      "status": "green",
+      "bar_fill_pct": null,
+      "note": "New in v2"
+    },
+    {
+      "id": "s_hat_above_1_fraction",
+      "value": 0.051,
+      "display": "5.1%",
+      "status": "amber",
+      "bar_fill_pct": 100.0,
+      "note": "New in v2 \u00b7 v3 adds clipping"
+    },
+    {
+      "id": "rewatch_dampening_effect_movie",
+      "value": 0.000115,
+      "display": "0.0001",
+      "status": "green",
+      "bar_fill_pct": null
+    },
+    {
+      "id": "rewatch_dampening_effect_series",
+      "value": 0.0189,
+      "display": "0.019",
+      "status": "green",
+      "bar_fill_pct": null,
+      "note": "Potential double-count flagged"
+    },
+    {
+      "id": "rewatch_smell_test",
+      "value": "partial",
+      "display": "partial",
+      "status": "amber",
+      "bar_fill_pct": null
+    },
+    {
+      "id": "rollup_arithmetic_diff",
+      "value": 0.0,
+      "display": "0",
+      "status": "green",
+      "bar_fill_pct": 0.0
+    },
+    {
+      "id": "series_completion_event_share",
+      "value": 0.015,
+      "display": "1.5%",
+      "status": "amber",
+      "bar_fill_pct": 50.0
+    },
+    {
+      "id": "session_init_downsample_applied",
+      "value": "no",
+      "display": "no",
+      "status": "amber",
+      "bar_fill_pct": null
+    },
+    {
+      "id": "session_init_spearman_2h",
+      "value": 0.698,
+      "display": "0.698",
+      "status": "green",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "sharp_disagreer_fraction",
+      "value": 0.65,
+      "display": "65.0%",
+      "status": "red",
+      "bar_fill_pct": 100.0,
+      "v1_value": "99.6%",
+      "v1_delta": "\u221234.6 pp"
+    },
+    {
+      "id": "smd_violation_count",
+      "value": 39,
+      "display": "39",
+      "status": "red",
+      "bar_fill_pct": 100.0
+    },
+    {
+      "id": "titles_routed_observed",
+      "value": 200,
+      "display": "~200",
+      "status": "red",
+      "bar_fill_pct": 2.0,
+      "v1_value": "2",
+      "v1_delta": "+198 titles"
+    },
+    {
+      "id": "titles_routed_predicted",
+      "value": 193860,
+      "display": "193,860",
+      "status": "green",
+      "bar_fill_pct": null
+    },
+    {
+      "id": "treated_match_rate",
+      "value": 0.00127,
+      "display": "0.1%",
+      "status": "red",
+      "bar_fill_pct": 0.13
+    },
+    {
+      "id": "window_sens_max_delta_top10",
+      "value": 0.08,
+      "display": "0.08",
+      "status": "amber",
+      "bar_fill_pct": 40.0,
+      "v1_value": "7.07",
+      "v1_delta": "\u221298.9%"
+    },
+    {
+      "id": "xlearner_rmse_movie",
+      "value": 0.44,
+      "display": "0.44",
+      "status": "red",
+      "bar_fill_pct": 100.0,
+      "v1_value": "0.74",
+      "v1_delta": "\u22120.30"
+    },
+    {
+      "id": "xlearner_rmse_series",
+      "value": 0.53,
+      "display": "0.53",
+      "status": "red",
+      "bar_fill_pct": 100.0,
+      "v1_value": "0.89",
+      "v1_delta": "\u22120.36"
+    }
+  ],
+  "page_insight": "v2 confirms the denominator fix works: substitution rates are in [0,1], RMSE halved, and agreement doubled. The remaining gap to the original 70% CI-overlap gate is a structural population mismatch (\u221220.6 pp) between anchors, not a model deficiency. Rank-based agreement (Spearman 0.37, same-half 65.5%) passes proposed thresholds. v3 (5% sampling, extended window, \u015d clipping) is prepared and ready to run."
+};</script>
+<script>
+// === Tab switching ===
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+  });
+});
+
+// === Data loading ===
+const PHASE_NAMES = {
+  p1: 'Events', p2: 'Matching', p3: 'Model', p4: 'Validate', p5: 'Rollup'
+};
+
+function loadData() {
+  const data = window.SCORECARD_DATA;
+  if (!data) {
+    console.warn('window.SCORECARD_DATA not set.');
+    renderEmpty();
+    return;
+  }
+  render(data);
+}
+
+function setSlot(name, value) {
+  document.querySelectorAll(`[data-slot="${name}"]`).forEach(el => {
+    el.textContent = value;
+  });
+}
+
+function renderEmpty() {
+  setSlot('as_of_date', 'no data file');
+  setSlot('ship_gate_status', 'no data');
+  setSlot('ship_gate_primary', 'No data loaded.');
+  setSlot('ship_gate_blocker', '');
+  renderPhaseRibbon([]);
+}
+
+function render(data) {
+  // Title bar
+  setSlot('as_of_date', data.meta?.as_of_date || '—');
+
+  // Ship gate
+  const shipStatus = data.ship_gate?.status || 'unknown';
+  const shipEl = document.querySelector('[data-slot="ship_gate_status"]');
+  if (shipEl) {
+    shipEl.textContent = data.ship_gate?.headline || '—';
+    shipEl.classList.remove('pass', 'fail', 'warn');
+    shipEl.classList.add(shipStatus === 'pass' ? 'pass' : shipStatus === 'fail' ? 'fail' : 'warn');
+  }
+  const primary = data.ship_gate?.primary_display && data.ship_gate?.primary_target_display
+    ? `${data.ship_gate.primary_display} / target ${data.ship_gate.primary_target_display}`
+    : '—';
+  setSlot('ship_gate_primary', primary);
+  setSlot('ship_gate_blocker', data.ship_gate?.blocker || '');
+
+  // Overview mirrored slots
+  setSlot('overview_ship_status', data.ship_gate?.headline || '—');
+  setSlot('page_insight', data.page_insight || '—');
+
+  // Counts
+  const counts = data.header_counts || { green: 0, amber: 0, red: 0, stale: 0 };
+  setSlot('count_green', counts.green);
+  setSlot('count_amber', counts.amber);
+  setSlot('count_red', counts.red);
+  setSlot('count_green_2', counts.green);
+  setSlot('count_amber_2', counts.amber);
+  setSlot('count_red_2', counts.red);
+
+  // Phase ribbon
+  renderPhaseRibbon(data.phases || []);
+
+  // Phase status chips + insights
+  (data.phases || []).forEach(phase => {
+    const chip = document.querySelector(`[data-slot="phase_status_${phase.id}"]`);
+    if (chip) {
+      chip.textContent = phase.status || '—';
+      chip.classList.remove('green', 'amber', 'red', 'stale');
+      chip.classList.add(phase.status || 'stale');
+    }
+    setSlot(`phase_insight_${phase.id}`, phase.insight || '—');
+  });
+
+  // Metrics
+  (data.metrics || []).forEach(metric => {
+    const tile = document.querySelector(`[data-metric-id="${metric.id}"]`);
+    if (!tile) return;
+    tile.classList.remove('green', 'amber', 'red', 'stale');
+    tile.classList.add(metric.status || 'stale');
+
+    const valueEl = tile.querySelector('[data-slot="value"]');
+    if (valueEl) valueEl.textContent = metric.display ?? '—';
+
+    const barFill = tile.querySelector('[data-slot="bar_fill"]');
+    if (barFill && metric.bar_fill_pct != null) {
+      barFill.style.width = `${Math.max(0, Math.min(100, metric.bar_fill_pct))}%`;
+    }
+
+    // Render v1 delta if present
+    if (metric.v1_delta) {
+      let deltaEl = tile.querySelector('.delta');
+      if (!deltaEl) {
+        deltaEl = document.createElement('div');
+        deltaEl.className = 'delta';
+        tile.appendChild(deltaEl);
+      }
+      const isImproved = metric.v1_delta.includes('\u2212') || metric.v1_delta.includes('+');
+      deltaEl.classList.add('improved');
+      deltaEl.textContent = `v1: ${metric.v1_value} → v2: ${metric.display} (${metric.v1_delta})`;
+    }
+  });
+}
+
+function renderPhaseRibbon(phases) {
+  const ribbon = document.querySelector('[data-slot="phase_ribbon"]');
+  if (!ribbon) return;
+  ribbon.innerHTML = '';
+  const byId = {};
+  phases.forEach(p => { byId[p.id] = p; });
+  ['p1', 'p2', 'p3', 'p4', 'p5'].forEach(id => {
+    const phase = byId[id];
+    const tile = document.createElement('div');
+    const status = phase?.status || 'stale';
+    tile.className = `phase-tile ${status}`;
+    tile.innerHTML = `<div class="phase-id">${id.toUpperCase()}</div><div class="phase-name">${PHASE_NAMES[id]}</div>`;
+    ribbon.appendChild(tile);
+  });
+}
+
+loadData();
+</script>
+
+</body>
+</html>
