@@ -332,6 +332,19 @@ details summary::-webkit-details-marker { color: var(--text-tertiary); }
         <li>Delta-method CI is accurate enough for v2 headline numbers <span class="status-chip amber">under review · bootstrap planned</span></li>
       </ul>
       <p><strong>v2 addition:</strong> <code>vw_segment_decomposition_v1</code> — decomposes per-title pairs into amplified / substituted / suppressed / churned segments.</p>
+      <p><strong>Amplification (open question):</strong></p>
+      <ul>
+        <li><strong>What it is:</strong> Some titles generate TVT on <em>other</em> titles beyond their own direct viewing — they bring viewers to the platform or trigger binge sessions that spill over. This is the "amplification" component: TVT on other titles that would not have occurred without T's presence.</li>
+        <li><strong>Current state:</strong> The segment decomposition identifies "amplified" pairs (where <code>delta_tvt &lt; 0</code>, i.e., control viewed <em>less</em> total TVT than treated), but this is not yet incorporated into the headline incremental TVT number.</li>
+        <li><strong>Challenge:</strong> Need to separate genuine amplification (T attracts viewers who then watch more of everything) from noise / regression-to-mean in the delta. Possible approaches: <span class="status-chip amber">TBD</span></li>
+        <ul style="margin-left: 1.5rem; margin-top: 0.25rem;">
+          <li>(a) Title-level amplification rate = fraction of matched pairs with negative delta_tvt, weighted by magnitude</li>
+          <li>(b) Session-initiation credit already captures some of this (TVT in sessions <em>started</em> by T but spent on other titles)</li>
+          <li>(c) Net incrementality = direct TVT × (1 − ŝ) + amplification credit − session-init double-count adjustment</li>
+          <li>(d) Risk: amplification + substitution may double-count if not carefully netted</li>
+        </ul>
+        <li><strong>Adjustment needed:</strong> If amplification is folded into the headline number, the formula becomes: <code>incremental_tvt(T) = direct_tvt(T) × (1 − ŝ_dampened) + amplified_tvt(T) × amplification_rate</code>. The amplification rate and its interaction with the session-initiation credit need to be defined to avoid double-counting.</li>
+      </ul>
       <p><strong>Primary outputs:</strong> <code>fct_content_incremental_tvt_daily_v1</code> (3,706 rows), weekly/monthly/YTD views, <code>vw_content_promo_sidebar_snapshot_v1</code>, <code>vw_segment_decomposition_v1</code>.</p>
       <div class="insight" data-slot="phase_insight_p5">—</div>
     </details>
