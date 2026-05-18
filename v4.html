@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality · v4</title>
+<style>
+:root {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e5e5e7;
+  --border: #d1d1d6;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #aeaeb2;
+  --accent: #0071e3;
+  --success: #34c759;
+  --warning: #ff9f0a;
+  --error: #ff3b30;
+  --stale-bg: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1d1d1f;
+    --bg-secondary: #2d2d2f;
+    --bg-tertiary: #3d3d3f;
+    --border: #424245;
+    --text-primary: #f5f5f7;
+    --text-secondary: #86868b;
+    --accent: #0a84ff;
+    --success: #30d158;
+    --warning: #ffd60a;
+    --error: #ff453a;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+       background: var(--bg-primary); color: var(--text-primary); line-height: 1.5;
+       padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; }
+h1 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
+h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+
+.title-bar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+.title-bar .as-of { color: var(--text-secondary); font-size: 0.8rem; }
+
+.header { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+          padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.ship-gate { flex: 1; }
+.ship-gate .status { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.02em; }
+.ship-gate .status.pass { color: var(--success); }
+.ship-gate .status.fail { color: var(--error); }
+.ship-gate .status.warn { color: var(--warning); }
+.ship-gate .primary { font-size: 0.9rem; margin-top: 0.15rem; color: var(--text-secondary); }
+.ship-gate .blocker { font-size: 0.85rem; margin-top: 0.25rem; color: var(--text-primary); }
+
+.counts { display: flex; gap: 0.5rem; }
+.count-chip { padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: white; }
+.count-chip.green { background: var(--success); }
+.count-chip.amber { background: var(--warning); }
+.count-chip.red { background: var(--error); }
+.count-chip.stale { background: var(--text-tertiary); }
+
+.phase-ribbon { display: flex; gap: 0.4rem; margin-top: 1rem; }
+.phase-tile { flex: 1; padding: 0.7rem 0.5rem; border-radius: 6px; color: white; text-align: center;
+              font-size: 0.85rem; font-weight: 600; }
+.phase-tile.green { background: var(--success); }
+.phase-tile.amber { background: var(--warning); }
+.phase-tile.red { background: var(--error); }
+.phase-tile.stale { background: var(--text-tertiary); }
+.phase-tile .phase-id { font-weight: 700; }
+.phase-tile .phase-name { font-size: 0.7rem; opacity: 0.95; font-weight: 500; }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 2px solid var(--border); margin-bottom: 1rem; flex-wrap: wrap; }
+.tab { padding: 0.6rem 1rem; background: none; border: none; cursor: pointer;
+       font-size: 0.9rem; color: var(--text-secondary); border-bottom: 2px solid transparent;
+       margin-bottom: -2px; font-weight: 500; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+        padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+.card.green { border-left: 4px solid var(--success); }
+.card.amber { border-left: 4px solid var(--warning); }
+.card.red { border-left: 4px solid var(--error); }
+
+.status-chip { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 10px; font-size: 0.7rem;
+               font-weight: 600; color: white; }
+.status-chip.green { background: var(--success); }
+.status-chip.amber { background: var(--warning); }
+.status-chip.red { background: var(--error); }
+.status-chip.stale { background: var(--text-tertiary); }
+
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+               gap: 0.75rem; }
+.metric-tile { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+               padding: 0.8rem 1rem; }
+.metric-tile.green { border-left: 4px solid var(--success); }
+.metric-tile.amber { border-left: 4px solid var(--warning); }
+.metric-tile.red { border-left: 4px solid var(--error); }
+.metric-tile.stale { border: 1px dashed var(--text-tertiary); background: var(--stale-bg); }
+.metric-tile .label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;
+                      letter-spacing: 0.04em; }
+.metric-tile .value { font-size: 1.5rem; font-weight: 700; margin: 0.15rem 0; }
+.metric-tile .target { font-size: 0.75rem; color: var(--text-secondary); }
+.metric-tile .bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px;
+                    margin-top: 0.4rem; overflow: hidden; }
+.metric-tile .bar-fill { height: 100%; }
+.metric-tile.green .bar-fill { background: var(--success); }
+.metric-tile.amber .bar-fill { background: var(--warning); }
+.metric-tile.red .bar-fill { background: var(--error); }
+.metric-tile .note { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.4rem; }
+.metric-tile .phase-tag { font-size: 0.6rem; background: var(--bg-tertiary); padding: 0.1rem 0.4rem;
+                          border-radius: 3px; display: inline-block; margin-left: 0.3rem;
+                          color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+
+.legend { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; }
+.legend ul { list-style: none; padding: 0; }
+.legend li { padding: 0.2rem 0; }
+.legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+               margin-right: 0.4rem; vertical-align: middle; }
+.legend .dot.green { background: var(--success); }
+.legend .dot.amber { background: var(--warning); }
+.legend .dot.red { background: var(--error); }
+
+.gap-item { border-left: 4px solid var(--border); padding: 0.6rem 0.9rem; margin-bottom: 0.5rem;
+            background: var(--bg-secondary); border-radius: 4px; }
+.gap-item.red { border-left-color: var(--error); background: rgba(255,59,48,0.05); }
+.gap-item.amber { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+.gap-item.gray { border-left-color: var(--text-tertiary); opacity: 0.9; }
+
+.gap-item .gap-title { font-weight: 600; font-size: 0.9rem; }
+.gap-item .gap-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; }
+.gap-item .gap-body { font-size: 0.85rem; margin-top: 0.35rem; }
+
+.insight { font-size: 0.85rem; font-style: italic; color: var(--text-secondary);
+           border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem; }
+
+details summary { cursor: pointer; font-weight: 600; padding: 0.5rem 0; }
+details summary::-webkit-details-marker { color: var(--text-tertiary); }
+
+
+</style>
+</head>
+<body>
+
+<div class="title-bar">
+  <h1>Content Incrementality · v4</h1>
+  <div class="as-of">as of <span data-slot="as_of_date">—</span></div>
+</div>
+
+<div class="header">
+  <div class="header-row">
+    <div class="ship-gate">
+      <div class="status" data-slot="ship_gate_status">—</div>
+      <div class="primary" data-slot="ship_gate_primary">—</div>
+      <div class="blocker" data-slot="ship_gate_blocker">—</div>
+    </div>
+    <div class="counts">
+      <div class="count-chip green"><span data-slot="count_green">0</span> green</div>
+      <div class="count-chip amber"><span data-slot="count_amber">0</span> amber</div>
+      <div class="count-chip red"><span data-slot="count_red">0</span> red</div>
+    </div>
+  </div>
+  <div class="phase-ribbon" data-slot="phase_ribbon"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="overview">Overview</button>
+  <button class="tab" data-tab="method">Method</button>
+  <button class="tab" data-tab="metrics">Metrics</button>
+  <button class="tab" data-tab="gaps">Gaps</button>
+</div>
+
+<!-- ========== OVERVIEW TAB ========== -->
+<div class="tab-panel active" data-panel="overview">
+  <h2>What this is</h2>
+  <p style="margin-bottom: 0.75rem;">
+    Measures how much TVT is truly <em>incremental</em> per title on Tubi — TVT that
+    would not have happened on a substitute title if this one weren't in the catalog.
+    Content decisions (licensing, promotion, originals investment) hang on this number.
+  </p>
+
+  <h3>v4 changes from v1</h3>
+  <div class="card" style="margin-bottom: 1rem;">
+    <ul style="font-size: 0.85rem; padding-left: 1rem; line-height: 1.8;">
+      <li>Session-day anchored controls (eliminates immortal time bias)</li>
+      <li><code>power_viewer</code> + <code>qual_session_bucket</code> features added to propensity</li>
+      <li>Pre-event TVT >= 15 min filter (eliminates ratio blow-up from low-TVT viewers)</li>
+      <li>Substitution rate clipped to [-1, 2] per pair (allows super-additive and suppressive signals)</li>
+      <li>Per-genre X-learner (GBR per genre_bucket, title-level aggregation before fitting)</li>
+      <li>Model persistence to DBFS (<code>/dbfs/FileStore/phase3_models/</code>)</li>
+      <li>Timeframe: Jan–Mar 2026</li>
+    </ul>
+  </div>
+
+  <h3>How to read this page</h3>
+  <div class="legend">
+    <ul>
+      <li><span class="dot green"></span><strong>Green</strong> — metric inside manage-to target; nothing to do.</li>
+      <li><span class="dot amber"></span><strong>Amber</strong> — outside target but not ship-blocking.</li>
+      <li><span class="dot red"></span><strong>Red</strong> — outside target and degrades trust; see Gaps tab.</li>
+      <li><strong>Ship gate</strong> — anchor agreement threshold that decides whether v4 is usable.</li>
+    </ul>
+  </div>
+
+  <h3>Where v4 stands</h3>
+  <div class="card" data-slot="overview_ship_gate_card">
+    <div><strong data-slot="overview_ship_status">—</strong></div>
+    <div class="insight" data-slot="page_insight">—</div>
+  </div>
+</div>
+
+<!-- ========== METHOD TAB ========== -->
+<div class="tab-panel" data-panel="method">
+  <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+    Five stages feed the daily incremental-TVT fact table. Click any stage to expand.
+  </p>
+
+  <div class="card" data-phase-id="p1">
+    <details open>
+      <summary>P1 · Event definitions <span class="status-chip" data-slot="phase_status_p1">—</span></summary>
+      <p><strong>What it does:</strong> Builds staging tables from raw <code>video_session</code> + <code>rightsline_right</code>: completion events, catalog expirations, rewatch rates.</p>
+      <p><strong>Key assumptions:</strong></p>
+      <ul>
+        <li>Viewer grain = <code>COALESCE(user_id, device_id)</code></li>
+        <li>28-day abandonment window uniform across content types</li>
+      </ul>
+      <p><strong>Outputs:</strong> <code>stg_completion_events_v1</code>, <code>stg_catalog_expirations_v1</code></p>
+      <div class="insight" data-slot="phase_insight_p1">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p2">
+    <details>
+      <summary>P2 · Matching & propensity <span class="status-chip" data-slot="phase_status_p2">—</span></summary>
+      <p><strong>What it does:</strong> Logistic propensity per (content_type x genre_bucket) cell; session-day anchored nearest-neighbor matching within strata; emits 28d TVT deltas.</p>
+      <p><strong>v4 changes:</strong> Added <code>power_viewer</code> + <code>qual_session_bucket</code>; session-day anchor fixes immortal-time bias; <code>pre_event_tvt >= 900s</code> filter.</p>
+      <p><strong>Outputs:</strong> <code>matched_event_pairs_v4</code>, <code>event_deltas_v4</code></p>
+      <div class="insight" data-slot="phase_insight_p2">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p3">
+    <details>
+      <summary>P3 · Substitution model <span class="status-chip" data-slot="phase_status_p3">—</span></summary>
+      <p><strong>What it does:</strong> Predicts per-title substitution rate <code>s(T)</code>. Per-genre GradientBoostingRegressor on title-level aggregated s. Rewatch dampening <code>s * (1 - rewatch_rate)</code>.</p>
+      <p><strong>v4 changes:</strong> Per-genre models (not per-content_type); title-level aggregation before fitting; pair-level clipping [-1, 2]; Jan-Mar 2026 scope; model persistence to DBFS.</p>
+      <p><strong>Outputs:</strong> <code>title_substitution_observed_v4</code>, <code>title_substitution_predicted_v4</code>, <code>title_substitution_dampened_v4</code></p>
+      <div class="insight" data-slot="phase_insight_p3">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p4">
+    <details>
+      <summary>P4 · Anchor validation <span class="status-chip" data-slot="phase_status_p4">—</span></summary>
+      <p><strong>What it does:</strong> Checks whether per-user anchor (completer delta) and expiration anchor (catalog removal delta) produce overlapping 95% CIs per title.</p>
+      <p><strong>v4 changes:</strong> Both anchors apply same pair-level clipping [-1, 2] and pre_tvt >= 900s. Comparison on same formula: <code>s = 1 - (delta_tvt / pre_event_tvt)</code>.</p>
+      <p><strong>Outputs:</strong> <code>expiration_deltas_v4</code>, <code>anchor_agreement_v4</code></p>
+      <div class="insight" data-slot="phase_insight_p4">—</div>
+    </details>
+  </div>
+
+  <div class="card" data-phase-id="p5">
+    <details>
+      <summary>P5 · Daily rollup <span class="status-chip" data-slot="phase_status_p5">—</span></summary>
+      <p><strong>What it does:</strong> Aggregates per-title dampened substitution rates into daily fact table by cohort x content_type. <code>incremental_tvt = tvt_retained * (1 - s_dampened)</code>.</p>
+      <p><strong>v4 changes:</strong> Reads from <code>title_substitution_dampened_v4</code>; no session_initiation_credit (skipped for v4 fast iteration); Jan-Mar 2026.</p>
+      <p><strong>Outputs:</strong> <code>fct_content_incremental_tvt_daily_v4</code></p>
+      <div class="insight" data-slot="phase_insight_p5">—</div>
+    </details>
+  </div>
+</div>
+
+<!-- ========== METRICS TAB ========== -->
+<div class="tab-panel" data-panel="metrics">
+  <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+    Pipeline-integrity metrics with manage-to targets. Sorted by status (red first) within each phase.
+  </p>
+
+  <div class="metric-grid" data-slot="metric_grid">
+
+    <!-- P1 metrics -->
+    <div class="metric-tile" data-metric-id="completion_events_rows" data-phase-id="p1">
+      <div class="label">Completion events rows <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 1B</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="catalog_expirations_rows" data-phase-id="p1">
+      <div class="label">Catalog expirations rows <span class="phase-tag">P1</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 1,000</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <!-- P2 metrics -->
+    <div class="metric-tile" data-metric-id="propensity_auc_min_cell" data-phase-id="p2">
+      <div class="label">Propensity AUC (min cell) <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">green in [0.70, 0.95]</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="propensity_auc_max_cell" data-phase-id="p2">
+      <div class="label">Propensity AUC (max cell) <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">green in [0.70, 0.95]</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="matched_pair_count" data-phase-id="p2">
+      <div class="label">Matched pair count <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 1M</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="treated_match_rate" data-phase-id="p2">
+      <div class="label">Treated match rate <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 99%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="max_post_match_smd" data-phase-id="p2">
+      <div class="label">Max post-match SMD <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target <= 0.10</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="smd_violation_count" data-phase-id="p2">
+      <div class="label">SMD violations <span class="phase-tag">P2</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target = 0</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <!-- P3 metrics -->
+    <div class="metric-tile" data-metric-id="xlearner_rmse_best_genre" data-phase-id="p3">
+      <div class="label">X-learner RMSE (best genre) <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target <= 0.10</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="xlearner_rmse_worst_genre" data-phase-id="p3">
+      <div class="label">X-learner RMSE (worst genre) <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target <= 0.10</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="n_genres_fitted" data-phase-id="p3">
+      <div class="label">Genres fitted <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="titles_scored" data-phase-id="p3">
+      <div class="label">Titles scored (predicted) <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="titles_observed_eligible" data-phase-id="p3">
+      <div class="label">Titles observed-eligible <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 1,000</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="avg_s_observed" data-phase-id="p3">
+      <div class="label">Avg s (observed, 28d) <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="dampened_titles_count" data-phase-id="p3">
+      <div class="label">Dampened titles count <span class="phase-tag">P3</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <!-- P4 metrics -->
+    <div class="metric-tile" data-metric-id="anchor_agreement" data-phase-id="p4"
+         style="border-right: 3px solid var(--error);">
+      <div class="label">Anchor agreement <span class="phase-tag">P4</span> <span class="phase-tag" style="background: var(--error); color: white;">SHIP</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 70%</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="n_joint" data-phase-id="p4">
+      <div class="label">n_joint titles <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 50</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="avg_disagreement_pp" data-phase-id="p4">
+      <div class="label">Avg disagreement (pp) <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target <= 10 pp</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="median_disagreement_pp" data-phase-id="p4">
+      <div class="label">Median disagreement (pp) <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target <= 10 pp</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="per_user_mean_s" data-phase-id="p4">
+      <div class="label">Per-user anchor mean s <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="expiration_mean_s" data-phase-id="p4">
+      <div class="label">Expiration anchor mean s <span class="phase-tag">P4</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <!-- P5 metrics -->
+    <div class="metric-tile" data-metric-id="fct_table_row_count" data-phase-id="p5">
+      <div class="label">Fact table rows <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">target >= 500</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="total_tvt_hours" data-phase-id="p5">
+      <div class="label">Total TVT (hours) <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">informational</div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="incremental_share" data-phase-id="p5">
+      <div class="label">Incremental share <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">green in [30%, 90%]</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+    <div class="metric-tile" data-metric-id="cohort_days_covered" data-phase-id="p5">
+      <div class="label">Days covered <span class="phase-tag">P5</span></div>
+      <div class="value" data-slot="value">—</div>
+      <div class="target">Jan-Mar 2026 (90d)</div>
+      <div class="bar"><div class="bar-fill" data-slot="bar_fill"></div></div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ========== GAPS TAB ========== -->
+<div class="tab-panel" data-panel="gaps">
+  <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+    Grouped by severity. Each item names what to fix, which metrics move, and expected lift.
+  </p>
+
+  <h3 style="color: var(--error); margin-top: 0.75rem;">Red — blocks ship</h3>
+
+  <div class="gap-item red">
+    <div class="gap-title">Anchor agreement below target</div>
+    <div class="gap-meta">P4 · ship gate</div>
+    <div class="gap-body">
+      <strong>What's happening:</strong> Per-user anchor (completers = heavy viewers, mean s ~0.73) is
+      structurally higher than expiration anchor (all watchers including casual, mean s ~0.57).
+      The ~16pp systematic gap is a population difference, not a method error.
+      <br><strong>Metrics that move:</strong> <code>anchor_agreement</code>, <code>avg_disagreement_pp</code>.
+      <br><strong>Options:</strong> (a) Accept the gap as structural and calibrate thresholds per-anchor,
+      (b) restrict both anchors to the same viewer population (heavy-viewer subset), or
+      (c) weight agreement by data density.
+    </div>
+  </div>
+
+  <h3 style="color: var(--warning); margin-top: 1rem;">Amber — on the backlog</h3>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Post-match SMD violations on activity features</div>
+    <div class="gap-meta">P2 · matching quality</div>
+    <div class="gap-body">
+      <strong>What's happening:</strong> Two SMD violations exceed the |0.10| threshold:
+      <code>sessions_28d</code> (SMD = 0.265) and <code>tvt_28d_sec</code> (SMD = 0.261).
+      Treated viewers average 852 sessions and 19.9M sec TVT in 28d vs controls at 470 sessions
+      and 2.2M sec — a ~9× TVT gap and 1.8× session gap. The imbalance is uniform across genres
+      (kids lowest at 4.3×, documentary/drama worst at 10–12×). Propensity matching on
+      tenure_bucket + is_registered + logit caliper does not absorb the fundamental activity
+      difference between completers and non-completers.
+      <br><strong>Metrics that move:</strong> <code>max_post_match_smd</code>, <code>smd_violation_count</code>, downstream delta estimates.
+      <br><strong>Options:</strong> (a) Add <code>tvt_28d_sec</code> quartile as an exact-match blocking variable,
+      (b) apply IPW weighting post-match to rebalance, or (c) restrict treated pool to a TVT band
+      where controls are available at comparable density.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Wide confidence intervals in observed substitution rates</div>
+    <div class="gap-meta">P3 · precision</div>
+    <div class="gap-body">
+      <strong>What's happening:</strong> Most titles have CI halfwidths exceeding the 0.25 dampening
+      threshold, routing them to the predicted model even when observed data exists (e.g., Coraline:
+      s_observed = 1.66, CI halfwidth = 0.97, dampened to s_predicted = 0.75). The 0.25 threshold
+      is too strict given pair-level variance, causing the model to override direct observation
+      for ~74% of observed-eligible titles.
+      <br><strong>Metrics that move:</strong> <code>titles_observed_eligible</code> effective utilization, dampened s accuracy.
+      <br><strong>Options:</strong> (a) Relax halfwidth threshold (e.g., 0.50) to trust observed when available,
+      (b) use observed whenever <code>model_source_eligible = true</code> regardless of CI width,
+      or (c) blend observed and predicted weighted by inverse CI width.
+    </div>
+  </div>
+
+  <div class="gap-item amber">
+    <div class="gap-title">Two-anchor system (no experiment anchor)</div>
+    <div class="gap-meta">P0/P1 · structural</div>
+    <div class="gap-body">
+      <strong>What's limited:</strong> Zero credible past addition experiments found in
+      <code>statsig_experiment_bydevice</code>. v4 ships two-anchor; correlated bias uncheckable.
+      <br><strong>Fix:</strong> Run a controlled content-addition experiment in Q3 2026.
+    </div>
+  </div>
+
+  <h3 style="color: var(--text-tertiary); margin-top: 1rem;">Nice-to-have</h3>
+
+  <div class="gap-item gray">
+    <div class="gap-title">Full-year cohort coverage</div>
+    <div class="gap-meta">P2/P5 · scope</div>
+    <div class="gap-body">
+      v4 scoped to Jan-Mar 2026 for fast iteration. Extending to full year requires
+      larger compute allocation.
+    </div>
+  </div>
+
+  <div class="gap-item gray">
+    <div class="gap-title">Session-initiation credit layer</div>
+    <div class="gap-meta">P5 · skipped in v4</div>
+    <div class="gap-body">
+      Session-initiation credit (titles that start viewing sessions for other content)
+      skipped in v4 for speed. Next version re-adds it.
+    </div>
+  </div>
+</div>
+
+<script>
+window.SCORECARD_DATA = {
+  "meta": {
+    "generated_at": "2026-05-17T00:00:00+00:00",
+    "as_of_date": "2026-05-17",
+    "cohort_window": "Jan–Mar 2026",
+    "pipeline_version": "v4",
+    "method": "Propensity-score matching (logistic, 0.1 logit caliper) + per-genre GBR X-learner"
+  },
+  "ship_gate": {
+    "status": "fail",
+    "headline": "v4 ship gate: FAIL",
+    "primary_metric_id": "anchor_agreement",
+    "primary_value": 0.054,
+    "primary_display": "5.4%",
+    "primary_target_display": "≥ 70%",
+    "blocker": "Per-user anchor (completers, mean s=0.73) structurally higher than expiration anchor (all watchers, mean s=0.57). ~16pp systematic gap is a population difference."
+  },
+  "header_counts": {
+    "green": 12,
+    "amber": 6,
+    "red": 4
+  },
+  "phases": [
+    {
+      "id": "p1",
+      "status": "green",
+      "insight": "Staging tables populated at expected volumes: 9.6B completion events, 4,964 catalog expirations."
+    },
+    {
+      "id": "p2",
+      "status": "amber",
+      "insight": "38.3M matched pairs (v4), 99.97% treated match rate, AUC 0.87–0.94. SMD violations: sessions_28d (0.265) and tvt_28d_sec (0.261) — treated viewers have ~9× more TVT and 1.8× more sessions than matched controls. Propensity match does not fully absorb the activity gap between completers and non-completers."
+    },
+    {
+      "id": "p3",
+      "status": "amber",
+      "insight": "Per-genre GBR models fitted on title-level aggregated data. 194,657 titles scored. Wide confidence intervals: only 26% of observed titles have CI halfwidth < 0.25 (model_source_eligible threshold), routing most titles to predicted model. Observed avg s = 0.93 but mean CI halfwidth ~0.5 limits per-title precision."
+    },
+    {
+      "id": "p4",
+      "status": "red",
+      "insight": "Anchor agreement 5.4% (target 70%). Avg disagreement 16.0pp. Structural: per-user anchor measures heavy completers, expiration measures all watchers including casual viewers."
+    },
+    {
+      "id": "p5",
+      "status": "amber",
+      "insight": "Fact table populated: 2,766 rows, 90 days. Incremental share = 17.3% of total TVT. 3.4B total TVT hours over Jan-Mar 2026."
+    }
+  ],
+  "metrics": [
+    {"id": "completion_events_rows", "value": 9621585877, "display": "9.6B", "status": "green", "bar_fill_pct": 100},
+    {"id": "catalog_expirations_rows", "value": 4964, "display": "4,964", "status": "green", "bar_fill_pct": 100},
+    {"id": "propensity_auc_min_cell", "value": 0.865, "display": "0.865", "status": "green", "bar_fill_pct": 82},
+    {"id": "propensity_auc_max_cell", "value": 0.943, "display": "0.943", "status": "green", "bar_fill_pct": 95},
+    {"id": "matched_pair_count", "value": 38285531, "display": "38.3M", "status": "green", "bar_fill_pct": 100},
+    {"id": "treated_match_rate", "value": 0.9997, "display": "99.97%", "status": "green", "bar_fill_pct": 100},
+    {"id": "max_post_match_smd", "value": 0.265, "display": "0.265", "status": "red", "bar_fill_pct": 100},
+    {"id": "smd_violation_count", "value": 2, "display": "2", "status": "amber", "bar_fill_pct": 50},
+    {"id": "xlearner_rmse_best_genre", "value": null, "display": "pending", "status": "stale", "bar_fill_pct": null},
+    {"id": "xlearner_rmse_worst_genre", "value": null, "display": "pending", "status": "stale", "bar_fill_pct": null},
+    {"id": "n_genres_fitted", "value": 8, "display": "8", "status": "green", "bar_fill_pct": null},
+    {"id": "titles_scored", "value": 194657, "display": "194,657", "status": "green", "bar_fill_pct": null},
+    {"id": "titles_observed_eligible", "value": 50321, "display": "50,321", "status": "green", "bar_fill_pct": 100},
+    {"id": "avg_s_observed", "value": 0.932, "display": "0.932", "status": "green", "bar_fill_pct": null},
+    {"id": "dampened_titles_count", "value": 194657, "display": "194,657", "status": "green", "bar_fill_pct": null},
+    {"id": "anchor_agreement", "value": 0.054, "display": "5.4%", "status": "red", "bar_fill_pct": 7.7},
+    {"id": "n_joint", "value": 427, "display": "427", "status": "green", "bar_fill_pct": 100},
+    {"id": "avg_disagreement_pp", "value": 15.98, "display": "16.0 pp", "status": "red", "bar_fill_pct": 100},
+    {"id": "median_disagreement_pp", "value": 15.02, "display": "15.0 pp", "status": "red", "bar_fill_pct": 100},
+    {"id": "per_user_mean_s", "value": 0.726, "display": "0.726", "status": "green", "bar_fill_pct": null},
+    {"id": "expiration_mean_s", "value": 0.570, "display": "0.570", "status": "green", "bar_fill_pct": null},
+    {"id": "fct_table_row_count", "value": 2766, "display": "2,766", "status": "green", "bar_fill_pct": 100},
+    {"id": "total_tvt_hours", "value": 3396508007, "display": "3.4B hrs", "status": "green", "bar_fill_pct": null},
+    {"id": "incremental_share", "value": 0.173, "display": "17.3%", "status": "amber", "bar_fill_pct": 25},
+    {"id": "cohort_days_covered", "value": 90, "display": "90", "status": "amber", "bar_fill_pct": 100}
+  ],
+  "page_insight": "v4 pipeline complete (Jan-Mar 2026). 38.3M matched pairs, 50K+ titles with observed substitution rates. Ship gate fails on anchor agreement (5.4%). P2 amber: SMD violations on sessions (0.265) and TVT (0.261) — treated viewers ~9× more active than matched controls. P3 amber: wide CIs route ~74% of observed titles to predicted model, overriding direct observation. P4 red: structural ~16pp gap between per-user and expiration anchors."
+};
+</script>
+<script>
+const PHASE_NAMES = { p1: 'Events', p2: 'Matching', p3: 'Model', p4: 'Validate', p5: 'Rollup' };
+
+function setSlot(name, value) {
+  document.querySelectorAll(`[data-slot="${name}"]`).forEach(el => { el.textContent = value; });
+}
+
+function renderPhaseRibbon(phases) {
+  const ribbon = document.querySelector('[data-slot="phase_ribbon"]');
+  if (!ribbon) return;
+  ribbon.innerHTML = '';
+  const byId = {};
+  phases.forEach(p => { byId[p.id] = p; });
+  ['p1', 'p2', 'p3', 'p4', 'p5'].forEach(id => {
+    const phase = byId[id];
+    const tile = document.createElement('div');
+    tile.className = `phase-tile ${phase?.status || 'stale'}`;
+    tile.innerHTML = `<div class="phase-id">${id.toUpperCase()}</div><div class="phase-name">${PHASE_NAMES[id]}</div>`;
+    ribbon.appendChild(tile);
+  });
+}
+
+
+function render(data) {
+  setSlot('as_of_date', data.meta?.as_of_date || '—');
+
+  // Ship gate
+  const shipEl = document.querySelector('[data-slot="ship_gate_status"]');
+  if (shipEl) {
+    shipEl.textContent = data.ship_gate?.headline || '—';
+    shipEl.classList.remove('pass', 'fail', 'warn');
+    shipEl.classList.add(data.ship_gate?.status === 'pass' ? 'pass' : data.ship_gate?.status === 'fail' ? 'fail' : 'warn');
+  }
+  const primary = data.ship_gate?.primary_display && data.ship_gate?.primary_target_display
+    ? `${data.ship_gate.primary_display} / target ${data.ship_gate.primary_target_display}`
+    : '—';
+  setSlot('ship_gate_primary', primary);
+  setSlot('ship_gate_blocker', data.ship_gate?.blocker || '');
+  setSlot('overview_ship_status', data.ship_gate?.headline || '—');
+  setSlot('page_insight', data.page_insight || '—');
+
+  // Counts
+  const counts = data.header_counts || { green: 0, amber: 0, red: 0 };
+  setSlot('count_green', counts.green);
+  setSlot('count_amber', counts.amber);
+  setSlot('count_red', counts.red);
+
+  // Phase ribbon
+  renderPhaseRibbon(data.phases || []);
+
+  // Phase status chips + insights
+  (data.phases || []).forEach(phase => {
+    const chip = document.querySelector(`[data-slot="phase_status_${phase.id}"]`);
+    if (chip) {
+      chip.textContent = phase.status || '—';
+      chip.classList.remove('green', 'amber', 'red', 'stale');
+      chip.classList.add(phase.status || 'stale');
+    }
+    setSlot(`phase_insight_${phase.id}`, phase.insight || '—');
+  });
+
+  // Metrics
+  (data.metrics || []).forEach(metric => {
+    const tile = document.querySelector(`[data-metric-id="${metric.id}"]`);
+    if (!tile) return;
+    tile.classList.remove('green', 'amber', 'red', 'stale');
+    tile.classList.add(metric.status || 'stale');
+    const valueEl = tile.querySelector('[data-slot="value"]');
+    if (valueEl) valueEl.textContent = metric.display ?? '—';
+    const barFill = tile.querySelector('[data-slot="bar_fill"]');
+    if (barFill && metric.bar_fill_pct != null) {
+      barFill.style.width = `${Math.max(0, Math.min(100, metric.bar_fill_pct))}%`;
+    }
+  });
+
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === btn.dataset.tab));
+  });
+});
+
+// Load
+if (window.SCORECARD_DATA) {
+  render(window.SCORECARD_DATA);
+} else {
+  setSlot('as_of_date', 'no data');
+  setSlot('ship_gate_status', 'Run scorecard notebook to populate');
+  renderPhaseRibbon([]);
+}
+</script>
+</body>
+</html>
