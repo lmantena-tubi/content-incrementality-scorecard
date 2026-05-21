@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PSM Evaluation & Diagnostics Scorecard · v4</title>
+<style>
+:root {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e5e5e7;
+  --border: #d1d1d6;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #aeaeb2;
+  --accent: #0071e3;
+  --success: #34c759;
+  --warning: #ff9f0a;
+  --error: #ff3b30;
+  --high-bg: rgba(52, 199, 89, 0.08);
+  --medium-bg: rgba(255, 159, 10, 0.08);
+  --low-bg: rgba(255, 59, 48, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1d1d1f;
+    --bg-secondary: #2d2d2f;
+    --bg-tertiary: #3d3d3f;
+    --border: #424245;
+    --text-primary: #f5f5f7;
+    --text-secondary: #86868b;
+    --accent: #0a84ff;
+    --success: #30d158;
+    --warning: #ffd60a;
+    --error: #ff453a;
+    --high-bg: rgba(48, 209, 88, 0.1);
+    --medium-bg: rgba(255, 214, 10, 0.1);
+    --low-bg: rgba(255, 69, 58, 0.1);
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+       background: var(--bg-primary); color: var(--text-primary); line-height: 1.5;
+       padding: 1.5rem 2rem; max-width: 1600px; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; }
+h1 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
+h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.05rem; margin-bottom: 0.5rem; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+
+.title-bar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+.title-bar .subtitle { color: var(--text-secondary); font-size: 0.8rem; }
+
+/* Header panel */
+.header { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+          padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap; }
+
+.ship-gate { flex: 1; min-width: 200px; }
+.ship-gate .status { font-size: 1.4rem; font-weight: 700; }
+.ship-gate .status.pass { color: var(--success); }
+.ship-gate .status.warn { color: var(--warning); }
+.ship-gate .status.fail { color: var(--error); }
+.ship-gate .detail { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem; }
+
+.grade-chips { display: flex; gap: 0.5rem; align-items: center; }
+.grade-chip { padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: white; }
+.grade-chip.high { background: var(--success); }
+.grade-chip.medium { background: var(--warning); }
+.grade-chip.low { background: var(--error); }
+
+/* KPI tiles */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.kpi-tile { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+            padding: 0.9rem 1rem; position: relative; overflow: hidden; }
+.kpi-tile.green { border-left: 4px solid var(--success); }
+.kpi-tile.amber { border-left: 4px solid var(--warning); }
+.kpi-tile.red { border-left: 4px solid var(--error); }
+.kpi-tile .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;
+                   letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.3rem; }
+.kpi-tile .phase-tag { font-size: 0.6rem; background: var(--bg-tertiary); padding: 0.1rem 0.35rem;
+                       border-radius: 3px; color: var(--text-secondary); font-weight: 600; }
+.kpi-tile .value { font-size: 1.6rem; font-weight: 700; margin: 0.2rem 0; }
+.kpi-tile .target { font-size: 0.72rem; color: var(--text-secondary); }
+.kpi-tile .bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; margin-top: 0.5rem; overflow: hidden; }
+.kpi-tile .bar-fill { height: 100%; border-radius: 2px; }
+.kpi-tile.green .bar-fill { background: var(--success); }
+.kpi-tile.amber .bar-fill { background: var(--warning); }
+.kpi-tile.red .bar-fill { background: var(--error); }
+
+/* Tabs */
+.tabs { display: flex; gap: 0.25rem; border-bottom: 2px solid var(--border); margin-bottom: 1rem; flex-wrap: wrap; }
+.tab { padding: 0.6rem 1rem; background: none; border: none; cursor: pointer;
+       font-size: 0.9rem; color: var(--text-secondary); border-bottom: 2px solid transparent;
+       margin-bottom: -2px; font-weight: 500; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Diagnostic pass rates */
+.diag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.6rem; margin-bottom: 1.5rem; }
+.diag-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+             padding: 0.8rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+.diag-card .diag-name { font-size: 0.85rem; font-weight: 500; }
+.diag-card .diag-rate { font-size: 1.1rem; font-weight: 700; }
+.diag-card .diag-bar { width: 60px; height: 6px; background: var(--bg-tertiary); border-radius: 3px;
+                       overflow: hidden; margin-top: 0.2rem; }
+.diag-card .diag-bar-fill { height: 100%; border-radius: 3px; }
+.diag-card.pass-high .diag-bar-fill { background: var(--success); }
+.diag-card.pass-medium .diag-bar-fill { background: var(--warning); }
+.diag-card.pass-low .diag-bar-fill { background: var(--error); }
+
+/* Averages by grade table */
+.grade-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.85rem; }
+.grade-table th { background: var(--bg-tertiary); padding: 0.6rem 0.8rem; text-align: left; font-weight: 600;
+                  border-bottom: 2px solid var(--border); }
+.grade-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); }
+.grade-table tr:last-child td { border-bottom: none; }
+.grade-table .grade-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+                           font-weight: 600; font-size: 0.75rem; color: white; }
+.grade-badge.high { background: var(--success); }
+.grade-badge.medium { background: var(--warning); }
+.grade-badge.low { background: var(--error); }
+
+/* Title table */
+.title-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.title-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; }
+.title-table th { background: var(--bg-tertiary); padding: 0.5rem 0.6rem; text-align: left;
+                  font-weight: 600; position: sticky; top: 0; border-bottom: 2px solid var(--border); }
+.title-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); }
+.title-table tr:hover { background: var(--high-bg); }
+.title-table tr.grade-high { background: var(--high-bg); }
+.title-table tr.grade-medium { background: var(--medium-bg); }
+.title-table tr.grade-low { background: var(--low-bg); }
+.title-table .pass { color: var(--success); font-weight: 600; }
+.title-table .fail { color: var(--error); font-weight: 600; }
+.title-table .num { text-align: right; font-family: ui-monospace, monospace; }
+
+/* Criteria panel */
+.criteria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+@media (max-width: 768px) { .criteria-grid { grid-template-columns: 1fr; } }
+.criteria-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.criteria-card h4 { font-size: 0.9rem; margin-bottom: 0.5rem; }
+.criteria-list { list-style: none; font-size: 0.82rem; }
+.criteria-list li { padding: 0.3rem 0; display: flex; justify-content: space-between; border-bottom: 1px solid var(--bg-tertiary); }
+.criteria-list li:last-child { border-bottom: none; }
+.criteria-list .criterion { color: var(--text-primary); }
+.criteria-list .threshold { color: var(--text-secondary); font-family: ui-monospace, monospace; }
+
+/* Sort controls */
+.sort-controls { margin-bottom: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.sort-controls label { font-size: 0.8rem; color: var(--text-secondary); }
+.sort-controls select { font-size: 0.8rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border);
+                        border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); }
+.filter-chip { padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; cursor: pointer;
+               border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); }
+.filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="title-bar">
+  <div>
+    <h1>PSM Evaluation & Diagnostics</h1>
+    <h2>Propensity Score Matching Scorecard · v4</h2>
+  </div>
+  <div class="subtitle">Top 50 Movies · Jan–Mar 2026 TVT</div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-row">
+    <div class="ship-gate">
+      <div class="status warn">CONDITIONAL PASS</div>
+      <div class="detail">19/50 titles HIGH confidence, 6 MEDIUM, 25 LOW — matching quality varies by title characteristics</div>
+    </div>
+    <div class="grade-chips">
+      <div class="grade-chip high">19 HIGH</div>
+      <div class="grade-chip medium">6 MEDIUM</div>
+      <div class="grade-chip low">25 LOW</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== KPI TILES ===== -->
+<div class="kpi-row">
+  <div class="kpi-tile green">
+    <div class="label">Treated Match Rate <span class="phase-tag">P2</span></div>
+    <div class="value">99.97%</div>
+    <div class="target">target &ge; 99%</div>
+    <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+  </div>
+  <div class="kpi-tile green">
+    <div class="label">Total Matched Pairs <span class="phase-tag">P2</span></div>
+    <div class="value">3.16M</div>
+    <div class="target">target &ge; 1M · Jan–Mar 2026</div>
+    <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+  </div>
+  <div class="kpi-tile amber">
+    <div class="label">SMD Pass Rate <span class="phase-tag">P2</span></div>
+    <div class="value">50.0%</div>
+    <div class="target">target = 100% (|SMD| &lt; 0.10)</div>
+    <div class="bar"><div class="bar-fill" style="width: 50%"></div></div>
+  </div>
+  <div class="kpi-tile amber">
+    <div class="label">VR Pre-TVT Pass Rate <span class="phase-tag">P2</span></div>
+    <div class="value">40.0%</div>
+    <div class="target">target = 100% (VR in [0.8, 1.25])</div>
+    <div class="bar"><div class="bar-fill" style="width: 40%"></div></div>
+  </div>
+  <div class="kpi-tile green">
+    <div class="label">A/A Test Out-of-Sample Pass <span class="phase-tag">P2</span></div>
+    <div class="value">92.0%</div>
+    <div class="target">target &ge; 80%</div>
+    <div class="bar"><div class="bar-fill" style="width: 92%"></div></div>
+  </div>
+  <div class="kpi-tile amber">
+    <div class="label">Rosenbaum &gamma; &ge; 1.5 <span class="phase-tag">P2</span></div>
+    <div class="value">74.0%</div>
+    <div class="target">target &ge; 80%</div>
+    <div class="bar"><div class="bar-fill" style="width: 74%"></div></div>
+  </div>
+  <div class="kpi-tile green">
+    <div class="label">CI Width &le; 4% <span class="phase-tag">P3</span></div>
+    <div class="value">100%</div>
+    <div class="target">all 50 titles pass</div>
+    <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+  </div>
+  <div class="kpi-tile green">
+    <div class="label">Median CI Width <span class="phase-tag">P3</span></div>
+    <div class="value">2.65%</div>
+    <div class="target">target &le; 4%</div>
+    <div class="bar"><div class="bar-fill" style="width: 66%"></div></div>
+  </div>
+</div>
+
+<!-- ===== TABS ===== -->
+<div class="tabs">
+  <button class="tab active" data-tab="summary">Summary</button>
+  <button class="tab" data-tab="diagnostics">Diagnostics</button>
+  <button class="tab" data-tab="titles">Title Detail</button>
+  <button class="tab" data-tab="criteria">Criteria</button>
+</div>
+
+<!-- ===== SUMMARY TAB ===== -->
+<div class="tab-panel active" data-panel="summary">
+  <h3>Grade Distribution</h3>
+  <table class="grade-table">
+    <thead>
+      <tr><th>Grade</th><th>Titles</th><th>% of Titles</th><th>Total TVT Hours (Jan–Mar 2026)</th><th>% of TVT</th><th>Avg Matched Pairs</th><th>Avg CI Width</th><th>Median &Gamma; (Wilcoxon)</th><th>Avg Sub Rate</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="grade-badge high">HIGH</span></td>
+        <td>19</td><td>38.0%</td><td>64,958,538</td><td>41.0%</td><td>77,501</td><td>2.53%</td><td>1.42</td><td>83.25%</td>
+      </tr>
+      <tr>
+        <td><span class="grade-badge medium">MEDIUM</span></td>
+        <td>6</td><td>12.0%</td><td>18,331,555</td><td>11.6%</td><td>61,925</td><td>2.65%</td><td>1.54</td><td>80.09%</td>
+      </tr>
+      <tr>
+        <td><span class="grade-badge low">LOW</span></td>
+        <td>25</td><td>50.0%</td><td>75,209,389</td><td>47.5%</td><td>56,721</td><td>2.61%</td><td>1.79</td><td>72.90%</td>
+      </tr>
+      <tr style="font-weight: 600; border-top: 2px solid var(--border);">
+        <td>TOTAL</td>
+        <td>50</td><td>100%</td><td>158,499,482</td><td>100%</td><td>—</td><td>—</td><td>—</td><td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Key Findings</h3>
+  <div class="criteria-grid">
+    <div class="criteria-card" style="border-left: 4px solid var(--success);">
+      <h4>Strengths</h4>
+      <ul style="font-size: 0.82rem; padding-left: 1rem; line-height: 1.8;">
+        <li><strong>Match coverage:</strong> 99.97% treated match rate — virtually no selection from coverage gaps</li>
+        <li><strong>Precision:</strong> All 50 titles have CI width &le; 4%; median 2.65%</li>
+        <li><strong>A/A test:</strong> 92% of titles pass out-of-sample temporal A/A test (no pre-trend contamination)</li>
+        <li><strong>Volume:</strong> 3.16M matched pairs across top 50 titles</li>
+      </ul>
+    </div>
+    <div class="criteria-card" style="border-left: 4px solid var(--error);">
+      <h4>Concerns</h4>
+      <ul style="font-size: 0.82rem; padding-left: 1rem; line-height: 1.8;">
+        <li><strong>SMD violations:</strong> 50% of titles have |SMD| &ge; 0.10 — treated viewers are systematically heavier watchers</li>
+        <li><strong>Variance ratio:</strong> 60% fail VR pre-TVT check — distributional shape mismatch between groups</li>
+        <li><strong>Action titles dominate LOW:</strong> Genre-correlated confounding not fully absorbed by propensity</li>
+        <li><strong>Robustness:</strong> 0/50 titles robust at &Gamma; &ge; 2.0 — effects sensitive to moderate hidden bias</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="criteria-card" style="border-left: 4px solid var(--warning); margin-bottom: 1rem;">
+    <h4>Interpretation</h4>
+    <p style="font-size: 0.82rem; line-height: 1.7;">
+      The matching pipeline achieves excellent coverage and precision but shows systematic imbalance: treated
+      (completers) are heavier viewers than controls. This is expected given the completion-event definition —
+      completing a movie selects for engagement propensity. The HIGH-confidence titles (mostly comedy/kids)
+      have smaller imbalance because genre effects partially absorb the engagement gap. LOW-confidence
+      titles (mostly action) show larger VR and SMD imbalance, suggesting the propensity model's features
+      don't fully capture what makes someone an action-movie completer vs non-completer.
+    </p>
+  </div>
+</div>
+
+<!-- ===== DIAGNOSTICS TAB ===== -->
+<div class="tab-panel" data-panel="diagnostics">
+  <h3>Diagnostic Pass Rates (50 titles)</h3>
+  <div class="diag-grid">
+    <div class="diag-card pass-high">
+      <div>
+        <div class="diag-name">CI Width &le; 4%</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 100%"></div></div>
+      </div>
+      <div class="diag-rate">50/50</div>
+    </div>
+    <div class="diag-card pass-high">
+      <div>
+        <div class="diag-name">A/A Test Out-of-Sample</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 92%"></div></div>
+      </div>
+      <div class="diag-rate">46/50</div>
+    </div>
+    <div class="diag-card pass-medium">
+      <div>
+        <div class="diag-name">Rosenbaum &gamma; &ge; 1.5</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 74%"></div></div>
+      </div>
+      <div class="diag-rate">37/50</div>
+    </div>
+    <div class="diag-card pass-medium">
+      <div>
+        <div class="diag-name">SMD Pre-TVT &lt; 0.10</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 50%"></div></div>
+      </div>
+      <div class="diag-rate">25/50</div>
+    </div>
+    <div class="diag-card pass-medium">
+      <div>
+        <div class="diag-name">A/A Test In-Sample</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 48%"></div></div>
+      </div>
+      <div class="diag-rate">24/50</div>
+    </div>
+    <div class="diag-card pass-low">
+      <div>
+        <div class="diag-name">VR Pre-TVT [0.8, 1.25]</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 40%"></div></div>
+      </div>
+      <div class="diag-rate">20/50</div>
+    </div>
+    <div class="diag-card pass-low">
+      <div>
+        <div class="diag-name">VR Post-TVT [0.8, 1.25]</div>
+        <div class="diag-bar"><div class="diag-bar-fill" style="width: 38%"></div></div>
+      </div>
+      <div class="diag-rate">19/50</div>
+    </div>
+  </div>
+
+  <h3>Metric Distributions</h3>
+  <table class="grade-table">
+    <thead>
+      <tr><th>Metric</th><th>Min</th><th>P25</th><th>Median</th><th>P75</th><th>Max</th><th>Target</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>SMD Pre-TVT</td><td class="num">-0.075</td><td class="num">0.044</td><td class="num">0.097</td><td class="num">0.147</td><td class="num">0.203</td><td>|SMD| &lt; 0.10</td></tr>
+      <tr><td>VR Pre-TVT</td><td class="num">0.819</td><td class="num">1.032</td><td class="num">1.308</td><td class="num">1.428</td><td class="num">1.822</td><td>[0.8, 1.25]</td></tr>
+      <tr><td>VR Post-TVT</td><td class="num">0.870</td><td class="num">1.079</td><td class="num">1.383</td><td class="num">1.499</td><td class="num">1.878</td><td>[0.8, 1.25]</td></tr>
+      <tr><td>Match Distance</td><td class="num">0.0008</td><td class="num">0.0012</td><td class="num">0.0015</td><td class="num">0.0017</td><td class="num">0.0025</td><td>informational</td></tr>
+      <tr><td>A/A Test In-Sample (d)</td><td class="num">-0.058</td><td class="num">0.034</td><td class="num">0.094</td><td class="num">0.139</td><td class="num">0.203</td><td>|d| &lt; 0.10</td></tr>
+      <tr><td>A/A Test Out-of-Sample (d)</td><td class="num">-0.089</td><td class="num">0.009</td><td class="num">0.044</td><td class="num">0.082</td><td class="num">0.149</td><td>|d| &lt; 0.10</td></tr>
+      <tr><td>&Gamma; Wilcoxon</td><td class="num">1.09</td><td class="num">1.38</td><td class="num">1.62</td><td class="num">1.81</td><td class="num">2.05</td><td>&ge; 1.5</td></tr>
+      <tr><td>&Gamma; Sign Test</td><td class="num">1.12</td><td class="num">1.41</td><td class="num">1.61</td><td class="num">1.74</td><td class="num">1.87</td><td>&ge; 1.5</td></tr>
+      <tr><td>CI Width</td><td class="num">1.79%</td><td class="num">2.13%</td><td class="num">2.65%</td><td class="num">2.83%</td><td class="num">3.73%</td><td>&le; 4%</td></tr>
+      <tr><td>Substitution Rate</td><td class="num">66.09%</td><td class="num">72.28%</td><td class="num">77.37%</td><td class="num">83.06%</td><td class="num">96.52%</td><td>informational</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Diagnostic Correlation with Grade</h3>
+  <div class="criteria-card">
+    <p style="font-size: 0.82rem; line-height: 1.8;">
+      <strong>HIGH-grade titles</strong> share: SMD &lt; 0.10, VR in [0.8, 1.25], both A/A test windows pass.
+      They tend to be comedy/kids genres with higher substitution rates (83%) and larger pair counts (77K avg).<br>
+      <strong>LOW-grade titles</strong> systematically fail SMD and VR checks. They are predominantly action genre
+      with lower sub rates (73%) and smaller pair counts (57K avg). Despite worse balance, they show
+      <em>higher</em> Rosenbaum &Gamma; (median 1.79 vs 1.42) — paradoxically, the larger raw effect size in
+      these titles makes them harder to explain away by bias, even though the bias risk is actually higher.
+    </p>
+  </div>
+</div>
+
+<!-- ===== TITLE DETAIL TAB ===== -->
+<div class="tab-panel" data-panel="titles">
+  <div class="sort-controls">
+    <label>Sort by:</label>
+    <select id="sortSelect">
+      <option value="tvt">Total TVT</option>
+      <option value="grade">Grade</option>
+      <option value="smd">SMD Pre-TVT</option>
+      <option value="gamma">Gamma (Wilcoxon)</option>
+      <option value="subrate">Substitution Rate</option>
+    </select>
+    <label style="margin-left: 1rem;">Filter:</label>
+    <span class="filter-chip active" data-filter="all">All</span>
+    <span class="filter-chip" data-filter="HIGH">HIGH</span>
+    <span class="filter-chip" data-filter="MEDIUM">MEDIUM</span>
+    <span class="filter-chip" data-filter="LOW">LOW</span>
+  </div>
+  <div class="title-table-wrap" style="max-height: 600px; overflow-y: auto;">
+    <table class="title-table" id="titleTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Genre</th>
+          <th>Pairs</th>
+          <th>TVT Hrs</th>
+          <th>SMD</th>
+          <th>VR Pre</th>
+          <th>VR Post</th>
+          <th>A/A In</th>
+          <th>A/A Out</th>
+          <th>&Gamma; Wilcox</th>
+          <th>&Gamma; Sign</th>
+          <th>Sub Rate</th>
+          <th>CI Width</th>
+          <th>Checks</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody id="titleBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== CRITERIA TAB ===== -->
+<div class="tab-panel" data-panel="criteria">
+  <h3>Grading Criteria</h3>
+  <div class="criteria-grid">
+    <div class="criteria-card">
+      <h4>Diagnostic Checks (6 total)</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion">1. SMD Pre-TVT</span><span class="threshold">|SMD| &lt; 0.10</span></li>
+        <li><span class="criterion">2. VR Pre-TVT</span><span class="threshold">0.8 &le; VR &le; 1.25</span></li>
+        <li><span class="criterion">3. VR Post-TVT</span><span class="threshold">0.8 &le; VR &le; 1.25</span></li>
+        <li><span class="criterion">4. A/A Test In-Sample</span><span class="threshold">|d| &lt; 0.10</span></li>
+        <li><span class="criterion">5. A/A Test Out-of-Sample</span><span class="threshold">|d| &lt; 0.10</span></li>
+        <li><span class="criterion">6. Rosenbaum &gamma; &ge; 1.5</span><span class="threshold">&Gamma; &ge; 1.5 (sign test)</span></li>
+      </ul>
+    </div>
+    <div class="criteria-card">
+      <h4>Grade Assignment</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion"><span class="grade-badge high">HIGH</span></span><span class="threshold">&ge; 5/6 checks AND SMD pass AND CI &le; 4%</span></li>
+        <li><span class="criterion"><span class="grade-badge medium">MEDIUM</span></span><span class="threshold">3–4 checks pass, or would be HIGH but fails hard gate</span></li>
+        <li><span class="criterion"><span class="grade-badge low">LOW</span></span><span class="threshold">&lt; 3 checks pass</span></li>
+      </ul>
+    </div>
+    <div class="criteria-card">
+      <h4>Hard Gates</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion">Treated Match Rate</span><span class="threshold">Fail &rarr; caps at MEDIUM</span></li>
+        <li><span class="criterion">SMD Pre-TVT</span><span class="threshold">Fail &rarr; caps at MEDIUM</span></li>
+        <li><span class="criterion">CI Width &le; 4%</span><span class="threshold">Fail &rarr; caps at MEDIUM</span></li>
+      </ul>
+    </div>
+    <div class="criteria-card">
+      <h4>Pipeline-Level KPIs</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion">Treated Match Rate</span><span class="threshold">&ge; 99%</span></li>
+        <li><span class="criterion">Total Matched Pairs</span><span class="threshold">&ge; 1M</span></li>
+        <li><span class="criterion">CI Width (all titles)</span><span class="threshold">&le; 4%</span></li>
+        <li><span class="criterion">A/A Test Out-of-Sample</span><span class="threshold">&ge; 80% pass</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Metric Definitions</h3>
+  <div class="criteria-card">
+    <ul style="font-size: 0.82rem; line-height: 2; padding-left: 1rem;">
+      <li><strong>SMD Pre-TVT:</strong> Standardized mean difference in 28-day pre-event TVT between treated and control groups. Measures mean balance.</li>
+      <li><strong>VR Pre/Post-TVT:</strong> Variance ratio of treated vs control pre/post-event TVT. Measures distributional shape balance.</li>
+      <li><strong>A/A Test In-Sample [-29,-1]:</strong> Cohen's d on the matching covariate window. Small &ne; 0 is acceptable (matching balanced levels).</li>
+      <li><strong>A/A Test Out-of-Sample [-57,-29]:</strong> Cohen's d on a held-out pre-period. Should be ~0 if matching doesn't capture pre-trends.</li>
+      <li><strong>Rosenbaum &Gamma;:</strong> Sensitivity to hidden bias. How strong an unmeasured confounder must be to explain the effect. &Gamma;=2 means confounder doubles treatment odds.</li>
+      <li><strong>CI Width:</strong> 95% confidence interval width on substitution rate (delta method). Measures estimation precision.</li>
+      <li><strong>Treated Match Rate:</strong> Fraction of eligible treated events that found a valid control match within caliper.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// Title data from CSV
+const titles = [
+  {id:"670475",name:"White Chicks",genre:"comedy",pairs:120849,tvt:6484547,smd:0.0291,smdPass:true,vrPre:1.0842,vrPrePass:true,vrPost:1.1495,vrPostPass:true,dist:0.0009,placeboIn:0.0321,placeboOut:-0.0221,inPass:true,outPass:true,gammaW:1.35,gammaS:1.40,robust15:false,robust20:false,subRate:84.84,ciLow:83.83,ciHigh:85.84,ciWidth:2.02,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100022440",name:"Jurassic World: Fallen Kingdom",genre:"action",pairs:107912,tvt:6273950,smd:0.1467,smdPass:false,vrPre:1.3577,vrPrePass:false,vrPost:1.3866,vrPostPass:false,dist:0.0015,placeboIn:0.1480,placeboOut:0.0859,inPass:false,outPass:true,gammaW:1.70,gammaS:1.64,robust15:true,robust20:false,subRate:73.12,ciLow:72.19,ciHigh:74.04,ciWidth:1.86,ciPass:true,checks:2,grade:"LOW"},
+  {id:"594102",name:"Friday",genre:"comedy",pairs:131923,tvt:5450345,smd:0.0403,smdPass:true,vrPre:1.1158,vrPrePass:true,vrPost:1.1919,vrPostPass:true,dist:0.0012,placeboIn:0.0426,placeboOut:-0.0033,inPass:true,outPass:true,gammaW:1.40,gammaS:1.49,robust15:false,robust20:false,subRate:83.00,ciLow:82.10,ciHigh:83.89,ciWidth:1.79,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100049195",name:"Twin",genre:"action",pairs:112503,tvt:5005640,smd:0.0521,smdPass:true,vrPre:1.0991,vrPrePass:true,vrPost:1.1482,vrPostPass:true,dist:0.0013,placeboIn:0.0546,placeboOut:0.0214,inPass:true,outPass:true,gammaW:1.64,gammaS:1.58,robust15:true,robust20:false,subRate:80.59,ciLow:79.62,ciHigh:81.55,ciWidth:1.93,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100011373",name:"The Equalizer",genre:"action",pairs:78902,tvt:4921232,smd:0.1318,smdPass:false,vrPre:1.3942,vrPrePass:false,vrPost:1.4905,vrPostPass:false,dist:0.0016,placeboIn:0.1330,placeboOut:0.0819,inPass:false,outPass:true,gammaW:1.77,gammaS:1.65,robust15:true,robust20:false,subRate:75.19,ciLow:74.13,ciHigh:76.25,ciWidth:2.13,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100050211",name:"Blacklight",genre:"action",pairs:98229,tvt:4704992,smd:0.0606,smdPass:true,vrPre:1.1481,vrPrePass:true,vrPost:1.2078,vrPostPass:true,dist:0.0016,placeboIn:0.0626,placeboOut:0.0085,inPass:true,outPass:true,gammaW:1.54,gammaS:1.58,robust15:true,robust20:false,subRate:78.49,ciLow:77.50,ciHigh:79.49,ciWidth:1.99,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100011498",name:"The Equalizer 2",genre:"action",pairs:80454,tvt:4655269,smd:0.1373,smdPass:false,vrPre:1.3934,vrPrePass:false,vrPost:1.4474,vrPostPass:false,dist:0.0017,placeboIn:0.1387,placeboOut:0.0811,inPass:false,outPass:true,gammaW:1.79,gammaS:1.65,robust15:true,robust20:false,subRate:75.43,ciLow:74.40,ciHigh:76.46,ciWidth:2.05,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100029838",name:"Shrek",genre:"kids",pairs:104471,tvt:4593400,smd:0.0454,smdPass:true,vrPre:0.9948,vrPrePass:true,vrPost:1.0665,vrPostPass:true,dist:0.0009,placeboIn:0.0646,placeboOut:0.0355,inPass:true,outPass:true,gammaW:1.47,gammaS:1.58,robust15:true,robust20:false,subRate:80.84,ciLow:79.67,ciHigh:82.00,ciWidth:2.33,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"589281",name:"Tyler Perry's Madea Goes to Jail",genre:"comedy",pairs:94394,tvt:4373930,smd:0.1317,smdPass:false,vrPre:1.3898,vrPrePass:false,vrPost:1.4946,vrPostPass:false,dist:0.0015,placeboIn:0.1327,placeboOut:0.0731,inPass:false,outPass:true,gammaW:1.67,gammaS:1.69,robust15:true,robust20:false,subRate:73.11,ciLow:72.14,ciHigh:74.08,ciWidth:1.94,ciPass:true,checks:2,grade:"LOW"},
+  {id:"464315",name:"Tyler Perry's Diary of a Mad Black Woman",genre:"comedy",pairs:74214,tvt:3854801,smd:0.1216,smdPass:false,vrPre:1.3332,vrPrePass:false,vrPost:1.4011,vrPostPass:false,dist:0.0016,placeboIn:0.1226,placeboOut:0.0491,inPass:false,outPass:true,gammaW:1.63,gammaS:1.66,robust15:true,robust20:false,subRate:76.01,ciLow:74.98,ciHigh:77.04,ciWidth:2.06,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100030750",name:"Shrek 2",genre:"kids",pairs:87655,tvt:3716762,smd:0.0483,smdPass:true,vrPre:1.0326,vrPrePass:true,vrPost:1.0790,vrPostPass:true,dist:0.0010,placeboIn:0.0661,placeboOut:0.0365,inPass:true,outPass:true,gammaW:1.58,gammaS:1.60,robust15:true,robust20:false,subRate:79.70,ciLow:78.44,ciHigh:80.96,ciWidth:2.51,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"639852",name:"Armageddon",genre:"action",pairs:51086,tvt:3687219,smd:0.1654,smdPass:false,vrPre:1.7316,vrPrePass:false,vrPost:1.7570,vrPostPass:false,dist:0.0016,placeboIn:0.1662,placeboOut:0.0828,inPass:false,outPass:true,gammaW:2.01,gammaS:1.79,robust15:true,robust20:true,subRate:70.56,ciLow:69.20,ciHigh:71.92,ciWidth:2.73,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100020378",name:"Step Brothers",genre:"comedy",pairs:80495,tvt:3641405,smd:0.0220,smdPass:true,vrPre:1.2594,vrPrePass:false,vrPost:1.3915,vrPostPass:false,dist:0.0009,placeboIn:0.0252,placeboOut:0.0040,inPass:true,outPass:true,gammaW:1.36,gammaS:1.33,robust15:false,robust20:false,subRate:85.82,ciLow:84.50,ciHigh:87.14,ciWidth:2.64,ciPass:true,checks:3,grade:"MEDIUM"},
+  {id:"554631",name:"Tyler Perry's Madea's Big Happy Family",genre:"comedy",pairs:73066,tvt:3499388,smd:0.1168,smdPass:false,vrPre:1.4240,vrPrePass:false,vrPost:1.4994,vrPostPass:false,dist:0.0016,placeboIn:0.1181,placeboOut:0.0476,inPass:false,outPass:true,gammaW:1.72,gammaS:1.63,robust15:true,robust20:false,subRate:75.91,ciLow:74.84,ciHigh:76.98,ciWidth:2.13,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100052519",name:"The Beekeeper",genre:"action",pairs:68453,tvt:3488756,smd:0.0490,smdPass:true,vrPre:1.4168,vrPrePass:false,vrPost:1.3843,vrPostPass:false,dist:0.0017,placeboIn:0.0508,placeboOut:0.0062,inPass:true,outPass:true,gammaW:1.54,gammaS:1.45,robust15:false,robust20:false,subRate:82.01,ciLow:80.76,ciHigh:83.25,ciWidth:2.49,ciPass:true,checks:3,grade:"MEDIUM"},
+  {id:"675884",name:"Next Friday",genre:"comedy",pairs:87556,tvt:3461800,smd:0.0414,smdPass:true,vrPre:1.2042,vrPrePass:true,vrPost:1.2382,vrPostPass:true,dist:0.0013,placeboIn:0.0434,placeboOut:-0.0094,inPass:true,outPass:true,gammaW:1.42,gammaS:1.47,robust15:false,robust20:false,subRate:83.06,ciLow:82.04,ciHigh:84.09,ciWidth:2.05,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100032075",name:"Prey",genre:"other",pairs:70421,tvt:3201813,smd:0.0159,smdPass:true,vrPre:1.2137,vrPrePass:true,vrPost:1.2386,vrPostPass:true,dist:0.0012,placeboIn:0.0175,placeboOut:-0.0255,inPass:true,outPass:true,gammaW:1.27,gammaS:1.41,robust15:false,robust20:false,subRate:86.03,ciLow:84.71,ciHigh:87.36,ciWidth:2.65,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100045155",name:"Unrequited",genre:"action",pairs:64952,tvt:3148369,smd:-0.0027,smdPass:true,vrPre:0.9801,vrPrePass:true,vrPost:0.9695,vrPostPass:true,dist:0.0017,placeboIn:-0.0003,placeboOut:-0.0233,inPass:true,outPass:true,gammaW:1.22,gammaS:1.34,robust15:false,robust20:false,subRate:92.15,ciLow:90.98,ciHigh:93.32,ciWidth:2.34,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"711132",name:"Battleship",genre:"action",pairs:54631,tvt:3094897,smd:0.1563,smdPass:false,vrPre:1.4943,vrPrePass:false,vrPost:1.5511,vrPostPass:false,dist:0.0020,placeboIn:0.1574,placeboOut:0.0709,inPass:false,outPass:true,gammaW:1.86,gammaS:1.76,robust15:true,robust20:false,subRate:72.86,ciLow:71.65,ciHigh:74.07,ciWidth:2.42,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100000302",name:"Real Steel",genre:"action",pairs:58626,tvt:3012480,smd:0.1784,smdPass:false,vrPre:1.8217,vrPrePass:false,vrPost:1.8781,vrPostPass:false,dist:0.0016,placeboIn:0.1787,placeboOut:0.0974,inPass:false,outPass:true,gammaW:2.05,gammaS:1.81,robust15:true,robust20:true,subRate:66.09,ciLow:64.74,ciHigh:67.44,ciWidth:2.70,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100016431",name:"Madagascar",genre:"kids",pairs:74428,tvt:2998560,smd:0.0044,smdPass:true,vrPre:0.9106,vrPrePass:true,vrPost:1.0210,vrPostPass:true,dist:0.0011,placeboIn:0.0172,placeboOut:-0.0194,inPass:true,outPass:true,gammaW:1.38,gammaS:1.50,robust15:true,robust20:false,subRate:85.82,ciLow:84.38,ciHigh:87.26,ciWidth:2.88,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100004440",name:"Welcome Home Roscoe Jenkins",genre:"comedy",pairs:65196,tvt:2976828,smd:0.0720,smdPass:true,vrPre:1.2511,vrPrePass:false,vrPost:1.3014,vrPostPass:false,dist:0.0017,placeboIn:0.0737,placeboOut:0.0229,inPass:true,outPass:true,gammaW:1.72,gammaS:1.64,robust15:true,robust20:false,subRate:76.69,ciLow:75.62,ciHigh:77.77,ciWidth:2.16,ciPass:true,checks:4,grade:"MEDIUM"},
+  {id:"100046436",name:"Broken Bonds",genre:"action",pairs:49047,tvt:2835903,smd:0.0862,smdPass:true,vrPre:1.4258,vrPrePass:false,vrPost:1.5717,vrPostPass:false,dist:0.0019,placeboIn:0.0875,placeboOut:0.0253,inPass:true,outPass:true,gammaW:1.62,gammaS:1.66,robust15:true,robust20:false,subRate:78.25,ciLow:76.88,ciHigh:79.63,ciWidth:2.76,ciPass:true,checks:4,grade:"MEDIUM"},
+  {id:"100050541",name:"Kissing Is the Easy Part",genre:"drama",pairs:52083,tvt:2760572,smd:0.0961,smdPass:true,vrPre:1.5116,vrPrePass:false,vrPost:1.5084,vrPostPass:false,dist:0.0010,placeboIn:0.0979,placeboOut:0.0318,inPass:true,outPass:true,gammaW:1.09,gammaS:1.12,robust15:false,robust20:false,subRate:81.53,ciLow:79.82,ciHigh:83.24,ciWidth:3.42,ciPass:true,checks:3,grade:"MEDIUM"},
+  {id:"100050126",name:"Terri Joe: Missionary in Miami",genre:"comedy",pairs:65690,tvt:2745879,smd:0.0380,smdPass:true,vrPre:1.1905,vrPrePass:true,vrPost:1.2441,vrPostPass:true,dist:0.0010,placeboIn:0.0408,placeboOut:-0.0022,inPass:true,outPass:true,gammaW:1.24,gammaS:1.31,robust15:false,robust20:false,subRate:84.24,ciLow:82.83,ciHigh:85.66,ciWidth:2.83,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100002087",name:"King Kong",genre:"other",pairs:33378,tvt:2696224,smd:0.2034,smdPass:false,vrPre:1.4729,vrPrePass:false,vrPost:1.5699,vrPostPass:false,dist:0.0025,placeboIn:0.2026,placeboOut:0.1027,inPass:false,outPass:false,gammaW:1.98,gammaS:1.80,robust15:true,robust20:false,subRate:71.97,ciLow:70.65,ciHigh:73.30,ciWidth:2.65,ciPass:true,checks:1,grade:"LOW"},
+  {id:"600039",name:"Friday After Next",genre:"comedy",pairs:75643,tvt:2669341,smd:0.0488,smdPass:true,vrPre:1.1516,vrPrePass:true,vrPost:1.1961,vrPostPass:true,dist:0.0015,placeboIn:0.0510,placeboOut:-0.0192,inPass:true,outPass:true,gammaW:1.42,gammaS:1.47,robust15:false,robust20:false,subRate:83.18,ciLow:82.13,ciHigh:84.23,ciWidth:2.10,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100053679",name:"Tom Clancy's Without Remorse",genre:"action",pairs:55131,tvt:2649619,smd:0.0992,smdPass:true,vrPre:1.1885,vrPrePass:true,vrPost:1.2230,vrPostPass:true,dist:0.0018,placeboIn:0.1012,placeboOut:0.0361,inPass:false,outPass:true,gammaW:1.47,gammaS:1.61,robust15:true,robust20:false,subRate:79.46,ciLow:78.25,ciHigh:80.68,ciWidth:2.43,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100049581",name:"How to Lose a Popularity Contest",genre:"drama",pairs:49571,tvt:2647592,smd:0.1213,smdPass:false,vrPre:1.6788,vrPrePass:false,vrPost:1.7514,vrPostPass:false,dist:0.0009,placeboIn:0.1214,placeboOut:0.0512,inPass:false,outPass:true,gammaW:1.27,gammaS:1.29,robust15:false,robust20:false,subRate:74.78,ciLow:72.91,ciHigh:76.65,ciWidth:3.73,ciPass:true,checks:1,grade:"LOW"},
+  {id:"100053845",name:"Madagascar: Escape 2 Africa",genre:"kids",pairs:63258,tvt:2644793,smd:0.0275,smdPass:true,vrPre:0.9304,vrPrePass:true,vrPost:1.0343,vrPostPass:true,dist:0.0012,placeboIn:0.0403,placeboOut:-0.0073,inPass:true,outPass:true,gammaW:1.33,gammaS:1.53,robust15:true,robust20:false,subRate:84.54,ciLow:83.06,ciHigh:86.02,ciWidth:2.96,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100002156",name:"Men in Black",genre:"comedy",pairs:60900,tvt:2632152,smd:0.1076,smdPass:false,vrPre:1.5104,vrPrePass:false,vrPost:1.6611,vrPostPass:false,dist:0.0010,placeboIn:0.1093,placeboOut:0.0684,inPass:false,outPass:true,gammaW:1.81,gammaS:1.74,robust15:true,robust20:false,subRate:71.56,ciLow:70.14,ciHigh:72.97,ciWidth:2.83,ciPass:true,checks:2,grade:"LOW"},
+  {id:"404579",name:"Beauty Shop",genre:"comedy",pairs:56278,tvt:2628090,smd:0.0972,smdPass:true,vrPre:1.4157,vrPrePass:false,vrPost:1.4606,vrPostPass:false,dist:0.0017,placeboIn:0.0985,placeboOut:0.0221,inPass:true,outPass:true,gammaW:1.55,gammaS:1.61,robust15:true,robust20:false,subRate:76.25,ciLow:75.05,ciHigh:77.44,ciWidth:2.40,ciPass:true,checks:4,grade:"MEDIUM"},
+  {id:"670407",name:"The Fifth Element",genre:"action",pairs:48293,tvt:2587963,smd:0.1601,smdPass:false,vrPre:1.4913,vrPrePass:false,vrPost:1.5102,vrPostPass:false,dist:0.0014,placeboIn:0.1611,placeboOut:0.0986,inPass:false,outPass:true,gammaW:1.90,gammaS:1.70,robust15:true,robust20:false,subRate:73.06,ciLow:71.66,ciHigh:74.45,ciWidth:2.79,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100052786",name:"Shrek the Third",genre:"kids",pairs:65803,tvt:2567449,smd:0.0775,smdPass:true,vrPre:1.0281,vrPrePass:true,vrPost:1.1169,vrPostPass:true,dist:0.0011,placeboIn:0.0956,placeboOut:0.0559,inPass:true,outPass:true,gammaW:1.66,gammaS:1.71,robust15:true,robust20:false,subRate:75.31,ciLow:73.94,ciHigh:76.67,ciWidth:2.73,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100003573",name:"Jurassic World",genre:"action",pairs:51252,tvt:2563124,smd:0.1553,smdPass:false,vrPre:1.4010,vrPrePass:false,vrPost:1.5482,vrPostPass:false,dist:0.0015,placeboIn:0.1565,placeboOut:0.0971,inPass:false,outPass:true,gammaW:1.69,gammaS:1.70,robust15:true,robust20:false,subRate:71.17,ciLow:69.82,ciHigh:72.53,ciWidth:2.71,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100015411",name:"Ride Along 2",genre:"comedy",pairs:53795,tvt:2492637,smd:0.1370,smdPass:false,vrPre:1.3250,vrPrePass:false,vrPost:1.3964,vrPostPass:false,dist:0.0020,placeboIn:0.1380,placeboOut:0.0426,inPass:false,outPass:true,gammaW:1.83,gammaS:1.72,robust15:true,robust20:false,subRate:75.05,ciLow:73.92,ciHigh:76.18,ciWidth:2.27,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100003044",name:"Van Helsing",genre:"action",pairs:39686,tvt:2459976,smd:0.1971,smdPass:false,vrPre:1.4603,vrPrePass:false,vrPost:1.5512,vrPostPass:false,dist:0.0020,placeboIn:0.1980,placeboOut:0.0981,inPass:false,outPass:true,gammaW:2.05,gammaS:1.87,robust15:true,robust20:true,subRate:70.28,ciLow:68.94,ciHigh:71.62,ciWidth:2.67,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100053538",name:"Uncharted",genre:"action",pairs:47961,tvt:2391566,smd:0.1549,smdPass:false,vrPre:1.3095,vrPrePass:false,vrPost:1.4030,vrPostPass:false,dist:0.0018,placeboIn:0.1564,placeboOut:0.0602,inPass:false,outPass:true,gammaW:1.81,gammaS:1.82,robust15:true,robust20:false,subRate:71.95,ciLow:70.66,ciHigh:73.25,ciWidth:2.59,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100043268",name:"The Angry Birds Movie 2",genre:"kids",pairs:51836,tvt:2347841,smd:-0.0753,smdPass:true,vrPre:0.8189,vrPrePass:true,vrPost:0.8735,vrPostPass:true,dist:0.0013,placeboIn:-0.0584,placeboOut:-0.0885,inPass:true,outPass:true,gammaW:1.16,gammaS:1.34,robust15:false,robust20:false,subRate:96.52,ciLow:94.69,ciHigh:98.34,ciWidth:3.65,ciPass:true,checks:5,grade:"HIGH"},
+  {id:"100020235",name:"Taken 3",genre:"action",pairs:53448,tvt:2322455,smd:0.1107,smdPass:false,vrPre:1.3731,vrPrePass:false,vrPost:1.4897,vrPostPass:false,dist:0.0021,placeboIn:0.1120,placeboOut:0.0442,inPass:false,outPass:true,gammaW:1.61,gammaS:1.59,robust15:true,robust20:false,subRate:75.14,ciLow:73.86,ciHigh:76.43,ciWidth:2.57,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100052354",name:"Rio",genre:"kids",pairs:51302,tvt:2279568,smd:0.0376,smdPass:true,vrPre:0.9235,vrPrePass:true,vrPost:0.9783,vrPostPass:true,dist:0.0014,placeboIn:0.0546,placeboOut:0.0046,inPass:true,outPass:true,gammaW:1.52,gammaS:1.65,robust15:true,robust20:false,subRate:82.29,ciLow:80.73,ciHigh:83.84,ciWidth:3.10,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100001703",name:"Tyler Perry's Acrimony",genre:"action",pairs:44059,tvt:2220764,smd:0.1811,smdPass:false,vrPre:1.3862,vrPrePass:false,vrPost:1.4520,vrPostPass:false,dist:0.0015,placeboIn:0.1818,placeboOut:0.1377,inPass:false,outPass:false,gammaW:1.95,gammaS:1.85,robust15:true,robust20:false,subRate:69.75,ciLow:68.38,ciHigh:71.13,ciWidth:2.75,ciPass:true,checks:1,grade:"LOW"},
+  {id:"100046434",name:"Woman to Woman",genre:"action",pairs:45188,tvt:2216206,smd:0.0515,smdPass:true,vrPre:1.0256,vrPrePass:true,vrPost:1.0958,vrPostPass:true,dist:0.0016,placeboIn:0.0537,placeboOut:0.0400,inPass:true,outPass:true,gammaW:1.49,gammaS:1.59,robust15:true,robust20:false,subRate:81.96,ciLow:80.58,ciHigh:83.34,ciWidth:2.75,ciPass:true,checks:6,grade:"HIGH"},
+  {id:"100052319",name:"The Proposal",genre:"romance",pairs:44069,tvt:2196405,smd:0.1528,smdPass:false,vrPre:1.2821,vrPrePass:false,vrPost:1.4415,vrPostPass:false,dist:0.0013,placeboIn:0.1723,placeboOut:0.1271,inPass:false,outPass:false,gammaW:1.98,gammaS:1.78,robust15:true,robust20:false,subRate:67.86,ciLow:66.37,ciHigh:69.35,ciWidth:2.99,ciPass:true,checks:1,grade:"LOW"},
+  {id:"100053680",name:"Coming 2 America",genre:"comedy",pairs:44462,tvt:2141677,smd:0.1112,smdPass:false,vrPre:1.5284,vrPrePass:false,vrPost:1.6967,vrPostPass:false,dist:0.0023,placeboIn:0.1126,placeboOut:0.0450,inPass:false,outPass:true,gammaW:1.72,gammaS:1.74,robust15:true,robust20:false,subRate:76.10,ciLow:74.80,ciHigh:77.39,ciWidth:2.59,ciPass:true,checks:2,grade:"LOW"},
+  {id:"706428",name:"Menace II Society",genre:"other",pairs:51067,tvt:2137763,smd:0.1270,smdPass:false,vrPre:1.4966,vrPrePass:false,vrPost:1.6133,vrPostPass:false,dist:0.0013,placeboIn:0.1270,placeboOut:0.0928,inPass:false,outPass:true,gammaW:1.70,gammaS:1.63,robust15:true,robust20:false,subRate:75.01,ciLow:73.59,ciHigh:76.43,ciWidth:2.85,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100048428",name:"Angel and Demon",genre:"other",pairs:31166,tvt:2137622,smd:0.1092,smdPass:false,vrPre:1.2927,vrPrePass:false,vrPost:1.2920,vrPostPass:false,dist:0.0013,placeboIn:0.1094,placeboOut:0.0472,inPass:false,outPass:true,gammaW:1.42,gammaS:1.56,robust15:true,robust20:false,subRate:79.92,ciLow:78.19,ciHigh:81.65,ciWidth:3.45,ciPass:true,checks:2,grade:"LOW"},
+  {id:"486556",name:"A Home of Our Own",genre:"drama",pairs:45266,tvt:2134718,smd:0.1388,smdPass:false,vrPre:1.3746,vrPrePass:false,vrPost:1.4545,vrPostPass:false,dist:0.0017,placeboIn:0.1393,placeboOut:0.0549,inPass:false,outPass:true,gammaW:1.84,gammaS:1.79,robust15:true,robust20:false,subRate:71.09,ciLow:69.71,ciHigh:72.48,ciWidth:2.77,ciPass:true,checks:2,grade:"LOW"},
+  {id:"672282",name:"Jumanji",genre:"kids",pairs:46372,tvt:2073585,smd:0.1553,smdPass:false,vrPre:1.1487,vrPrePass:true,vrPost:1.3007,vrPostPass:false,dist:0.0008,placeboIn:0.1750,placeboOut:0.1494,inPass:false,outPass:false,gammaW:1.67,gammaS:1.73,robust15:true,robust20:false,subRate:69.48,ciLow:67.94,ciHigh:71.03,ciWidth:3.09,ciPass:true,checks:2,grade:"LOW"},
+  {id:"100014082",name:"Talladega Nights",genre:"comedy",pairs:45684,tvt:2071614,smd:0.0268,smdPass:true,vrPre:1.1390,vrPrePass:true,vrPost:1.2221,vrPostPass:true,dist:0.0013,placeboIn:0.0295,placeboOut:-0.0107,inPass:true,outPass:true,gammaW:1.43,gammaS:1.49,robust15:false,robust20:false,subRate:79.75,ciLow:78.22,ciHigh:81.28,ciWidth:3.05,ciPass:true,checks:5,grade:"HIGH"}
+];
+
+// Render title table
+function renderTable(data) {
+  const tbody = document.getElementById('titleBody');
+  tbody.innerHTML = data.map(t => {
+    const gradeClass = t.grade === 'HIGH' ? 'grade-high' : t.grade === 'MEDIUM' ? 'grade-medium' : 'grade-low';
+    const gradeBadge = `<span class="grade-badge ${t.grade.toLowerCase()}">${t.grade}</span>`;
+    return `<tr class="${gradeClass}">
+      <td title="${t.name}">${t.name.length > 30 ? t.name.slice(0,28)+'...' : t.name}</td>
+      <td>${t.genre}</td>
+      <td class="num">${t.pairs.toLocaleString()}</td>
+      <td class="num">${(t.tvt/1000000).toFixed(1)}M</td>
+      <td class="num ${t.smdPass ? 'pass' : 'fail'}">${t.smd.toFixed(4)}</td>
+      <td class="num ${t.vrPrePass ? 'pass' : 'fail'}">${t.vrPre.toFixed(3)}</td>
+      <td class="num ${t.vrPostPass ? 'pass' : 'fail'}">${t.vrPost.toFixed(3)}</td>
+      <td class="num ${t.inPass ? 'pass' : 'fail'}">${t.placeboIn.toFixed(4)}</td>
+      <td class="num ${t.outPass ? 'pass' : 'fail'}">${t.placeboOut.toFixed(4)}</td>
+      <td class="num">${t.gammaW.toFixed(2)}</td>
+      <td class="num">${t.gammaS.toFixed(2)}</td>
+      <td class="num">${t.subRate.toFixed(1)}%</td>
+      <td class="num">${t.ciWidth.toFixed(2)}%</td>
+      <td class="num">${t.checks}/6</td>
+      <td>${gradeBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Sort
+document.getElementById('sortSelect').addEventListener('change', function() {
+  const key = this.value;
+  let sorted = [...titles];
+  if (key === 'tvt') sorted.sort((a,b) => b.tvt - a.tvt);
+  else if (key === 'grade') sorted.sort((a,b) => {
+    const order = {HIGH:0, MEDIUM:1, LOW:2};
+    return order[a.grade] - order[b.grade] || b.tvt - a.tvt;
+  });
+  else if (key === 'smd') sorted.sort((a,b) => Math.abs(b.smd) - Math.abs(a.smd));
+  else if (key === 'gamma') sorted.sort((a,b) => b.gammaW - a.gammaW);
+  else if (key === 'subrate') sorted.sort((a,b) => b.subRate - a.subRate);
+  applyFilter(sorted);
+});
+
+// Filter
+let currentFilter = 'all';
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    currentFilter = this.dataset.filter;
+    applySort();
+  });
+});
+
+function applyFilter(data) {
+  let filtered = data || titles;
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(t => t.grade === currentFilter);
+  }
+  renderTable(filtered);
+}
+
+function applySort() {
+  const key = document.getElementById('sortSelect').value;
+  let sorted = [...titles];
+  if (key === 'tvt') sorted.sort((a,b) => b.tvt - a.tvt);
+  else if (key === 'grade') sorted.sort((a,b) => {
+    const order = {HIGH:0, MEDIUM:1, LOW:2};
+    return order[a.grade] - order[b.grade] || b.tvt - a.tvt;
+  });
+  else if (key === 'smd') sorted.sort((a,b) => Math.abs(b.smd) - Math.abs(a.smd));
+  else if (key === 'gamma') sorted.sort((a,b) => b.gammaW - a.gammaW);
+  else if (key === 'subrate') sorted.sort((a,b) => b.subRate - a.subRate);
+  applyFilter(sorted);
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelector(`[data-panel="${this.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+// Initial render
+renderTable(titles);
+</script>
+
+</body>
+</html>
