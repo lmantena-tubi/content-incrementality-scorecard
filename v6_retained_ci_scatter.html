@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V6 Retained Viewers — Rate vs Pre-Period Gap (95% CI)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+  .takeaway { background: #F2F7FB; border-left: 3px solid #2E75B6; padding: 14px 18px; margin-bottom: 2rem; font-size: 13.5px; line-height: 1.7; }
+  .takeaway strong { color: #1B3A5C; }
+  .intro { max-width: 920px; font-size: 13.5px; line-height: 1.7; color: #333; margin-bottom: 2rem; }
+  .intro p { margin-bottom: 10px; }
+  .intro strong { color: #1B3A5C; }
+  .method-table { width: 100%; border-collapse: collapse; margin-bottom: 2.5rem; font-size: 13px; }
+  .method-table th { background: #1B3A5C; color: #fff; text-align: left; padding: 10px 14px; font-weight: 600; }
+  .method-table td { padding: 10px 14px; border-bottom: 1px solid #E8E8E8; vertical-align: top; }
+  .method-table tr:nth-child(even) td { background: #F2F7FB; }
+  .method-table .formula { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; background: #F5F5F5; padding: 3px 6px; border-radius: 3px; display: inline-block; color: #8B2500; }
+  .section-header { font-size: 18px; font-weight: 600; color: #1B3A5C; margin: 2.5rem 0 0.5rem; border-bottom: 2px solid #2E75B6; padding-bottom: 6px; }
+  .chart-section { margin-bottom: 2.5rem; }
+  .chart-title { font-size: 16px; font-weight: 600; color: #2E75B6; margin-bottom: 2px; }
+  .chart-formula { font-size: 12px; color: #888; margin-bottom: 8px; font-family: 'Consolas', monospace; }
+  .chart-wrap { position: relative; width: 100%; height: 400px; }
+  .sig-legend { font-size: 12px; color: #888; margin-bottom: 1.5rem; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality v6 — Retained Viewers</h1>
+<p class="subtitle">50 titles &middot; Active non-power (Retained) segment &middot; 28-day window &middot; Error bars = 95% confidence intervals</p>
+
+<div class="takeaway">
+  <strong>Key takeaway:</strong> All four methods confirm positive incrementality for retained viewers, but they disagree on magnitude. <strong>Additive Proportional</strong> (median 1.29&times;) is the most conservative — it attributes only the title's proportional share of the total simple effect, so for titles that are a small fraction of a viewer's diet, the allocated lift is modest. <strong>Simple</strong> (median 4.71&times;) attributes the entire treated-vs-control gap to the title, which overstates any single title's contribution when viewers watch many titles. <strong>DiD</strong> (median 7.01&times;) and <strong>DiD Additive Proportional</strong> (median 2.27&times;) are inflated because treated viewers watched <em>less</em> than controls pre-period (negative pre-gap), causing regression-to-mean bias.<br><br>
+  <strong>Recommendation:</strong> For retained viewers, <strong>Additive Proportional (1.29&times;)</strong> is the most defensible estimate — it uses the control group as counterfactual, ignores the problematic pre-period, and attributes only title T's fair share. However, 20% of titles show CIs crossing 1 (not significant), so confidence varies by title.
+</div>
+
+<div class="intro">
+  <p><strong>Why methods differ in conservatism:</strong> The four methods sit on a spectrum from most to least conservative. <strong>Additive Proportional</strong> is most conservative because it takes the simple treated-vs-control gap and multiplies by <strong>weight_T</strong> — the title's share of a viewer's total on-title viewing time, i.e. <span style="font-family:Consolas,monospace;font-size:12px;background:#F5F5F5;padding:2px 5px;border-radius:3px;color:#8B2500;">tvt_on_T / tvt_on_all_titles</span>. This weight is typically 5–20%, so it attributes only title T's proportional share of the effect. This prevents double-counting when a viewer watches many titles. <strong>Simple</strong> assigns the full gap to the title — fine if we want "total ecosystem lift associated with title T viewers" but not a per-title causal claim. <strong>DiD</strong> methods attempt causal identification by removing pre-existing trends, but in v6 the negative pre-gap (treated watched less than controls before) inflates DiD via regression to the mean — the treated group's "improvement" partly reflects natural reversion, not title-driven lift.</p>
+  <p>The scatter plots below show each title against its pre-period TVT gap. Notice that Simple and Add Prop show no correlation with pre-gap (they ignore pre-period data), while DiD rates climb as the pre-gap becomes more negative — a signature of regression-to-mean bias.</p>
+</div>
+
+<table class="method-table">
+  <thead>
+    <tr>
+      <th style="width:18%"></th>
+      <th style="width:20.5%">Simple</th>
+      <th style="width:20.5%">Additive Proportional</th>
+      <th style="width:20.5%">DiD</th>
+      <th style="width:20.5%">DiD Additive Prop</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Formula</strong></td>
+      <td><span class="formula">treated_post_off &minus; control_post_off</span></td>
+      <td><span class="formula">simple &times; weight_T</span><br><span style="font-size:11px;color:#666;">weight_T = tvt_on_T / tvt_on_all_titles</span></td>
+      <td><span class="formula">(T_post &minus; T_pre) &minus; (C_post &minus; C_pre)</span></td>
+      <td><span class="formula">DiD &times; weight_T</span><br><span style="font-size:11px;color:#666;">weight_T = tvt_on_T / tvt_on_all_titles</span></td>
+    </tr>
+    <tr>
+      <td><strong>Uses pre-period?</strong></td>
+      <td>No</td>
+      <td>No</td>
+      <td>Yes</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td><strong>Conservatism</strong></td>
+      <td>Moderate — full gap attributed to title</td>
+      <td><strong>Most conservative</strong> — proportional share only</td>
+      <td>Least conservative when pre-gap &lt; 0</td>
+      <td>Moderate — DiD dampened by weight_T</td>
+    </tr>
+    <tr>
+      <td><strong>Median rate (Retained)</strong></td>
+      <td><strong>4.71&times;</strong></td>
+      <td><strong>1.29&times;</strong></td>
+      <td><strong>7.01&times;</strong></td>
+      <td><strong>2.27&times;</strong></td>
+    </tr>
+    <tr>
+      <td><strong>All 50 titles significant?</strong></td>
+      <td>Yes (50/50)</td>
+      <td>No (26/50 positive, 3 negative, 21 ns)</td>
+      <td>Yes (50/50)</td>
+      <td>Yes (50/50)</td>
+    </tr>
+    <tr>
+      <td><strong>Cannibalization (rate &lt; 1)</strong></td>
+      <td>0%</td>
+      <td>20%</td>
+      <td>0%</td>
+      <td>0%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="sig-legend">&bull; Filled dot = statistically significant &nbsp;&nbsp; &#9675; Hollow dot = not significant (CI crosses 1 for rates, or 0 for hours)</p>
+
+<div class="section-header">Absolute Incremental TVT (hours per viewer)</div>
+
+<div class="chart-section">
+  <div class="chart-title">Simple — incremental off-title hours per viewer</div>
+  <div class="chart-formula">AVG(treated_post_off &minus; control_post_off) in hours</div>
+  <div class="chart-wrap"><canvas id="abs1"></canvas></div>
+</div>
+
+<div class="chart-section">
+  <div class="chart-title">DiD — incremental off-title hours per viewer</div>
+  <div class="chart-formula">AVG((T_post &minus; T_pre) &minus; (C_post &minus; C_pre)) in hours</div>
+  <div class="chart-wrap"><canvas id="abs2"></canvas></div>
+</div>
+
+<div class="section-header">Incrementality Rates (per hour of on-title TVT)</div>
+
+<div class="chart-section">
+  <div class="chart-title">Simple rate</div>
+  <div class="chart-formula">rate = 1 + &Sigma;(treated_post_off &minus; control_post_off) / &Sigma;on_title_tvt</div>
+  <div class="chart-wrap"><canvas id="c1"></canvas></div>
+</div>
+
+<div class="chart-section">
+  <div class="chart-title">Additive Proportional rate</div>
+  <div class="chart-formula">rate = 1 + &Sigma;(simple &times; weight_T) / &Sigma;on_title_tvt</div>
+  <div class="chart-wrap"><canvas id="c2"></canvas></div>
+</div>
+
+<div class="chart-section">
+  <div class="chart-title">DiD rate</div>
+  <div class="chart-formula">rate = 1 + &Sigma;DiD / &Sigma;on_title_tvt</div>
+  <div class="chart-wrap"><canvas id="c3"></canvas></div>
+</div>
+
+<div class="chart-section">
+  <div class="chart-title">DiD Additive Proportional rate</div>
+  <div class="chart-formula">rate = 1 + &Sigma;(DiD &times; weight_T) / &Sigma;on_title_tvt</div>
+  <div class="chart-wrap"><canvas id="c4"></canvas></div>
+</div>
+
+<script>
+const DATA = [{"title": "50 First Dates", "segment": "Active non-power (Retained)", "n_pairs": 13753, "pre_gap": -2.5999, "simple_rate": 3.3355, "simple_ci_lo": 2.66, "simple_ci_hi": 4.0109, "add_prop_rate": 0.8054, "add_prop_ci_lo": 0.5399, "add_prop_ci_hi": 1.0709, "did_rate": 5.1659, "did_ci_lo": 4.5932, "did_ci_hi": 5.7387, "did_add_rate": 1.5722, "did_add_ci_lo": 1.3218, "did_add_ci_hi": 1.8226, "simple_hrs": 3.3195, "simple_hrs_lo": 2.3595, "simple_hrs_hi": 4.2795, "did_hrs": 5.9212, "did_hrs_lo": 5.1071, "did_hrs_hi": 6.7353, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "All About the Benjamins", "segment": "Active non-power (Retained)", "n_pairs": 21249, "pre_gap": -4.4609, "simple_rate": 4.8733, "simple_ci_lo": 4.1465, "simple_ci_hi": 5.6, "add_prop_rate": 1.1171, "add_prop_ci_lo": 0.9019, "add_prop_ci_hi": 1.3323, "did_rate": 7.8089, "did_ci_lo": 7.193, "did_ci_hi": 8.4249, "did_add_rate": 1.8854, "did_add_ci_lo": 1.7009, "did_add_ci_hi": 2.07, "simple_hrs": 5.8773, "simple_hrs_lo": 4.7745, "simple_hrs_hi": 6.9801, "did_hrs": 10.332, "did_hrs_lo": 9.3973, "did_hrs_hi": 11.2667, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Armageddon", "segment": "Active non-power (Retained)", "n_pairs": 29641, "pre_gap": -3.844, "simple_rate": 3.5519, "simple_ci_lo": 3.1659, "simple_ci_hi": 3.9379, "add_prop_rate": 1.2432, "add_prop_ci_lo": 1.0789, "add_prop_ci_hi": 1.4074, "did_rate": 5.3373, "did_ci_lo": 5.0626, "did_ci_hi": 5.612, "did_add_rate": 2.2361, "did_add_ci_lo": 2.0884, "did_add_ci_hi": 2.3838, "simple_hrs": 5.4925, "simple_hrs_lo": 4.6617, "simple_hrs_hi": 6.3233, "did_hrs": 9.3352, "did_hrs_lo": 8.744, "did_hrs_hi": 9.9264, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Baby Boy", "segment": "Active non-power (Retained)", "n_pairs": 15615, "pre_gap": -2.5534, "simple_rate": 4.1755, "simple_ci_lo": 3.4732, "simple_ci_hi": 4.8777, "add_prop_rate": 1.0464, "add_prop_ci_lo": 0.8209, "add_prop_ci_hi": 1.2719, "did_rate": 5.7196, "did_ci_lo": 5.1693, "did_ci_hi": 6.2698, "did_add_rate": 1.5852, "did_add_ci_lo": 1.3832, "did_add_ci_hi": 1.7873, "simple_hrs": 5.2343, "simple_hrs_lo": 4.0768, "simple_hrs_hi": 6.3918, "did_hrs": 7.7796, "did_hrs_lo": 6.8725, "did_hrs_hi": 8.6866, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Battle: Los Angeles", "segment": "Active non-power (Retained)", "n_pairs": 16315, "pre_gap": -3.3185, "simple_rate": 5.3435, "simple_ci_lo": 4.8514, "simple_ci_hi": 5.8355, "add_prop_rate": 1.5514, "add_prop_ci_lo": 1.3395, "add_prop_ci_hi": 1.7633, "did_rate": 7.3904, "did_ci_lo": 6.9373, "did_ci_hi": 7.8434, "did_add_rate": 2.4424, "did_add_ci_lo": 2.244, "did_add_ci_hi": 2.6408, "simple_hrs": 7.0519, "simple_hrs_lo": 6.2531, "simple_hrs_hi": 7.8508, "did_hrs": 10.3752, "did_hrs_lo": 9.6396, "did_hrs_hi": 11.1108, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Battleship", "segment": "Active non-power (Retained)", "n_pairs": 24797, "pre_gap": -4.5148, "simple_rate": 4.455, "simple_ci_lo": 4.0084, "simple_ci_hi": 4.9016, "add_prop_rate": 1.4772, "add_prop_ci_lo": 1.2919, "add_prop_ci_hi": 1.6624, "did_rate": 6.8914, "did_ci_lo": 6.5062, "did_ci_hi": 7.2765, "did_add_rate": 2.4257, "did_add_ci_lo": 2.2635, "did_add_ci_hi": 2.5878, "simple_hrs": 6.3871, "simple_hrs_lo": 5.5614, "simple_hrs_hi": 7.2127, "did_hrs": 10.891, "did_hrs_lo": 10.179, "did_hrs_hi": 11.6031, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Black and Blue", "segment": "Active non-power (Retained)", "n_pairs": 11027, "pre_gap": -3.0033, "simple_rate": 4.8926, "simple_ci_lo": 3.8182, "simple_ci_hi": 5.9671, "add_prop_rate": 1.3922, "add_prop_ci_lo": 0.9555, "add_prop_ci_hi": 1.8289, "did_rate": 6.6817, "did_ci_lo": 5.8574, "did_ci_hi": 7.506, "did_add_rate": 2.3554, "did_add_ci_lo": 2.0146, "did_add_ci_hi": 2.6961, "simple_hrs": 6.5434, "simple_hrs_lo": 4.7373, "simple_hrs_hi": 8.3495, "did_hrs": 9.5507, "did_hrs_lo": 8.1651, "did_hrs_hi": 10.9363, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Boyz N the Hood", "segment": "Active non-power (Retained)", "n_pairs": 12729, "pre_gap": -2.0795, "simple_rate": 5.2807, "simple_ci_lo": 4.2644, "simple_ci_hi": 6.2969, "add_prop_rate": 0.924, "add_prop_ci_lo": 0.6445, "add_prop_ci_hi": 1.2036, "did_rate": 6.6205, "did_ci_lo": 5.9246, "did_ci_hi": 7.3164, "did_add_rate": 1.8704, "did_add_ci_lo": 1.6201, "did_add_ci_hi": 2.1207, "simple_hrs": 6.6216, "simple_hrs_lo": 5.0496, "simple_hrs_hi": 8.1937, "did_hrs": 8.6942, "did_hrs_lo": 7.6177, "did_hrs_hi": 9.7706, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Bringing Down the House", "segment": "Active non-power (Retained)", "n_pairs": 19414, "pre_gap": -3.8707, "simple_rate": 5.2587, "simple_ci_lo": 4.6482, "simple_ci_hi": 5.8692, "add_prop_rate": 1.3219, "add_prop_ci_lo": 1.1135, "add_prop_ci_hi": 1.5303, "did_rate": 7.6112, "did_ci_lo": 7.1033, "did_ci_hi": 8.1192, "did_add_rate": 2.2204, "did_add_ci_lo": 2.0241, "did_add_ci_hi": 2.4168, "simple_hrs": 7.0068, "simple_hrs_lo": 6.0023, "simple_hrs_hi": 8.0113, "did_hrs": 10.8774, "did_hrs_lo": 10.0417, "did_hrs_hi": 11.7131, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Brown Sugar", "segment": "Active non-power (Retained)", "n_pairs": 12780, "pre_gap": -3.523, "simple_rate": 5.2665, "simple_ci_lo": 4.4245, "simple_ci_hi": 6.1085, "add_prop_rate": 1.4415, "add_prop_ci_lo": 1.052, "add_prop_ci_hi": 1.831, "did_rate": 7.449, "did_ci_lo": 6.802, "did_ci_hi": 8.0961, "did_add_rate": 2.156, "did_add_ci_lo": 1.8823, "did_add_ci_hi": 2.4296, "simple_hrs": 6.8683, "simple_hrs_lo": 5.5129, "simple_hrs_hi": 8.2238, "did_hrs": 10.3818, "did_hrs_lo": 9.3401, "did_hrs_hi": 11.4234, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Click", "segment": "Active non-power (Retained)", "n_pairs": 15233, "pre_gap": -2.7145, "simple_rate": 3.8639, "simple_ci_lo": 3.1774, "simple_ci_hi": 4.5505, "add_prop_rate": 0.6275, "add_prop_ci_lo": 0.3405, "add_prop_ci_hi": 0.9144, "did_rate": 5.807, "did_ci_lo": 5.22, "did_ci_hi": 6.3939, "did_add_rate": 1.5506, "did_add_ci_lo": 1.3118, "did_add_ci_hi": 1.7895, "simple_hrs": 3.9977, "simple_hrs_lo": 3.0394, "simple_hrs_hi": 4.9561, "did_hrs": 6.71, "did_hrs_lo": 5.8907, "did_hrs_hi": 7.5293, "simple_sig": "positive", "add_prop_sig": "negative", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Coming 2 America", "segment": "Active non-power (Retained)", "n_pairs": 20505, "pre_gap": -3.759, "simple_rate": 6.307, "simple_ci_lo": 5.3182, "simple_ci_hi": 7.2958, "add_prop_rate": 1.4159, "add_prop_ci_lo": 1.1421, "add_prop_ci_hi": 1.6896, "did_rate": 8.6067, "did_ci_lo": 8.0789, "did_ci_hi": 9.1346, "did_add_rate": 2.425, "did_add_ci_lo": 2.228, "did_add_ci_hi": 2.622, "simple_hrs": 8.6449, "simple_hrs_lo": 7.0341, "simple_hrs_hi": 10.2556, "did_hrs": 12.391, "did_hrs_lo": 11.5311, "did_hrs_hi": 13.2509, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Coming to America", "segment": "Active non-power (Retained)", "n_pairs": 15814, "pre_gap": -3.3172, "simple_rate": 3.864, "simple_ci_lo": 3.2793, "simple_ci_hi": 4.4487, "add_prop_rate": 1.0338, "add_prop_ci_lo": 0.8003, "add_prop_ci_hi": 1.2674, "did_rate": 5.7377, "did_ci_lo": 5.2471, "did_ci_hi": 6.2283, "did_add_rate": 1.8718, "did_add_ci_lo": 1.6718, "did_add_ci_hi": 2.0719, "simple_hrs": 5.0665, "simple_hrs_lo": 4.0321, "simple_hrs_hi": 6.1008, "did_hrs": 8.3811, "did_hrs_lo": 7.5132, "did_hrs_hi": 9.2489, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Double Take", "segment": "Active non-power (Retained)", "n_pairs": 14046, "pre_gap": -4.1374, "simple_rate": 7.4133, "simple_ci_lo": 6.3612, "simple_ci_hi": 8.4653, "add_prop_rate": 1.2807, "add_prop_ci_lo": 0.9551, "add_prop_ci_hi": 1.6064, "did_rate": 10.4033, "did_ci_lo": 9.6402, "did_ci_hi": 11.1664, "did_add_rate": 2.3183, "did_add_ci_lo": 2.046, "did_add_ci_hi": 2.5906, "simple_hrs": 8.8815, "simple_hrs_lo": 7.4246, "simple_hrs_hi": 10.3385, "did_hrs": 13.0224, "did_hrs_lo": 11.9656, "did_hrs_hi": 14.0792, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "D\u00e9j\u00e0 Vu", "segment": "Active non-power (Retained)", "n_pairs": 14369, "pre_gap": -1.852, "simple_rate": 4.4939, "simple_ci_lo": 3.7419, "simple_ci_hi": 5.2459, "add_prop_rate": 1.3212, "add_prop_ci_lo": 0.8458, "add_prop_ci_hi": 1.7967, "did_rate": 5.5749, "did_ci_lo": 5.0553, "did_ci_hi": 6.0944, "did_add_rate": 1.9845, "did_add_ci_lo": 1.7273, "did_add_ci_hi": 2.2418, "simple_hrs": 5.9416, "simple_hrs_lo": 4.6628, "simple_hrs_hi": 7.2204, "did_hrs": 7.7798, "did_hrs_lo": 6.8963, "did_hrs_hi": 8.6634, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Friday", "segment": "Active non-power (Retained)", "n_pairs": 58801, "pre_gap": -4.937, "simple_rate": 4.7608, "simple_ci_lo": 4.4, "simple_ci_hi": 5.1215, "add_prop_rate": 1.077, "add_prop_ci_lo": 0.9355, "add_prop_ci_hi": 1.2185, "did_rate": 7.9686, "did_ci_lo": 7.6675, "did_ci_hi": 8.2698, "did_add_rate": 2.389, "did_add_ci_lo": 2.2598, "did_add_ci_hi": 2.5183, "simple_hrs": 5.7876, "simple_hrs_lo": 5.2325, "simple_hrs_hi": 6.3428, "did_hrs": 10.7244, "did_hrs_lo": 10.2609, "did_hrs_hi": 11.1879, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Friday After Next", "segment": "Active non-power (Retained)", "n_pairs": 32349, "pre_gap": -5.7163, "simple_rate": 6.2061, "simple_ci_lo": 5.6339, "simple_ci_hi": 6.7784, "add_prop_rate": 1.3873, "add_prop_ci_lo": 1.1866, "add_prop_ci_hi": 1.588, "did_rate": 10.3258, "did_ci_lo": 9.8154, "did_ci_hi": 10.8362, "did_add_rate": 2.2989, "did_add_ci_lo": 2.146, "did_add_ci_hi": 2.4518, "simple_hrs": 7.1863, "simple_hrs_lo": 6.3964, "simple_hrs_hi": 7.9762, "did_hrs": 12.8728, "did_hrs_lo": 12.1683, "did_hrs_hi": 13.5773, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Hustle & Flow", "segment": "Active non-power (Retained)", "n_pairs": 13731, "pre_gap": -3.0685, "simple_rate": 4.7199, "simple_ci_lo": 3.7934, "simple_ci_hi": 5.6465, "add_prop_rate": 0.8253, "add_prop_ci_lo": 0.5399, "add_prop_ci_hi": 1.1106, "did_rate": 6.7881, "did_ci_lo": 6.048, "did_ci_hi": 7.5281, "did_add_rate": 1.7287, "did_add_ci_lo": 1.4126, "did_add_ci_hi": 2.0447, "simple_hrs": 5.5117, "simple_hrs_lo": 4.1389, "simple_hrs_hi": 6.8845, "did_hrs": 8.576, "did_hrs_lo": 7.4795, "did_hrs_hi": 9.6725, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Ice Age", "segment": "Active non-power (Retained)", "n_pairs": 25654, "pre_gap": -2.0271, "simple_rate": 5.3934, "simple_ci_lo": 4.4726, "simple_ci_hi": 6.3143, "add_prop_rate": 1.3099, "add_prop_ci_lo": 1.0426, "add_prop_ci_hi": 1.5771, "did_rate": 6.9958, "did_ci_lo": 6.4839, "did_ci_hi": 7.5078, "did_add_rate": 2.2114, "did_add_ci_lo": 2.009, "did_add_ci_hi": 2.4138, "simple_hrs": 5.5661, "simple_hrs_lo": 4.3994, "simple_hrs_hi": 6.7328, "did_hrs": 7.5962, "did_hrs_lo": 6.9476, "did_hrs_hi": 8.2448, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "In Time", "segment": "Active non-power (Retained)", "n_pairs": 15427, "pre_gap": -4.1309, "simple_rate": 4.0005, "simple_ci_lo": 3.3622, "simple_ci_hi": 4.6387, "add_prop_rate": 0.717, "add_prop_ci_lo": 0.4522, "add_prop_ci_hi": 0.9817, "did_rate": 6.8112, "did_ci_lo": 6.2448, "did_ci_hi": 7.3775, "did_add_rate": 1.9966, "did_add_ci_lo": 1.7397, "did_add_ci_hi": 2.2534, "simple_hrs": 4.4066, "simple_hrs_lo": 3.4693, "simple_hrs_hi": 5.344, "did_hrs": 8.5346, "did_hrs_lo": 7.7028, "did_hrs_hi": 9.3664, "simple_sig": "positive", "add_prop_sig": "negative", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Jumper", "segment": "Active non-power (Retained)", "n_pairs": 17409, "pre_gap": -2.3105, "simple_rate": 4.9638, "simple_ci_lo": 4.2958, "simple_ci_hi": 5.6319, "add_prop_rate": 0.8701, "add_prop_ci_lo": 0.5935, "add_prop_ci_hi": 1.1466, "did_rate": 6.86, "did_ci_lo": 6.2684, "did_ci_hi": 7.4516, "did_add_rate": 1.6115, "did_add_ci_lo": 1.3703, "did_add_ci_hi": 1.8527, "simple_hrs": 4.8345, "simple_hrs_lo": 4.0197, "simple_hrs_hi": 5.6492, "did_hrs": 7.1472, "did_hrs_lo": 6.4257, "did_hrs_hi": 7.8687, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "King Kong", "segment": "Active non-power (Retained)", "n_pairs": 17563, "pre_gap": -2.9134, "simple_rate": 4.0094, "simple_ci_lo": 3.5488, "simple_ci_hi": 4.4701, "add_prop_rate": 1.4247, "add_prop_ci_lo": 1.2244, "add_prop_ci_hi": 1.6251, "did_rate": 5.3676, "did_ci_lo": 4.9795, "did_ci_hi": 5.7557, "did_add_rate": 2.1172, "did_add_ci_lo": 1.9376, "did_add_ci_hi": 2.2969, "simple_hrs": 6.4101, "simple_hrs_lo": 5.4289, "simple_hrs_hi": 7.3912, "did_hrs": 9.303, "did_hrs_lo": 8.4764, "did_hrs_hi": 10.1297, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Life", "segment": "Active non-power (Retained)", "n_pairs": 18505, "pre_gap": -2.327, "simple_rate": 5.4067, "simple_ci_lo": 4.3747, "simple_ci_hi": 6.4387, "add_prop_rate": 1.3068, "add_prop_ci_lo": 1.0229, "add_prop_ci_hi": 1.5906, "did_rate": 6.7998, "did_ci_lo": 6.1497, "did_ci_hi": 7.4498, "did_add_rate": 2.0177, "did_add_ci_lo": 1.7725, "did_add_ci_hi": 2.2629, "simple_hrs": 7.3685, "simple_hrs_lo": 5.6428, "simple_hrs_hi": 9.0941, "did_hrs": 9.6978, "did_hrs_lo": 8.6108, "did_hrs_hi": 10.7847, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Madagascar", "segment": "Active non-power (Retained)", "n_pairs": 38409, "pre_gap": -4.5371, "simple_rate": 4.2556, "simple_ci_lo": 3.7109, "simple_ci_hi": 4.8004, "add_prop_rate": 0.8739, "add_prop_ci_lo": 0.6947, "add_prop_ci_hi": 1.0531, "did_rate": 7.6475, "did_ci_lo": 7.2416, "did_ci_hi": 8.0533, "did_add_rate": 2.3106, "did_add_ci_lo": 2.1367, "did_add_ci_hi": 2.4844, "simple_hrs": 4.3494, "simple_hrs_lo": 3.6216, "simple_hrs_hi": 5.0771, "did_hrs": 8.8807, "did_hrs_lo": 8.3385, "did_hrs_hi": 9.4229, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Madagascar: Escape 2 Africa", "segment": "Active non-power (Retained)", "n_pairs": 30963, "pre_gap": -4.6466, "simple_rate": 4.517, "simple_ci_lo": 3.9604, "simple_ci_hi": 5.0735, "add_prop_rate": 1.2038, "add_prop_ci_lo": 1.0175, "add_prop_ci_hi": 1.3901, "did_rate": 7.753, "did_ci_lo": 7.3402, "did_ci_hi": 8.1658, "did_add_rate": 2.4878, "did_add_ci_lo": 2.3206, "did_add_ci_hi": 2.655, "simple_hrs": 5.02, "simple_hrs_lo": 4.2256, "simple_hrs_hi": 5.8144, "did_hrs": 9.639, "did_hrs_lo": 9.0498, "did_hrs_hi": 10.2282, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Mechanic: Resurrection", "segment": "Active non-power (Retained)", "n_pairs": 16087, "pre_gap": -5.4102, "simple_rate": 3.9574, "simple_ci_lo": 3.198, "simple_ci_hi": 4.7167, "add_prop_rate": 1.115, "add_prop_ci_lo": 0.811, "add_prop_ci_hi": 1.4191, "did_rate": 7.6456, "did_ci_lo": 6.8993, "did_ci_hi": 8.3919, "did_add_rate": 2.8318, "did_add_ci_lo": 2.5372, "did_add_ci_hi": 3.1265, "simple_hrs": 4.3329, "simple_hrs_lo": 3.2204, "simple_hrs_hi": 5.4454, "did_hrs": 9.7366, "did_hrs_lo": 8.6432, "did_hrs_hi": 10.83, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Mighty Joe Young", "segment": "Active non-power (Retained)", "n_pairs": 11006, "pre_gap": -2.049, "simple_rate": 6.3566, "simple_ci_lo": 5.4213, "simple_ci_hi": 7.2918, "add_prop_rate": 1.9876, "add_prop_ci_lo": 1.6153, "add_prop_ci_hi": 2.3599, "did_rate": 7.7273, "did_ci_lo": 6.9993, "did_ci_hi": 8.4552, "did_add_rate": 2.6266, "did_add_ci_lo": 2.2871, "did_add_ci_hi": 2.9661, "simple_hrs": 8.0165, "simple_hrs_lo": 6.6168, "simple_hrs_hi": 9.4162, "did_hrs": 10.0679, "did_hrs_lo": 8.9785, "did_hrs_hi": 11.1573, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Morbius", "segment": "Active non-power (Retained)", "n_pairs": 17485, "pre_gap": -3.4339, "simple_rate": 6.0233, "simple_ci_lo": 5.2461, "simple_ci_hi": 6.8006, "add_prop_rate": 1.4212, "add_prop_ci_lo": 1.128, "add_prop_ci_hi": 1.7144, "did_rate": 8.4637, "did_ci_lo": 7.8419, "did_ci_hi": 9.0856, "did_add_rate": 2.5977, "did_add_ci_lo": 2.317, "did_add_ci_hi": 2.8784, "simple_hrs": 7.0548, "simple_hrs_lo": 5.9633, "simple_hrs_hi": 8.1464, "did_hrs": 10.4822, "did_hrs_lo": 9.6089, "did_hrs_hi": 11.3555, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "National Security", "segment": "Active non-power (Retained)", "n_pairs": 17938, "pre_gap": -3.3485, "simple_rate": 7.3581, "simple_ci_lo": 6.3886, "simple_ci_hi": 8.3275, "add_prop_rate": 1.3134, "add_prop_ci_lo": 1.009, "add_prop_ci_hi": 1.6178, "did_rate": 10.0039, "did_ci_lo": 9.2872, "did_ci_hi": 10.7205, "did_add_rate": 2.0139, "did_add_ci_lo": 1.7923, "did_add_ci_hi": 2.2356, "simple_hrs": 8.0255, "simple_hrs_lo": 6.8018, "simple_hrs_hi": 9.2492, "did_hrs": 11.3652, "did_hrs_lo": 10.4606, "did_hrs_hi": 12.2698, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Next Friday", "segment": "Active non-power (Retained)", "n_pairs": 38658, "pre_gap": -5.841, "simple_rate": 5.2761, "simple_ci_lo": 4.7998, "simple_ci_hi": 5.7524, "add_prop_rate": 1.1584, "add_prop_ci_lo": 1.0034, "add_prop_ci_hi": 1.3133, "did_rate": 9.1512, "did_ci_lo": 8.7547, "did_ci_hi": 9.5478, "did_add_rate": 2.2496, "did_add_ci_lo": 2.1278, "did_add_ci_hi": 2.3715, "simple_hrs": 6.399, "simple_hrs_lo": 5.6863, "simple_hrs_hi": 7.1117, "did_hrs": 12.1979, "did_hrs_lo": 11.6046, "did_hrs_hi": 12.7913, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Parker", "segment": "Active non-power (Retained)", "n_pairs": 14130, "pre_gap": -2.7471, "simple_rate": 4.4335, "simple_ci_lo": 3.6076, "simple_ci_hi": 5.2593, "add_prop_rate": 1.3152, "add_prop_ci_lo": 0.9617, "add_prop_ci_hi": 1.6686, "did_rate": 6.1364, "did_ci_lo": 5.4951, "did_ci_hi": 6.7776, "did_add_rate": 2.238, "did_add_ci_lo": 1.9036, "did_add_ci_hi": 2.5723, "simple_hrs": 5.5383, "simple_hrs_lo": 4.2062, "simple_hrs_hi": 6.8704, "did_hrs": 8.2852, "did_hrs_lo": 7.2509, "did_hrs_hi": 9.3196, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Phat Girlz", "segment": "Active non-power (Retained)", "n_pairs": 15818, "pre_gap": -2.4165, "simple_rate": 7.0332, "simple_ci_lo": 6.1564, "simple_ci_hi": 7.9099, "add_prop_rate": 1.5164, "add_prop_ci_lo": 1.2166, "add_prop_ci_hi": 1.8163, "did_rate": 8.7587, "did_ci_lo": 8.0815, "did_ci_hi": 9.4358, "did_add_rate": 2.226, "did_add_ci_lo": 1.9729, "did_add_ci_hi": 2.4791, "simple_hrs": 8.4556, "simple_hrs_lo": 7.2269, "simple_hrs_hi": 9.6843, "did_hrs": 10.8739, "did_hrs_lo": 9.9249, "did_hrs_hi": 11.823, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Phenomenon", "segment": "Active non-power (Retained)", "n_pairs": 13950, "pre_gap": -3.2317, "simple_rate": 4.2428, "simple_ci_lo": 3.7459, "simple_ci_hi": 4.7398, "add_prop_rate": 1.6327, "add_prop_ci_lo": 1.3528, "add_prop_ci_hi": 1.9127, "did_rate": 6.1337, "did_ci_lo": 5.6716, "did_ci_hi": 6.5958, "did_add_rate": 2.7808, "did_add_ci_lo": 2.5065, "did_add_ci_hi": 3.0551, "simple_hrs": 5.5564, "simple_hrs_lo": 4.705, "simple_hrs_hi": 6.4079, "did_hrs": 8.7964, "did_hrs_lo": 8.0046, "did_hrs_hi": 9.5882, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Ride Along", "segment": "Active non-power (Retained)", "n_pairs": 14195, "pre_gap": -5.182, "simple_rate": 6.0934, "simple_ci_lo": 5.1953, "simple_ci_hi": 6.9915, "add_prop_rate": 0.9976, "add_prop_ci_lo": 0.7414, "add_prop_ci_hi": 1.2538, "did_rate": 9.6869, "did_ci_lo": 8.9493, "did_ci_hi": 10.4244, "did_add_rate": 1.9603, "did_add_ci_lo": 1.753, "did_add_ci_hi": 2.1677, "simple_hrs": 7.3293, "simple_hrs_lo": 6.037, "simple_hrs_hi": 8.6216, "did_hrs": 12.5002, "did_hrs_lo": 11.4388, "did_hrs_hi": 13.5615, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Ride Along 2", "segment": "Active non-power (Retained)", "n_pairs": 21565, "pre_gap": -5.1009, "simple_rate": 5.9867, "simple_ci_lo": 5.1592, "simple_ci_hi": 6.8143, "add_prop_rate": 1.1276, "add_prop_ci_lo": 0.906, "add_prop_ci_hi": 1.3492, "did_rate": 9.2084, "did_ci_lo": 8.65, "did_ci_hi": 9.7667, "did_add_rate": 2.1236, "did_add_ci_lo": 1.9345, "did_add_ci_hi": 2.3127, "simple_hrs": 7.8672, "simple_hrs_lo": 6.5616, "simple_hrs_hi": 9.1727, "did_hrs": 12.9497, "did_hrs_lo": 12.0688, "did_hrs_hi": 13.8305, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Road House", "segment": "Active non-power (Retained)", "n_pairs": 16866, "pre_gap": -3.9136, "simple_rate": 4.5723, "simple_ci_lo": 3.5979, "simple_ci_hi": 5.5468, "add_prop_rate": 2.3384, "add_prop_ci_lo": 2.0517, "add_prop_ci_hi": 2.6251, "did_rate": 6.7753, "did_ci_lo": 6.3296, "did_ci_hi": 7.221, "did_add_rate": 3.8341, "did_add_ci_lo": 3.5684, "did_add_ci_hi": 4.0997, "simple_hrs": 6.365, "simple_hrs_lo": 4.6288, "simple_hrs_hi": 8.1013, "did_hrs": 10.2902, "did_hrs_lo": 9.496, "did_hrs_hi": 11.0844, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Robots", "segment": "Active non-power (Retained)", "n_pairs": 20809, "pre_gap": -3.3427, "simple_rate": 3.8576, "simple_ci_lo": 3.0839, "simple_ci_hi": 4.6312, "add_prop_rate": 1.2041, "add_prop_ci_lo": 0.9368, "add_prop_ci_hi": 1.4714, "did_rate": 6.2264, "did_ci_lo": 5.7295, "did_ci_hi": 6.7232, "did_add_rate": 2.489, "did_add_ci_lo": 2.2447, "did_add_ci_hi": 2.7334, "simple_hrs": 4.0325, "simple_hrs_lo": 2.9408, "simple_hrs_hi": 5.1243, "did_hrs": 7.3754, "did_hrs_lo": 6.6743, "did_hrs_hi": 8.0766, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Rockabye", "segment": "Active non-power (Retained)", "n_pairs": 11391, "pre_gap": -13.7243, "simple_rate": 4.6025, "simple_ci_lo": 3.5259, "simple_ci_hi": 5.6791, "add_prop_rate": 3.0243, "add_prop_ci_lo": 2.4421, "add_prop_ci_hi": 3.6065, "did_rate": 12.8819, "did_ci_lo": 11.7623, "did_ci_hi": 14.0014, "did_add_rate": 8.3047, "did_add_ci_lo": 7.5749, "did_add_ci_hi": 9.0344, "simple_hrs": 5.9566, "simple_hrs_lo": 4.1765, "simple_hrs_hi": 7.7367, "did_hrs": 19.6461, "did_hrs_lo": 17.795, "did_hrs_hi": 21.4972, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Shooter", "segment": "Active non-power (Retained)", "n_pairs": 9376, "pre_gap": -2.8471, "simple_rate": 2.7723, "simple_ci_lo": 2.1366, "simple_ci_hi": 3.4081, "add_prop_rate": 0.9915, "add_prop_ci_lo": 0.6815, "add_prop_ci_hi": 1.3016, "did_rate": 4.3454, "did_ci_lo": 3.7799, "did_ci_hi": 4.9108, "did_add_rate": 1.7301, "did_add_ci_lo": 1.4418, "did_add_ci_hi": 2.0185, "simple_hrs": 3.2175, "simple_hrs_lo": 2.0634, "simple_hrs_hi": 4.3716, "did_hrs": 6.0733, "did_hrs_lo": 5.0468, "did_hrs_hi": 7.0998, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Stepmom", "segment": "Active non-power (Retained)", "n_pairs": 11030, "pre_gap": -3.9914, "simple_rate": 3.5263, "simple_ci_lo": 2.8036, "simple_ci_hi": 4.249, "add_prop_rate": 1.7719, "add_prop_ci_lo": 1.2696, "add_prop_ci_hi": 2.2742, "did_rate": 5.7749, "did_ci_lo": 5.2215, "did_ci_hi": 6.3282, "did_add_rate": 3.2553, "did_add_ci_lo": 2.9009, "did_add_ci_hi": 3.6097, "simple_hrs": 4.4852, "simple_hrs_lo": 3.202, "simple_hrs_hi": 5.7683, "did_hrs": 8.4773, "did_hrs_lo": 7.4949, "did_hrs_hi": 9.4597, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Surf's Up", "segment": "Active non-power (Retained)", "n_pairs": 18295, "pre_gap": -2.8102, "simple_rate": 3.7742, "simple_ci_lo": 3.1731, "simple_ci_hi": 4.3752, "add_prop_rate": 0.6999, "add_prop_ci_lo": 0.4637, "add_prop_ci_hi": 0.936, "did_rate": 5.9126, "did_ci_lo": 5.4077, "did_ci_hi": 6.4174, "did_add_rate": 1.836, "did_add_ci_lo": 1.6132, "did_add_ci_hi": 2.0588, "simple_hrs": 3.6478, "simple_hrs_lo": 2.8575, "simple_hrs_hi": 4.4382, "did_hrs": 6.4596, "did_hrs_lo": 5.7959, "did_hrs_hi": 7.1234, "simple_sig": "positive", "add_prop_sig": "negative", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "That's My Boy", "segment": "Active non-power (Retained)", "n_pairs": 17156, "pre_gap": -3.034, "simple_rate": 3.4547, "simple_ci_lo": 2.9392, "simple_ci_hi": 3.9702, "add_prop_rate": 1.2408, "add_prop_ci_lo": 0.9792, "add_prop_ci_hi": 1.5024, "did_rate": 5.3165, "did_ci_lo": 4.8508, "did_ci_hi": 5.7823, "did_add_rate": 2.2073, "did_add_ci_lo": 1.9753, "did_add_ci_hi": 2.4394, "simple_hrs": 4.0081, "simple_hrs_lo": 3.1664, "simple_hrs_hi": 4.8499, "did_hrs": 7.0483, "did_hrs_lo": 6.2878, "did_hrs_hi": 7.8087, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Tom Clancy's Without Remorse", "segment": "Active non-power (Retained)", "n_pairs": 29683, "pre_gap": -3.0905, "simple_rate": 4.6888, "simple_ci_lo": 4.1183, "simple_ci_hi": 5.2593, "add_prop_rate": 1.5531, "add_prop_ci_lo": 1.2574, "add_prop_ci_hi": 1.8489, "did_rate": 6.6578, "did_ci_lo": 6.2392, "did_ci_hi": 7.0763, "did_add_rate": 2.7444, "did_add_ci_lo": 2.5128, "did_add_ci_hi": 2.976, "simple_hrs": 5.789, "simple_hrs_lo": 4.8937, "simple_hrs_hi": 6.6842, "did_hrs": 8.879, "did_hrs_lo": 8.2221, "did_hrs_hi": 9.5358, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Tyler Perry's Diary of a Mad Black Woman", "segment": "Active non-power (Retained)", "n_pairs": 34493, "pre_gap": -5.466, "simple_rate": 4.6157, "simple_ci_lo": 4.134, "simple_ci_hi": 5.0974, "add_prop_rate": 1.1527, "add_prop_ci_lo": 0.9877, "add_prop_ci_hi": 1.3177, "did_rate": 7.723, "did_ci_lo": 7.3453, "did_ci_hi": 8.1007, "did_add_rate": 2.3032, "did_add_ci_lo": 2.1482, "did_add_ci_hi": 2.4582, "simple_hrs": 6.3365, "simple_hrs_lo": 5.4923, "simple_hrs_hi": 7.1808, "did_hrs": 11.7821, "did_hrs_lo": 11.1202, "did_hrs_hi": 12.444, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Tyler Perry's Madea's Big Happy Family", "segment": "Active non-power (Retained)", "n_pairs": 33963, "pre_gap": -4.1826, "simple_rate": 4.9115, "simple_ci_lo": 4.4036, "simple_ci_hi": 5.4194, "add_prop_rate": 1.2428, "add_prop_ci_lo": 1.0442, "add_prop_ci_hi": 1.4414, "did_rate": 7.4551, "did_ci_lo": 7.0631, "did_ci_hi": 7.8471, "did_add_rate": 2.292, "did_add_ci_lo": 2.1173, "did_add_ci_hi": 2.4666, "simple_hrs": 6.417, "simple_hrs_lo": 5.5838, "simple_hrs_hi": 7.2502, "did_hrs": 10.59, "did_hrs_lo": 9.9469, "did_hrs_hi": 11.2331, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Uncharted", "segment": "Active non-power (Retained)", "n_pairs": 25502, "pre_gap": -2.4277, "simple_rate": 5.9096, "simple_ci_lo": 5.3843, "simple_ci_hi": 6.4348, "add_prop_rate": 1.7263, "add_prop_ci_lo": 1.5295, "add_prop_ci_hi": 1.9231, "did_rate": 7.4955, "did_ci_lo": 7.078, "did_ci_hi": 7.913, "did_add_rate": 2.5715, "did_add_ci_lo": 2.391, "did_add_ci_hi": 2.7519, "simple_hrs": 7.515, "simple_hrs_lo": 6.711, "simple_hrs_hi": 8.319, "did_hrs": 9.9426, "did_hrs_lo": 9.3035, "did_hrs_hi": 10.5817, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Unrequited", "segment": "Active non-power (Retained)", "n_pairs": 20738, "pre_gap": -2.0827, "simple_rate": 4.2175, "simple_ci_lo": 3.4628, "simple_ci_hi": 4.9722, "add_prop_rate": 1.0478, "add_prop_ci_lo": 0.6145, "add_prop_ci_hi": 1.4811, "did_rate": 5.9173, "did_ci_lo": 5.3402, "did_ci_hi": 6.4944, "did_add_rate": 2.7631, "did_add_ci_lo": 2.3968, "did_add_ci_hi": 3.1294, "simple_hrs": 4.1234, "simple_hrs_lo": 3.1562, "simple_hrs_hi": 5.0906, "did_hrs": 6.3019, "did_hrs_lo": 5.5623, "did_hrs_hi": 7.0414, "simple_sig": "positive", "add_prop_sig": "ns", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Van Helsing", "segment": "Active non-power (Retained)", "n_pairs": 23327, "pre_gap": -3.8829, "simple_rate": 4.8093, "simple_ci_lo": 4.0362, "simple_ci_hi": 5.5824, "add_prop_rate": 1.4284, "add_prop_ci_lo": 1.1671, "add_prop_ci_hi": 1.6896, "did_rate": 7.0283, "did_ci_lo": 6.5752, "did_ci_hi": 7.4814, "did_add_rate": 2.6349, "did_add_ci_lo": 2.4229, "did_add_ci_hi": 2.8469, "simple_hrs": 6.6553, "simple_hrs_lo": 5.3046, "simple_hrs_hi": 8.006, "did_hrs": 10.5321, "did_hrs_lo": 9.7405, "did_hrs_hi": 11.3237, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "White Chicks", "segment": "Active non-power (Retained)", "n_pairs": 63152, "pre_gap": -4.5004, "simple_rate": 4.7006, "simple_ci_lo": 4.4207, "simple_ci_hi": 4.9805, "add_prop_rate": 1.3719, "add_prop_ci_lo": 1.2528, "add_prop_ci_hi": 1.491, "did_rate": 7.432, "did_ci_lo": 7.1886, "did_ci_hi": 7.6755, "did_add_rate": 2.5146, "did_add_ci_lo": 2.4048, "did_add_ci_hi": 2.6244, "simple_hrs": 6.0907, "simple_hrs_lo": 5.63, "simple_hrs_hi": 6.5513, "did_hrs": 10.5862, "did_hrs_lo": 10.1855, "did_hrs_hi": 10.9869, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}, {"title": "Woman to Woman", "segment": "Active non-power (Retained)", "n_pairs": 25254, "pre_gap": -7.9078, "simple_rate": 5.0884, "simple_ci_lo": 4.3597, "simple_ci_hi": 5.8171, "add_prop_rate": 2.6374, "add_prop_ci_lo": 2.1847, "add_prop_ci_hi": 3.09, "did_rate": 10.3088, "did_ci_lo": 9.6846, "did_ci_hi": 10.9331, "did_add_rate": 6.4054, "did_add_ci_lo": 5.9786, "did_add_ci_hi": 6.8322, "simple_hrs": 6.1658, "simple_hrs_lo": 5.0668, "simple_hrs_hi": 7.2647, "did_hrs": 14.0389, "did_hrs_lo": 13.0975, "did_hrs_hi": 14.9803, "simple_sig": "positive", "add_prop_sig": "positive", "did_sig": "positive", "did_add_sig": "positive"}];
+
+const DOT_COLOR = '#1D9E75';
+
+const errorBarPlugin = {
+  id: 'errorBars',
+  afterDatasetsDraw(chart) {
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      meta.data.forEach((pt, pi) => {
+        const raw = ds.data[pi];
+        if (!raw || raw.ciLo == null || raw.ciHi == null) return;
+        const yScale = chart.scales.y;
+        const yLo = yScale.getPixelForValue(raw.ciLo);
+        const yHi = yScale.getPixelForValue(raw.ciHi);
+        const area = chart.chartArea;
+        const yLoC = Math.max(yLo, area.top);
+        const yHiC = Math.min(yHi, area.bottom);
+        if (yLoC > area.bottom || yHiC < area.top) return;
+        const x = pt.x;
+        ctx.save();
+        ctx.strokeStyle = DOT_COLOR;
+        ctx.lineWidth = 1.2;
+        ctx.globalAlpha = 0.45;
+        ctx.beginPath();
+        ctx.moveTo(x, yLoC);
+        ctx.lineTo(x, yHiC);
+        ctx.stroke();
+        const capW = 3;
+        ctx.beginPath();
+        if (yLo >= area.top) { ctx.moveTo(x - capW, yLoC); ctx.lineTo(x + capW, yLoC); }
+        if (yHi <= area.bottom) { ctx.moveTo(x - capW, yHiC); ctx.lineTo(x + capW, yHiC); }
+        ctx.stroke();
+        ctx.restore();
+      });
+    });
+  }
+};
+
+function makeChart(canvasId, rateKey, loKey, hiKey, sigKey, yMin, yMax, yLabel, unit) {
+  const canvas = document.getElementById(canvasId);
+  const ds = {
+    label: 'Retained',
+    data: DATA.map(r => ({
+      x: r.pre_gap,
+      y: r[rateKey],
+      ciLo: r[loKey],
+      ciHi: r[hiKey],
+      title: r.title,
+      n_pairs: r.n_pairs,
+      sig: r[sigKey]
+    })),
+    backgroundColor: DATA.map(r => r[sigKey] === 'ns' ? 'rgba(255,255,255,0.9)' : DOT_COLOR),
+    borderColor: DOT_COLOR,
+    borderWidth: DATA.map(r => r[sigKey] === 'ns' ? 2 : 1),
+    pointRadius: 6,
+    pointHoverRadius: 8,
+  };
+
+  new Chart(canvas, {
+    type: 'scatter',
+    data: { datasets: [ds] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: { display: true, text: 'Pre-period TVT gap (hrs per viewer)', font: { family: 'Calibri', size: 12 } },
+          grid: { color: '#f0f0f0' }
+        },
+        y: {
+          min: yMin, max: yMax,
+          title: { display: true, text: yLabel, font: { family: 'Calibri', size: 12 } },
+          grid: { color: '#f0f0f0' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'nearest',
+          intersect: true,
+          backgroundColor: 'rgba(27,58,92,0.95)',
+          titleFont: { family: 'Calibri', size: 13, weight: 'bold' },
+          bodyFont: { family: 'Calibri', size: 12 },
+          padding: 10,
+          callbacks: {
+            title: ctx => ctx[0].raw.title,
+            label: ctx => {
+              const r = ctx.raw;
+              const fmt = v => unit === 'hrs' ? v.toFixed(1) + ' hrs' : v.toFixed(2) + '\u00d7';
+              return [
+                fmt(r.y),
+                '95% CI: [' + fmt(r.ciLo) + ', ' + fmt(r.ciHi) + ']',
+                r.n_pairs.toLocaleString() + ' pairs'
+              ];
+            }
+          }
+        }
+      }
+    },
+    plugins: [errorBarPlugin]
+  });
+}
+
+// Absolute hours
+makeChart('abs1', 'simple_hrs', 'simple_hrs_lo', 'simple_hrs_hi', 'simple_sig', -2, 12, 'Incremental off-title TVT (hrs/viewer)', 'hrs');
+makeChart('abs2', 'did_hrs', 'did_hrs_lo', 'did_hrs_hi', 'did_sig', -2, 18, 'Incremental off-title TVT (hrs/viewer)', 'hrs');
+
+// Rates
+makeChart('c1', 'simple_rate', 'simple_ci_lo', 'simple_ci_hi', 'simple_sig', -2, 12, 'Incrementality rate', 'x');
+makeChart('c2', 'add_prop_rate', 'add_prop_ci_lo', 'add_prop_ci_hi', 'add_prop_sig', -2, 5, 'Incrementality rate', 'x');
+makeChart('c3', 'did_rate', 'did_ci_lo', 'did_ci_hi', 'did_sig', -2, 20, 'Incrementality rate', 'x');
+makeChart('c4', 'did_add_rate', 'did_add_ci_lo', 'did_add_ci_hi', 'did_add_sig', -2, 8, 'Incrementality rate', 'x');
+</script>
+
+</body>
+</html>
