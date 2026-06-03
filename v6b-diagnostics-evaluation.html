@@ -182,7 +182,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 <div class="tabs">
   <button class="tab active" data-tab="summary">Summary</button>
   <button class="tab" data-tab="diagnostics">Diagnostics</button>
-  <button class="tab" data-tab="titles">Title Detail</button>
   <button class="tab" data-tab="segment">Title &times; Segment</button>
   <button class="tab" data-tab="rates">Incremental Rates</button>
   <button class="tab" data-tab="criteria">Criteria</button>
@@ -190,14 +189,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 <!-- ===== SUMMARY TAB ===== -->
 <div class="tab-panel active" data-panel="summary">
-  <h3>Grade Distribution &mdash; Title Level</h3>
-  <table class="grade-table" id="gradeTable">
-    <thead>
-      <tr><th>Grade</th><th>Titles</th><th>% of Titles</th><th>Total TVT Hours (March 2026)</th><th>% of TVT</th></tr>
-    </thead>
-    <tbody id="gradeTableBody"></tbody>
-  </table>
-
   <h3>Grade Distribution &mdash; Title &times; Segment Level</h3>
   <table class="grade-table" id="segGradeTable">
     <thead>
@@ -214,13 +205,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 <!-- ===== DIAGNOSTICS TAB ===== -->
 <div class="tab-panel" data-panel="diagnostics">
-  <h3>Diagnostic Pass Rates &mdash; Title Level (50 titles)</h3>
-  <div class="diag-grid" id="diagGrid"></div>
-
-  <h3>Diagnostic Pass Rates &mdash; Segment Level</h3>
+  <h3>Diagnostic Pass Rates &mdash; Title &times; Segment Level</h3>
   <div class="diag-grid" id="diagGridSeg"></div>
 
-  <h3>Metric Distributions (Title Level)</h3>
+  <h3>Metric Distributions (Title &times; Segment Level)</h3>
   <table class="grade-table" id="metricDistTable">
     <thead>
       <tr><th>Metric</th><th>Min</th><th>P25</th><th>Median</th><th>P75</th><th>Max</th><th>Target</th></tr>
@@ -235,50 +223,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   </table>
 </div>
 
-<!-- ===== TITLE DETAIL TAB ===== -->
-<div class="tab-panel" data-panel="titles">
-  <div class="sort-controls">
-    <label>Sort by:</label>
-    <select id="sortSelect">
-      <option value="pairs">Matched Pairs</option>
-      <option value="matchrate">Match Rate</option>
-      <option value="grade">Grade</option>
-      <option value="smd">SMD Pre-TVT</option>
-      <option value="vr">VR Pre-TVT</option>
-      <option value="gamma">Gamma</option>
-      <option value="ci">CI Width (hrs)</option>
-      <option value="rate">Add-Prop Rate</option>
-    </select>
-    <label style="margin-left: 1rem;">Filter:</label>
-    <span class="filter-chip active" data-filter="all" data-level="title">All</span>
-    <span class="filter-chip" data-filter="HIGH" data-level="title">HIGH</span>
-    <span class="filter-chip" data-filter="MEDIUM" data-level="title">MEDIUM</span>
-    <span class="filter-chip" data-filter="LOW" data-level="title">LOW</span>
-  </div>
-  <div class="title-table-wrap" style="max-height: 650px; overflow-y: auto;">
-    <table class="title-table" id="titleTable">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Pairs</th>
-          <th>Match %</th>
-          <th>SMD Pre</th>
-          <th>VR Pre</th>
-          <th>A/A In</th>
-          <th>A/A Out</th>
-          <th>&Gamma; Sign</th>
-          <th>CI &plusmn;hrs</th>
-          <th>Rate</th>
-          <th>Incr hrs/v</th>
-          <th>ML Dist</th>
-          <th>Checks</th>
-          <th>Grade</th>
-        </tr>
-      </thead>
-      <tbody id="titleBody"></tbody>
-    </table>
-  </div>
-</div>
 
 <!-- ===== TITLE x SEGMENT TAB ===== -->
 <div class="tab-panel" data-panel="segment">
@@ -338,29 +282,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 <!-- ===== INCREMENTAL RATES TAB ===== -->
 <div class="tab-panel" data-panel="rates">
-  <h3>Incremental Rates &mdash; Add-Prop Method (Title Level)</h3>
+  <h3>Incremental Rates &mdash; Add-Prop Method (Title &times; Segment)</h3>
   <p class="note">Net incremental rate = 1 + SUM(add_prop_delta_off_T) / SUM(tvt_on_T_post). Rate > 1 means the title generates incremental off-title viewing. CI in hours per viewer (add-prop method, 95%).</p>
-  <div class="title-table-wrap" style="max-height: 500px; overflow-y: auto;">
-    <table class="title-table" id="rateTable">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Pairs</th>
-          <th>TVT Hours</th>
-          <th>Add-Prop Rate</th>
-          <th>Incr hrs/viewer</th>
-          <th>CI Lower (hrs)</th>
-          <th>CI Upper (hrs)</th>
-          <th>CI &plusmn; (hrs)</th>
-          <th>&Gamma;</th>
-          <th>Grade</th>
-        </tr>
-      </thead>
-      <tbody id="rateBody"></tbody>
-    </table>
-  </div>
-
-  <h3 style="margin-top: 1.5rem;">Incremental Rates &mdash; By Segment</h3>
   <div class="sort-controls">
     <label>Segment:</label>
     <select id="rateSegFilter">
@@ -657,7 +580,6 @@ function renderGradeTable(bodyId, data) {
   document.getElementById(bodyId).innerHTML = rows + `
     <tr style="font-weight:600;border-top:2px solid var(--border)"><td>TOTAL</td><td>${total}</td><td>100%</td><td class="num">${Math.round(totalTvt).toLocaleString()}</td><td class="num">100%</td></tr>`;
 }
-renderGradeTable('gradeTableBody', normalizedTitles);
 renderGradeTable('segGradeTableBody', normalizedSegs);
 
 // --- KEY FINDINGS ---
@@ -699,25 +621,6 @@ document.getElementById('interpretationCard').innerHTML = `
 `;
 
 // --- DIAGNOSTICS TAB ---
-const diagChecks = [
-  {name: "1. SMD Pre-TVT &le; 0.10", pass: normalizedTitles.filter(t=>t.smdPass).length, total: normalizedTitles.length},
-  {name: "2. VR Pre-TVT [0.8, 1.25]", pass: normalizedTitles.filter(t=>t.vrPrePass).length, total: normalizedTitles.length},
-  {name: "3. A/A In-Sample |d|<0.10", pass: normalizedTitles.filter(t=>t.aaInPass).length, total: normalizedTitles.length},
-  {name: "4. A/A Out-of-Sample |d|<0.10", pass: normalizedTitles.filter(t=>t.aaOutPass).length, total: normalizedTitles.length},
-  {name: "5. Rosenbaum &gamma; &ge; 1.3", pass: normalizedTitles.filter(t=>t.gammaPass).length, total: normalizedTitles.length},
-  {name: "6. CI &le; 1 hr/viewer", pass: normalizedTitles.filter(t=>t.ciPass).length, total: normalizedTitles.length},
-  {name: "7. Match Rate &ge; 80%", pass: normalizedTitles.filter(t=>t.matchRatePass).length, total: normalizedTitles.length},
-];
-
-document.getElementById('diagGrid').innerHTML = diagChecks.map(d => {
-  const pct = d.pass / d.total * 100;
-  const cls = pct >= 80 ? "pass-high" : pct >= 50 ? "pass-medium" : "pass-low";
-  return `<div class="diag-card ${cls}">
-    <div><div class="diag-name">${d.name}</div><div class="diag-bar"><div class="diag-bar-fill" style="width:${pct}%"></div></div></div>
-    <div class="diag-rate">${d.pass}/${d.total}</div>
-  </div>`;
-}).join('');
-
 const segDiagChecks = [
   {name: "1. SMD Pre-TVT &le; 0.10", pass: normalizedSegs.filter(t=>t.smdPass).length, total: N_SEG},
   {name: "2. VR Pre-TVT [0.8, 1.25]", pass: normalizedSegs.filter(t=>t.vrPrePass).length, total: N_SEG},
@@ -737,17 +640,17 @@ document.getElementById('diagGridSeg').innerHTML = segDiagChecks.map(d => {
   </div>`;
 }).join('');
 
-// Metric distributions
+// Metric distributions (segment-level)
 function percentile(arr, p) { const s = [...arr].sort((a,b)=>a-b); return s[Math.floor(s.length*p)] || 0; }
-const smdVals = normalizedTitles.map(t => Math.abs(t.smd));
-const vrPreVals = normalizedTitles.map(t => t.vrPre);
-const gammaVals = normalizedTitles.map(t => t.gammaS);
-const ciVals = normalizedTitles.map(t => t.ciHalfHrs);
-const mlDistVals = normalizedTitles.map(t => t.mlDist);
-const aaInVals = normalizedTitles.map(t => Math.abs(t.aaIn));
-const aaOutVals = normalizedTitles.map(t => Math.abs(t.aaOut));
-const mrVals = normalizedTitles.map(t => t.matchRate * 100);
-const rateVals = normalizedTitles.map(t => t.addPropRate);
+const smdVals = normalizedSegs.map(t => Math.abs(t.smd));
+const vrPreVals = normalizedSegs.map(t => t.vrPre);
+const gammaVals = normalizedSegs.map(t => t.gammaS);
+const ciVals = normalizedSegs.map(t => t.ciHalfHrs);
+const mlDistVals = normalizedSegs.map(t => t.mlDist);
+const aaInVals = normalizedSegs.map(t => Math.abs(t.aaIn));
+const aaOutVals = normalizedSegs.map(t => Math.abs(t.aaOut));
+const mrVals = normalizedSegs.map(t => t.matchRate * 100);
+const rateVals = normalizedSegs.map(t => t.addPropRate);
 
 function distRow(name, vals, target) {
   return `<tr><td>${name}</td><td class="num">${Math.min(...vals).toFixed(4)}</td><td class="num">${percentile(vals,0.25).toFixed(4)}</td><td class="num">${percentile(vals,0.5).toFixed(4)}</td><td class="num">${percentile(vals,0.75).toFixed(4)}</td><td class="num">${Math.max(...vals).toFixed(4)}</td><td>${target}</td></tr>`;
@@ -778,59 +681,6 @@ document.getElementById('compTableBody').innerHTML = compRows.map(r =>
   `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td style="font-size:0.8rem;color:var(--text-secondary)">${r[3]}</td></tr>`
 ).join('');
 
-// --- TITLE TABLE ---
-function renderTitleTable(data) {
-  document.getElementById('titleBody').innerHTML = data.map(t => {
-    const gc = t.grade === 'HIGH' ? 'grade-high' : t.grade === 'MEDIUM' ? 'grade-medium' : 'grade-low';
-    const badge = `<span class="grade-badge ${t.grade.toLowerCase()}">${t.grade}</span>`;
-    const mrCls = t.matchRatePass ? 'pass' : 'fail';
-    return `<tr class="${gc}">
-      <td title="${t.name}">${t.name.length > 30 ? t.name.slice(0,28)+'...' : t.name}</td>
-      <td class="num">${t.pairs.toLocaleString()}</td>
-      <td class="num ${mrCls}">${(t.matchRate*100).toFixed(1)}%</td>
-      <td class="num ${t.smdPass?'pass':'fail'}">${t.smd.toFixed(4)}</td>
-      <td class="num ${t.vrPrePass?'pass':'fail'}">${t.vrPre.toFixed(3)}</td>
-      <td class="num ${t.aaInPass?'pass':'fail'}">${t.aaIn.toFixed(4)}</td>
-      <td class="num ${t.aaOutPass?'pass':'fail'}">${t.aaOut.toFixed(4)}</td>
-      <td class="num ${t.gammaPass?'pass':'fail'}">${t.gammaS.toFixed(3)}</td>
-      <td class="num ${t.ciPass?'pass':'fail'}">${t.ciHalfHrs.toFixed(4)}</td>
-      <td class="num">${t.addPropRate.toFixed(3)}</td>
-      <td class="num">${t.addPropPerViewerHrs.toFixed(4)}</td>
-      <td class="num">${t.mlDist.toFixed(4)}</td>
-      <td class="num">${t.checks}/7</td>
-      <td>${badge}</td>
-    </tr>`;
-  }).join('');
-}
-
-// Sort & Filter for titles
-let titleFilter = 'all';
-function getTitleFiltered() {
-  return titleFilter === 'all' ? [...normalizedTitles] : normalizedTitles.filter(t => t.grade === titleFilter);
-}
-function applyTitleSort() {
-  const key = document.getElementById('sortSelect').value;
-  let data = getTitleFiltered();
-  if (key === 'pairs') data.sort((a,b) => b.pairs - a.pairs);
-  else if (key === 'matchrate') data.sort((a,b) => a.matchRate - b.matchRate);
-  else if (key === 'grade') data.sort((a,b) => ({HIGH:0,MEDIUM:1,LOW:2}[a.grade] - {HIGH:0,MEDIUM:1,LOW:2}[b.grade]) || b.pairs - a.pairs);
-  else if (key === 'smd') data.sort((a,b) => Math.abs(b.smd) - Math.abs(a.smd));
-  else if (key === 'vr') data.sort((a,b) => Math.abs(b.vrPre - 1.0) - Math.abs(a.vrPre - 1.0));
-  else if (key === 'gamma') data.sort((a,b) => b.gammaS - a.gammaS);
-  else if (key === 'ci') data.sort((a,b) => b.ciHalfHrs - a.ciHalfHrs);
-  else if (key === 'rate') data.sort((a,b) => b.addPropRate - a.addPropRate);
-  renderTitleTable(data);
-}
-
-document.getElementById('sortSelect').addEventListener('change', applyTitleSort);
-document.querySelectorAll('[data-level="title"]').forEach(chip => {
-  chip.addEventListener('click', function() {
-    document.querySelectorAll('[data-level="title"]').forEach(c => c.classList.remove('active'));
-    this.classList.add('active');
-    titleFilter = this.dataset.filter;
-    applyTitleSort();
-  });
-});
 
 // --- SEGMENT TABLE ---
 function renderSegTable(data) {
@@ -913,10 +763,6 @@ function renderRateTable(data, bodyId) {
   }).join('');
 }
 
-// Title-level rates
-const titlesByRate = [...normalizedTitles].sort((a,b) => b.addPropRate - a.addPropRate);
-renderRateTable(titlesByRate, 'rateBody');
-
 // Segment-level rates
 function applyRateSegFilter() {
   const segFilter = document.getElementById('rateSegFilter').value;
@@ -939,7 +785,6 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // Initial render
-applyTitleSort();
 applySegSort();
 </script>
 
