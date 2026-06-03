@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v6b Methodology — Content Incrementality</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #232733;
+  --border: #2e3340;
+  --text: #e4e7ec;
+  --text-dim: #8b92a5;
+  --accent: #6c8cff;
+  --accent2: #a78bfa;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --cyan: #22d3ee;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+h2 {
+  font-size: 1.4rem;
+  color: var(--accent);
+  margin: 2.5rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 {
+  font-size: 1.1rem;
+  color: var(--text);
+  margin: 1.5rem 0 0.75rem;
+}
+p, li { color: var(--text); margin-bottom: 0.5rem; }
+ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+}
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--green);
+}
+.kpi-value.amber { color: var(--amber); }
+.kpi-value.blue { color: var(--accent); }
+.kpi-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.25rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+th, td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+td { color: var(--text); }
+tr:hover td { background: var(--surface2); }
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-green { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+.badge-blue { background: rgba(108, 140, 255, 0.15); color: var(--accent); }
+.badge-amber { background: rgba(251, 191, 36, 0.15); color: var(--amber); }
+.badge-red { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+.badge-cyan { background: rgba(34, 211, 238, 0.15); color: var(--cyan); }
+.flow-diagram {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+.flow-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  min-width: 160px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.flow-step .step-num {
+  font-size: 0.7rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.25rem;
+}
+.flow-step .step-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.flow-step .step-detail {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
+}
+.flow-arrow {
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  padding: 0 0.3rem;
+  flex-shrink: 0;
+}
+.timeline {
+  position: relative;
+  margin: 2rem 0;
+  padding: 1rem 0;
+}
+.timeline-bar {
+  display: flex;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.timeline-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+}
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+code {
+  background: var(--surface2);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--cyan);
+}
+.highlight-box {
+  background: rgba(108, 140, 255, 0.08);
+  border-left: 3px solid var(--accent);
+  padding: 1rem 1.25rem;
+  border-radius: 0 8px 8px 0;
+  margin: 1rem 0;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 768px) {
+  .two-col { grid-template-columns: 1fr; }
+  .card-grid { grid-template-columns: 1fr; }
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.toc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+}
+.toc-title {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+.toc ol { margin: 0; padding-left: 1.25rem; }
+.toc li { margin-bottom: 0.3rem; font-size: 0.9rem; }
+.toc a { color: var(--text); }
+.toc a:hover { color: var(--accent); }
+.formula {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  color: var(--cyan);
+}
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality v6b</h1>
+<p class="subtitle">Full Methodology — CEM + ML Score Caliper with Segment-Conditional Blocking | Top 50 Movies | March 2026</p>
+
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#overview">Pipeline Overview</a></li>
+    <li><a href="#step1">Step 1 — Event Definition & Time Anchoring</a></li>
+    <li><a href="#step2">Step 2 — Matching Design</a></li>
+    <li><a href="#step3">Step 3 — Rate Estimation (4 Methods)</a></li>
+    <li><a href="#diagnostics">Step 4 — Diagnostics & Findings</a></li>
+    <li><a href="#results">Key Results</a></li>
+  </ol>
+</div>
+
+<!-- KPI Summary -->
+<div class="card-grid">
+  <div class="kpi-card">
+    <div class="kpi-value">1.79M</div>
+    <div class="kpi-label">Matched Pairs</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">82.5%</div>
+    <div class="kpi-label">Pipeline Match Rate</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">50/50</div>
+    <div class="kpi-label">Titles Graded HIGH</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value blue">200/200</div>
+    <div class="kpi-label">Title×Segment Graded HIGH</div>
+  </div>
+</div>
+
+<!-- Pipeline Flow -->
+<h2 id="overview">Pipeline Overview</h2>
+
+<div class="flow-diagram">
+  <div class="flow-step">
+    <div class="step-num">Step 0</div>
+    <div class="step-title">Top 50 Titles</div>
+    <div class="step-detail">Movies by TVT, Mar 2026</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="step-num">Step 1</div>
+    <div class="step-title">ML Scores</div>
+    <div class="step-detail">DCN ranker log-odds</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="step-num">Step 2</div>
+    <div class="step-title">Treated Viewers</div>
+    <div class="step-detail">≥5min session + features</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="step-num">Step 3</div>
+    <div class="step-title">Control Pool</div>
+    <div class="step-detail">Zero TVT + 10% sample</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="step-num">Step 4</div>
+    <div class="step-title">CEM Matching</div>
+    <div class="step-detail">Segment-conditional</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="step-num">Step 5</div>
+    <div class="step-title">Pre/Post TVT</div>
+    <div class="step-detail">Decomposed deltas</div>
+  </div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step">
+    <div class="step-num">Step 6</div>
+    <div class="step-title">Rates + Diagnostics</div>
+    <div class="step-detail">4 methods + CI</div>
+  </div>
+</div>
+
+<div class="highlight-box">
+  <strong>What does this measure?</strong> For each viewer who watched ≥5 minutes of a title, how much <em>additional</em> total viewing time did they generate on <em>other</em> content — compared to an equivalent viewer who never watched that title? The "incrementality rate" expresses this as: for every hour spent on-title, how many total hours of viewing resulted?
+</div>
+
+<!-- STEP 1 -->
+<h2 id="step1">Step 1 — Event Definition & Time Anchoring</h2>
+
+<h3>Treated Event: ≥5 Minutes of Viewing</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Parameter</th><th>Definition</th></tr>
+    <tr><td>Treated event</td><td>First <code>video_session</code> with <code>tvt_millisec ≥ 300,000</code> (5 minutes) on title T</td></tr>
+    <tr><td>Event timestamp</td><td><code>event_ts = DATE_TRUNC('minute', start_ts)</code> of the qualifying session</td></tr>
+    <tr><td>Granularity</td><td>One event per (viewer, title) — the <strong>first</strong> qualifying session only</td></tr>
+    <tr><td>Population</td><td>5% device sample (<code>device_hash_num < 50</code>), both registered and anonymous</td></tr>
+    <tr><td>Title scope</td><td>Top 50 MOVIE titles by TVT, March 2026</td></tr>
+    <tr><td>ML score required</td><td>Viewer must have a <code>returning_user_content_ranker_dcn</code> score for title T on <code>event_date</code></td></tr>
+  </table>
+</div>
+
+<h3>Time Windows: Anchored to event_ts</h3>
+
+<p>Both treated and control windows are defined relative to the treated viewer's <code>event_ts</code>, providing minute-level alignment:</p>
+
+<div class="timeline">
+  <div class="timeline-bar">
+    <div class="timeline-seg" style="width:50%; background: linear-gradient(90deg, #374151, #4b5563);">Pre-Period: [event_ts − 28d, event_ts)</div>
+    <div class="timeline-seg" style="width:2%; background: var(--accent);">▼</div>
+    <div class="timeline-seg" style="width:48%; background: linear-gradient(90deg, #065f46, #047857);">Post-Period: [event_ts, event_ts + 28d)</div>
+  </div>
+  <div class="timeline-labels">
+    <span>event_ts − 28 days</span>
+    <span style="color: var(--accent); font-weight: 600;">event_ts (treatment moment)</span>
+    <span>event_ts + 28 days</span>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h3>Pre-Period</h3>
+    <ul>
+      <li><strong>Window:</strong> 28 days before event_ts</li>
+      <li><strong>Purpose:</strong> Measure baseline engagement balance</li>
+      <li><strong>Treated:</strong> Uses <code>event_ts</code> (timestamp-level)</li>
+      <li><strong>Control:</strong> Uses <code>TIMESTAMP(event_date)</code> (date-level anchor)</li>
+      <li><strong>Metrics:</strong> Total TVT, on-title TVT, off-title TVT, sessions, days active</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Post-Period</h3>
+    <ul>
+      <li><strong>Window:</strong> 28 days after event_ts</li>
+      <li><strong>Purpose:</strong> Measure outcome engagement</li>
+      <li><strong>Treated:</strong> Uses <code>event_ts</code> (timestamp-level)</li>
+      <li><strong>Control:</strong> Uses <code>TIMESTAMP(event_date)</code> (date-level anchor)</li>
+      <li><strong>Decomposed:</strong> On-title TVT vs off-title TVT</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Control Definition</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Criterion</th><th>Definition</th></tr>
+    <tr><td>Title exclusion</td><td><strong>Zero TVT</strong> on title T from Jan 1 – Apr 30, 2026 (covers pre + post)</td></tr>
+    <tr><td>ML score required</td><td>Must have ranking score for title T on <code>event_date</code> (title was surfaced)</td></tr>
+    <tr><td>Population</td><td>10% device sample (<code>device_hash_num < 100</code>) — expanded from 5% in v6a</td></tr>
+    <tr><td>Anchor</td><td>Uses the matched treated viewer's <code>event_date</code> for feature computation</td></tr>
+    <tr><td>Not same viewer</td><td>Control ≠ treated (explicit exclusion)</td></tr>
+  </table>
+</div>
+
+<h3>Viewer ID Construction</h3>
+
+<div class="formula">
+viewer_id = CASE WHEN user_id IS NOT NULL AND user_id != 0
+                 THEN CAST(user_id AS STRING)
+                 ELSE device_id END
+</div>
+<p>This includes both registered and anonymous users in the analysis.</p>
+
+<!-- STEP 2 -->
+<h2 id="step2">Step 2 — Matching Design</h2>
+
+<h3>Approach: Coarsened Exact Matching (CEM) + ML Score Caliper</h3>
+
+<div class="highlight-box">
+  <strong>Two-stage matching:</strong> First, exact match on all CEM blocking variables (coarsened engagement buckets + demographics). Then within each exact-match cell, select the control with the closest ML ranking score (within a 0.2 log-odds caliper).
+</div>
+
+<h3>Segment-Conditional Blocking Variables</h3>
+
+<p>v6b uses <strong>segment-conditional</strong> matching — three distinct matching strategies optimized for each segment's characteristics:</p>
+
+<div class="card">
+  <table>
+    <tr>
+      <th>Blocking Variable</th>
+      <th style="text-align:center;">Power Viewer</th>
+      <th style="text-align:center;">New (M1)</th>
+      <th style="text-align:center;">Retained</th>
+      <th style="text-align:center;">Reactivated</th>
+    </tr>
+    <tr>
+      <td><code>user_segment</code> <span class="badge badge-blue">4 levels</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+    </tr>
+    <tr>
+      <td><code>is_registered</code> <span class="badge badge-blue">boolean</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+    </tr>
+    <tr>
+      <td><code>tenure_bucket</code> <span class="badge badge-blue">6 levels</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+    </tr>
+    <tr>
+      <td><code>search_visit_7d</code> <span class="badge badge-blue">binary</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+    </tr>
+    <tr>
+      <td><code>tvt_bucket_28d_hybrid</code> <span class="badge badge-cyan">adaptive</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+    </tr>
+    <tr>
+      <td><code>sessions_bucket_1d</code> <span class="badge badge-blue">bucketed</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+    </tr>
+    <tr>
+      <td><code>platform_super_bucket</code> <span class="badge badge-cyan">coarsened</span></td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">—</td>
+      <td style="text-align:center;">—</td>
+    </tr>
+    <tr>
+      <td><code>platform_device_bucket</code> <span class="badge badge-amber">exact</span></td>
+      <td style="text-align:center;">—</td>
+      <td style="text-align:center;">—</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">—</td>
+    </tr>
+    <tr>
+      <td><code>autoplay_bucket_7d_4h</code> <span class="badge badge-amber">4h buckets</span></td>
+      <td style="text-align:center;">—</td>
+      <td style="text-align:center;">—</td>
+      <td style="text-align:center;">✓</td>
+      <td style="text-align:center;">—</td>
+    </tr>
+    <tr style="background: var(--surface2);">
+      <td><strong>Total blocking vars</strong></td>
+      <td style="text-align:center;"><strong>7</strong></td>
+      <td style="text-align:center;"><strong>7</strong></td>
+      <td style="text-align:center;"><strong>8</strong></td>
+      <td style="text-align:center;"><strong>6</strong></td>
+    </tr>
+  </table>
+</div>
+
+<h3>Bucket Definitions</h3>
+
+<div class="card">
+  <h3>TVT Hybrid Bucket (28d)</h3>
+  <p>Adaptive granularity — finer at low engagement where the pool is dense, coarser at high engagement:</p>
+  <table>
+    <tr><th>TVT Range</th><th>Bucket Width</th><th>Example Values</th></tr>
+    <tr><td>0 – 4 hours</td><td><strong>2 hours</strong></td><td>0, 2, 4</td></tr>
+    <tr><td>4+ hours</td><td><strong>4 hours</strong></td><td>4, 8, 12, 16, 20, 24, …</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Platform Matching — Segment-Specific</h3>
+  <table>
+    <tr><th>Segment</th><th>Variable Used</th><th>Values</th><th>Rationale</th></tr>
+    <tr>
+      <td><span class="badge badge-green">Power Viewer</span> + <span class="badge badge-blue">New (M1)</span></td>
+      <td><code>platform_super_bucket</code></td>
+      <td><strong>ROKU</strong>, <strong>MOBILE</strong> (Android/iPhone/iPad/FireTablet), <strong>CTV</strong> (all other), <strong>MULTI</strong> (2-3/4-5/6+ devices)</td>
+      <td>Coarsened platform preserves match pool for high-TVT Power Viewers and small-N New users</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cyan">Retained</span></td>
+      <td><code>platform_device_bucket</code></td>
+      <td>Exact platform name (1 device) or 2-3, 4-5, 6+ devices</td>
+      <td>Largest segment — can afford exact platform matching; viewing patterns differ by device</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-amber">Reactivated</span></td>
+      <td>— (not used)</td>
+      <td>—</td>
+      <td>Dormant viewers' last-used platform is noise, not signal</td>
+    </tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Other Buckets</h3>
+  <table>
+    <tr><th>Variable</th><th>Bucketing</th><th>Used By</th></tr>
+    <tr><td><code>autoplay_bucket_7d_4h</code></td><td>4-hour buckets (0, 4, 8, 12, …)</td><td>Retained only</td></tr>
+    <tr><td><code>sessions_bucket_1d</code></td><td>0, 1, 2, 3, 4, 5-9, 10-14, 15+</td><td>All segments</td></tr>
+    <tr><td><code>search_visit_7d</code></td><td>Binary (0 or 1)</td><td>All segments</td></tr>
+    <tr><td><code>tenure_bucket</code></td><td>lt_30d, 30_90d, 90_365d, 365d_2y, gt_2y, unknown</td><td>All segments</td></tr>
+    <tr><td><code>is_registered</code></td><td>Boolean</td><td>All segments</td></tr>
+  </table>
+</div>
+
+<div class="highlight-box">
+  <strong>Design rationale:</strong> Each segment gets a tailored variable set. Power Viewers and New users get coarsened platform (super-bucket) to prevent pool exhaustion at high TVT levels. Retained — the largest segment — can afford exact platform + autoplay matching without fragmenting the pool. Reactivated drops both: their dormant-period platform and autoplay are noise.
+</div>
+
+<h3>User Segment Definitions</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Segment</th><th>Definition</th></tr>
+    <tr><td><span class="badge badge-green">Power Viewer</span></td><td>≥8 visit days in 28d AND ≥4 hrs TVT per visit day</td></tr>
+    <tr><td><span class="badge badge-blue">New (M1)</span></td><td>First seen within 28 days of event_date</td></tr>
+    <tr><td><span class="badge badge-cyan">Retained</span></td><td>Active in past 28 days (last_visit within 28d, not on event_date itself)</td></tr>
+    <tr><td><span class="badge badge-amber">Reactivated</span></td><td>Not active in past 28 days (dormant returnees)</td></tr>
+  </table>
+</div>
+
+<h3>ML Score Caliper</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Score source</td><td><code>returning_user_content_ranker_dcn</code> from <code>ranking_operation_logging</code></td></tr>
+    <tr><td>Score type</td><td>Raw log-odds (logit) of content ranking model</td></tr>
+    <tr><td>Caliper width</td><td><strong>0.2</strong> on raw log-odds</td></tr>
+    <tr><td>Selection rule</td><td>Within caliper, closest ML score match (lowest <code>|logit_treated - logit_control|</code>)</td></tr>
+    <tr><td>Tie-breaking</td><td>Deterministic hash: <code>ABS(HASH(treated_viewer_id, control_viewer_id, title_id))</code></td></tr>
+    <tr><td>Replacement</td><td><strong>With-replacement:</strong> each control can be used up to 3 times per title</td></tr>
+  </table>
+</div>
+
+<h3>Why Three Matching Strategies?</h3>
+
+<div class="highlight-box">
+  <p><strong>Power Viewer + New (7 vars):</strong> These segments have high TVT or small N — exact platform matching fragments the pool at the tails. A coarsened <code>platform_super_bucket</code> (ROKU / MOBILE / CTV / MULTI) preserves match rate without sacrificing meaningful platform signal. Autoplay is excluded because Power Viewers' high autoplay variance makes it a poor discriminator.</p>
+  <p style="margin-top: 0.5rem;"><strong>Retained (8 vars):</strong> The largest segment with the deepest control pool. Can afford exact <code>platform_device_bucket</code> + <code>autoplay_bucket_7d_4h</code> without pool exhaustion. These variables carry genuine signal for habitual viewers.</p>
+  <p style="margin-top: 0.5rem;"><strong>Reactivated (6 vars):</strong> Dormant viewers — their last-used platform and autoplay patterns are noise, not signal. Dropping both yields higher match rates with no degradation in pre-period TVT balance.</p>
+</div>
+
+<!-- STEP 3 -->
+<h2 id="step3">Step 3 — Rate Estimation (4 Methods)</h2>
+
+<h3>What We Measure</h3>
+
+<p>After matching, we decompose post-period TVT into <strong>on-title</strong> (viewing title T) and <strong>off-title</strong> (viewing everything else). The incremental effect is the <em>off-title delta</em> between treated and matched control:</p>
+
+<div class="formula">
+Incrementality Rate = 1 + Σ(delta_off_title) / Σ(tvt_on_title_post)
+</div>
+
+<p>A rate of <strong>4.0×</strong> means: for every 1 hour a viewer spent watching the title, they generated 4 total hours of platform viewing (1 hr on-title + 3 hrs off-title uplift).</p>
+
+<h3>Four Estimation Methods</h3>
+
+<div class="card">
+  <table>
+    <tr><th>#</th><th>Method</th><th>Formula (pair-level delta)</th><th>Strengths</th></tr>
+    <tr>
+      <td>1</td>
+      <td><strong>Simple</strong></td>
+      <td><code>treated_post_off_T − control_post_off_T</code></td>
+      <td>Straightforward; unbiased if matching is balanced</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Additive Proportional</strong></td>
+      <td><code>(treated_off − control_off) × weight_T</code></td>
+      <td>Handles multi-title overlap (weights by on-title share)</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Difference-in-Differences (DiD)</strong></td>
+      <td><code>(treated_post − treated_pre) − (control_post − control_pre)</code></td>
+      <td>Controls for pre-existing trends; robust to level differences</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>DiD + Additive Proportional</strong></td>
+      <td><code>DiD_delta × weight_T</code></td>
+      <td>Combines DiD trend-removal with multi-title weighting</td>
+    </tr>
+  </table>
+</div>
+
+<h3>Multi-Title Engagement Weight</h3>
+
+<div class="formula">
+weight_T = on_title_T_post / Σ(on_title_all_matched_titles_post)
+</div>
+
+<p>If a viewer is matched to multiple titles, the weight ensures we don't double-count the off-title delta. When a viewer watches only one matched title, weight_T = 1.0.</p>
+
+<!-- STEP 4: DIAGNOSTICS -->
+<h2 id="diagnostics">Step 4 — Diagnostics & Findings</h2>
+
+<h3>Seven Diagnostic Checks</h3>
+
+<p>Each title × segment cell is graded on 7 checks. Grade is <span class="badge badge-green">HIGH</span> if ≥6 pass (including SMD + CI), <span class="badge badge-amber">MEDIUM</span> if ≥4 pass, <span class="badge badge-red">LOW</span> if &lt;4.</p>
+
+<div class="card">
+  <table>
+    <tr><th>Check</th><th>Criterion</th><th>Pass Rate (v6b)</th><th>What It Validates</th></tr>
+    <tr>
+      <td><strong>SMD Pre-TVT</strong></td>
+      <td>|d| ≤ 0.10</td>
+      <td><span class="badge badge-green">100%</span></td>
+      <td>Treated and control have balanced pre-period engagement</td>
+    </tr>
+    <tr>
+      <td><strong>Variance Ratio</strong></td>
+      <td>[0.80, 1.25]</td>
+      <td><span class="badge badge-green">100%</span></td>
+      <td>Pre-TVT dispersion is similar (no heavy-tail mismatch)</td>
+    </tr>
+    <tr>
+      <td><strong>A/A In-Sample</strong></td>
+      <td>|d| < 0.10</td>
+      <td><span class="badge badge-green">100%</span></td>
+      <td>Pre-period delta (same data) is near zero</td>
+    </tr>
+    <tr>
+      <td><strong>A/A Out-of-Sample</strong></td>
+      <td>Pre-gap ≈ 0</td>
+      <td><span class="badge badge-green">100%</span></td>
+      <td>Pre-period delta generalizes (not overfit)</td>
+    </tr>
+    <tr>
+      <td><strong>Rosenbaum Γ</strong></td>
+      <td>≥ 1.5</td>
+      <td><span class="badge badge-green">100%</span></td>
+      <td>Results robust to hidden bias up to 1.5× odds</td>
+    </tr>
+    <tr>
+      <td><strong>CI Width</strong></td>
+      <td>≤ 4 pp of rate</td>
+      <td><span class="badge badge-green">100%</span></td>
+      <td>Sufficient sample size for precise estimate</td>
+    </tr>
+    <tr>
+      <td><strong>Match Rate</strong></td>
+      <td>≥ 80% of treated matched</td>
+      <td><span class="badge badge-green">80%</span></td>
+      <td>Low selection bias from unmatched treated</td>
+    </tr>
+  </table>
+</div>
+
+<h3>Diagnostics Summary</h3>
+
+<div class="card-grid">
+  <div class="kpi-card">
+    <div class="kpi-value">0.0003</div>
+    <div class="kpi-label">Avg |SMD| Pre-TVT</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">1.000</div>
+    <div class="kpi-label">Avg Variance Ratio</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value blue">0.037</div>
+    <div class="kpi-label">Avg Caliper Distance</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">2.0</div>
+    <div class="kpi-label">Rosenbaum Γ (all titles)</div>
+  </div>
+</div>
+
+<h3>Grading Results</h3>
+
+<div class="two-col">
+  <div class="card">
+    <h3>Title-Level (50 titles)</h3>
+    <table>
+      <tr><th>Grade</th><th>Count</th><th>Pairs</th></tr>
+      <tr><td><span class="badge badge-green">HIGH</span></td><td>50</td><td>1,786,116</td></tr>
+      <tr><td><span class="badge badge-amber">MEDIUM</span></td><td>0</td><td>0</td></tr>
+      <tr><td><span class="badge badge-red">LOW</span></td><td>0</td><td>0</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Title × Segment Level (200 cells)</h3>
+    <table>
+      <tr><th>Grade</th><th>Count</th><th>Pairs</th></tr>
+      <tr><td><span class="badge badge-green">HIGH</span></td><td>200</td><td>1,786,116</td></tr>
+      <tr><td><span class="badge badge-amber">MEDIUM</span></td><td>0</td><td>0</td></tr>
+      <tr><td><span class="badge badge-red">LOW</span></td><td>0</td><td>0</td></tr>
+    </table>
+  </div>
+</div>
+
+<h3>Forest Plot — Incrementality Rates by Title</h3>
+
+<div class="card">
+  <p>Interactive forest plot showing all 50 title-level rates with confidence intervals:</p>
+  <p style="margin-top: 0.75rem;"><a href="https://lmantena-tubi.github.io/content-incrementality-scorecard/v6b_forest_plot.html" target="_blank">📊 View v6b Forest Plot →</a></p>
+  <p style="color: var(--text-dim); font-size: 0.82rem; margin-top: 0.5rem;">Shows simple and DiD rates per title, with 95% CI bars. All titles show rates significantly above 1.0 (incremental).</p>
+</div>
+
+<!-- RESULTS -->
+<h2 id="results">Key Results</h2>
+
+<h3>Top 10 Titles by Matched Pairs</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Title</th><th>Pairs</th><th>Match Rate</th><th>Simple Rate</th><th>DiD Rate</th><th>SMD</th><th>Grade</th></tr>
+    <tr><td>White Chicks</td><td>105,758</td><td>85.5%</td><td>4.11×</td><td>4.10×</td><td>0.0003</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Friday</td><td>99,768</td><td>86.5%</td><td>4.21×</td><td>4.22×</td><td>0.0001</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Next Friday</td><td>63,382</td><td>82.5%</td><td>4.99×</td><td>4.97×</td><td>0.0003</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Madagascar</td><td>63,295</td><td>85.2%</td><td>3.31×</td><td>3.32×</td><td>0.0001</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Tyler Perry's Diary of a Mad Black Woman</td><td>59,410</td><td>84.4%</td><td>3.79×</td><td>3.78×</td><td>0.0003</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Tyler Perry's Madea's Big Happy Family</td><td>58,444</td><td>83.3%</td><td>4.09×</td><td>4.08×</td><td>0.0002</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Friday After Next</td><td>52,944</td><td>81.1%</td><td>4.92×</td><td>4.91×</td><td>0.0002</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Madagascar: Escape 2 Africa</td><td>49,485</td><td>80.7%</td><td>3.49×</td><td>3.47×</td><td>0.0004</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Tom Clancy's Without Remorse</td><td>49,440</td><td>84.3%</td><td>3.67×</td><td>3.68×</td><td>0.0001</td><td><span class="badge badge-green">HIGH</span></td></tr>
+    <tr><td>Armageddon</td><td>48,618</td><td>80.2%</td><td>3.66×</td><td>3.67×</td><td>0.0001</td><td><span class="badge badge-green">HIGH</span></td></tr>
+  </table>
+</div>
+
+<h3>Interpretation of Rates</h3>
+
+<div class="highlight-box">
+  <p><strong>Example:</strong> White Chicks has a simple rate of <strong>4.11×</strong>. This means that for every 1 hour a viewer spent watching White Chicks, they generated <strong>4.11 total hours</strong> of platform viewing (1 hr on-title + 3.11 hrs of incremental off-title viewing that would not have happened without this title).</p>
+  <p style="margin-top: 0.5rem;">The close agreement between Simple (4.11×) and DiD (4.10×) confirms that pre-period trends are balanced — the Simple method is not biased by pre-existing engagement differences.</p>
+</div>
+
+<h3>v6b Improvements Over Previous Versions</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Issue (v6a)</th><th>Fix in v6b</th><th>Impact</th></tr>
+    <tr>
+      <td>tvt_bucket_28d accidentally omitted from matching</td>
+      <td>Included as hybrid bucket (adaptive granularity)</td>
+      <td>Eliminated −20hr Power Viewer pre-gap bias</td>
+    </tr>
+    <tr>
+      <td>Control pre-TVT duplication (with-replacement, no dedup)</td>
+      <td><code>SELECT DISTINCT</code> before video_session JOIN</td>
+      <td>Fixed 3× inflation in control pre-TVT</td>
+    </tr>
+    <tr>
+      <td>Zero-engagement controls dropped by INNER JOIN</td>
+      <td>LEFT JOIN + COALESCE to zero-fill engagement</td>
+      <td>Reactivated match rate recovered</td>
+    </tr>
+    <tr>
+      <td>Fandom variable caused 1-2pp fragmentation</td>
+      <td>Dropped from blocking variables</td>
+      <td>Higher match rate, no balance loss</td>
+    </tr>
+    <tr>
+      <td>5% control pool sometimes insufficient</td>
+      <td>Expanded to 10% (<code>device_hash_num < 100</code>)</td>
+      <td>More control candidates → better matches</td>
+    </tr>
+  </table>
+</div>
+
+<h3>Key Design Rationale</h3>
+
+<div class="card">
+  <table>
+    <tr><th>Decision</th><th>Choice</th><th>Why</th></tr>
+    <tr>
+      <td>Event threshold</td>
+      <td>≥5 min (not completion)</td>
+      <td>Larger sample; captures meaningful engagement beyond accidental clicks</td>
+    </tr>
+    <tr>
+      <td>Caliper</td>
+      <td>0.2 log-odds</td>
+      <td>Tight enough for precision; avg distance is only 0.037</td>
+    </tr>
+    <tr>
+      <td>With-replacement (max 3)</td>
+      <td>Allow reuse</td>
+      <td>Preserves match rate while limiting control overuse</td>
+    </tr>
+    <tr>
+      <td>Segment-conditional vars</td>
+      <td>7 (Power+New) / 8 (Retained) / 6 (Reactivated)</td>
+      <td>Power+New get coarsened platform; Retained gets exact + autoplay; Reactivated drops both</td>
+    </tr>
+    <tr>
+      <td>Hybrid TVT buckets</td>
+      <td>2h (&lt;4h) / 4h (4h+)</td>
+      <td>Fine granularity for light viewers, coarser for heavy (where exact match is hard)</td>
+    </tr>
+    <tr>
+      <td>Off-title as outcome</td>
+      <td>Not total TVT</td>
+      <td>Avoids mechanical correlation (watching title inflates total by definition)</td>
+    </tr>
+  </table>
+</div>
+
+<h3>Unmatched Treated Viewers — Characterization</h3>
+
+<p>17.5% of treated viewers remain unmatched. These are <strong>systematically higher-engagement</strong> viewers — primarily due to CEM cell exhaustion at the high-TVT tail, not caliper failure (ML scores are nearly identical):</p>
+
+<div class="card">
+  <table>
+    <tr><th>Segment</th><th>Matched (avg TVT 28d)</th><th>Unmatched (avg TVT 28d)</th><th>Unmatched (avg Sessions 1d)</th></tr>
+    <tr><td><span class="badge badge-green">Power Viewer</span></td><td>160 hrs</td><td>233 hrs</td><td>12.3</td></tr>
+    <tr><td><span class="badge badge-cyan">Retained</span></td><td>21 hrs</td><td>66 hrs</td><td>9.7</td></tr>
+    <tr><td><span class="badge badge-blue">New (M1)</span></td><td>14 hrs</td><td>74 hrs</td><td>10.7</td></tr>
+    <tr><td><span class="badge badge-amber">Reactivated</span></td><td>8 hrs</td><td>33 hrs</td><td>7.1</td></tr>
+  </table>
+</div>
+
+<div class="highlight-box">
+  <strong>Implication for rate estimates:</strong> Unmatched viewers are heavier users with likely higher off-title delta potential. Excluding them makes the reported incrementality rate <strong>conservative</strong> — the true rate is likely equal to or higher than what we report. This is the safer direction (under-claiming rather than over-claiming).
+</div>
+
+<p>Title-level match rates are relatively uniform (75–86%), so no single title is pathologically under-matched.</p>
+
+<!-- Footer -->
+<div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 0.8rem;">
+  <p>Content Incrementality v6b | DSA Lab | Generated June 2026</p>
+  <p style="margin-top: 0.25rem;">Pipeline: Top 50 Movies × 4 Segments × March 2026 | 1.79M matched pairs | All 50 titles + 200 cells graded HIGH</p>
+</div>
+
+</body>
+</html>
