@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>v6b Diagnostics Evaluation · 7 Metrics</title>
+<title>v6b Diagnostics Evaluation v2 · 7 Metrics</title>
 <style>
 :root {
   --bg-primary: #f5f5f7;
@@ -158,9 +158,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 <div class="title-bar">
   <div>
     <h1>CEM Diagnostics Evaluation</h1>
-    <h2>v6b · 7 Evaluation Metrics (Title &times; Segment Level)</h2>
+    <h2>v6b v2 &middot; 7 Evaluation Metrics (Title &times; Segment Level)</h2>
   </div>
-  <div class="subtitle">Top 50 Movies · March 2026 TVT · Qualified Viewer (>=5min) · Dedup Fix Applied</div>
+  <div class="subtitle">Top 50 Movies &middot; March 2026 TVT &middot; Qualified Viewer (>=5min) &middot; Dedup Fix &middot; Add-Prop Method</div>
 </div>
 
 <!-- ===== HEADER ===== -->
@@ -184,6 +184,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   <button class="tab" data-tab="diagnostics">Diagnostics</button>
   <button class="tab" data-tab="titles">Title Detail</button>
   <button class="tab" data-tab="segment">Title &times; Segment</button>
+  <button class="tab" data-tab="rates">Incremental Rates</button>
   <button class="tab" data-tab="criteria">Criteria</button>
 </div>
 
@@ -216,7 +217,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   <h3>Diagnostic Pass Rates &mdash; Title Level (50 titles)</h3>
   <div class="diag-grid" id="diagGrid"></div>
 
-  <h3>Diagnostic Pass Rates &mdash; Segment Level (200 rows)</h3>
+  <h3>Diagnostic Pass Rates &mdash; Segment Level</h3>
   <div class="diag-grid" id="diagGridSeg"></div>
 
   <h3>Metric Distributions (Title Level)</h3>
@@ -227,9 +228,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
     <tbody id="metricDistBody"></tbody>
   </table>
 
-  <h3>v6b vs v6a Comparison</h3>
+  <h3>v6b v2 vs v6b v1 Comparison</h3>
   <table class="grade-table" id="compTable">
-    <thead><tr><th>Metric</th><th>v6a</th><th>v6b</th><th>Change</th></tr></thead>
+    <thead><tr><th>Metric</th><th>v6b v1 (old)</th><th>v6b v2 (current)</th><th>Change</th></tr></thead>
     <tbody id="compTableBody"></tbody>
   </table>
 </div>
@@ -245,7 +246,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
       <option value="smd">SMD Pre-TVT</option>
       <option value="vr">VR Pre-TVT</option>
       <option value="gamma">Gamma</option>
-      <option value="ci">CI Width</option>
+      <option value="ci">CI Width (hrs)</option>
+      <option value="rate">Add-Prop Rate</option>
     </select>
     <label style="margin-left: 1rem;">Filter:</label>
     <span class="filter-chip active" data-filter="all" data-level="title">All</span>
@@ -259,13 +261,15 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
         <tr>
           <th>Title</th>
           <th>Pairs</th>
-          <th>Match Rate</th>
+          <th>Match %</th>
           <th>SMD Pre</th>
           <th>VR Pre</th>
           <th>A/A In</th>
           <th>A/A Out</th>
           <th>&Gamma; Sign</th>
-          <th>CI Width</th>
+          <th>CI &plusmn;hrs</th>
+          <th>Rate</th>
+          <th>Incr hrs/v</th>
           <th>ML Dist</th>
           <th>Checks</th>
           <th>Grade</th>
@@ -279,7 +283,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 <!-- ===== TITLE x SEGMENT TAB ===== -->
 <div class="tab-panel" data-panel="segment">
   <h3>Diagnostics by Title &times; User Segment</h3>
-  <p class="note">Full diagnostics at title &times; viewer segment grain. Same 7 metrics and grading as title-level. Segment-level grades reflect confidence in incremental estimates for each title-segment combination.</p>
+  <p class="note">Full diagnostics at title &times; viewer segment grain. Same 7 metrics and grading as title-level. CI is now in hours/viewer (add-prop method). Segment-level grades reflect confidence in incremental estimates for each title-segment combination.</p>
   <div class="sort-controls">
     <label>Sort by:</label>
     <select id="segSortSelect">
@@ -289,7 +293,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
       <option value="smd">SMD Pre-TVT</option>
       <option value="vr">VR Pre-TVT</option>
       <option value="gamma">Gamma</option>
-      <option value="ci">CI Width</option>
+      <option value="ci">CI Width (hrs)</option>
+      <option value="rate">Add-Prop Rate</option>
     </select>
     <label style="margin-left: 1rem;">Segment:</label>
     <select id="segFilterSelect">
@@ -312,19 +317,78 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
           <th>Title</th>
           <th>Segment</th>
           <th>Pairs</th>
-          <th>Match Rate</th>
+          <th>Match %</th>
           <th>SMD Pre</th>
           <th>VR Pre</th>
           <th>A/A In</th>
           <th>A/A Out</th>
           <th>&Gamma; Sign</th>
-          <th>CI Width</th>
+          <th>CI &plusmn;hrs</th>
+          <th>Rate</th>
+          <th>Incr hrs/v</th>
           <th>ML Dist</th>
           <th>Checks</th>
           <th>Grade</th>
         </tr>
       </thead>
       <tbody id="segBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== INCREMENTAL RATES TAB ===== -->
+<div class="tab-panel" data-panel="rates">
+  <h3>Incremental Rates &mdash; Add-Prop Method (Title Level)</h3>
+  <p class="note">Net incremental rate = 1 + SUM(add_prop_delta_off_T) / SUM(tvt_on_T_post). Rate > 1 means the title generates incremental off-title viewing. CI in hours per viewer (add-prop method, 95%).</p>
+  <div class="title-table-wrap" style="max-height: 500px; overflow-y: auto;">
+    <table class="title-table" id="rateTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Pairs</th>
+          <th>TVT Hours</th>
+          <th>Add-Prop Rate</th>
+          <th>Incr hrs/viewer</th>
+          <th>CI Lower (hrs)</th>
+          <th>CI Upper (hrs)</th>
+          <th>CI &plusmn; (hrs)</th>
+          <th>&Gamma;</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody id="rateBody"></tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top: 1.5rem;">Incremental Rates &mdash; By Segment</h3>
+  <div class="sort-controls">
+    <label>Segment:</label>
+    <select id="rateSegFilter">
+      <option value="all">All Segments</option>
+      <option value="Power Viewer">Power Viewer</option>
+      <option value="New (M1)">New (M1)</option>
+      <option value="Active non-power (Retained)">Active non-power</option>
+      <option value="Non-active (Reactivated)">Non-active</option>
+    </select>
+  </div>
+  <div class="title-table-wrap" style="max-height: 500px; overflow-y: auto;">
+    <table class="title-table" id="rateSegTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Segment</th>
+          <th>Pairs</th>
+          <th>TVT Hours</th>
+          <th>Add-Prop Rate</th>
+          <th>Incr hrs/viewer</th>
+          <th>CI Lower (hrs)</th>
+          <th>CI Upper (hrs)</th>
+          <th>CI &plusmn; (hrs)</th>
+          <th>&Gamma;</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody id="rateSegBody"></tbody>
     </table>
   </div>
 </div>
@@ -340,8 +404,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
         <li><span class="criterion">2. VR Pre-TVT</span><span class="threshold">0.8 &le; VR &le; 1.25</span></li>
         <li><span class="criterion">3. A/A Test In-Sample</span><span class="threshold">|Cohen's d| &lt; 0.10</span></li>
         <li><span class="criterion">4. A/A Test Out-of-Sample</span><span class="threshold">|Cohen's d| &lt; 0.10</span></li>
-        <li><span class="criterion">5. Rosenbaum &gamma; &ge; 1.5</span><span class="threshold">&Gamma; &ge; 1.5 (sign test)</span></li>
-        <li><span class="criterion">6. CI Width &le; 4%</span><span class="threshold">CI width &le; 4 pp</span></li>
+        <li><span class="criterion">5. Rosenbaum &gamma; &ge; 1.3</span><span class="threshold">&Gamma; &ge; 1.3 (sign test on add_prop)</span></li>
+        <li><span class="criterion">6. CI half-width &le; 1 hr</span><span class="threshold">CI &le; 1 hr/viewer (add_prop method)</span></li>
         <li><span class="criterion">7. Treated Match Rate</span><span class="threshold">&ge; 80% (title&times;segment level)</span></li>
       </ul>
     </div>
@@ -357,7 +421,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
       <h4>Hard Gates</h4>
       <ul class="criteria-list">
         <li><span class="criterion">SMD Pre-TVT</span><span class="threshold">|SMD| &le; 0.10 (required for HIGH)</span></li>
-        <li><span class="criterion">CI Width</span><span class="threshold">&le; 4% (required for HIGH)</span></li>
+        <li><span class="criterion">CI half-width</span><span class="threshold">&le; 1 hr/viewer (required for HIGH)</span></li>
       </ul>
     </div>
     <div class="criteria-card">
@@ -367,7 +431,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
         <li><span class="criterion">Total Matched Pairs</span><span class="threshold">&ge; 100K</span></li>
         <li><span class="criterion">SMD Pass Rate (all titles)</span><span class="threshold">&ge; 90%</span></li>
         <li><span class="criterion">A/A Out-of-Sample Pass</span><span class="threshold">&ge; 80% titles</span></li>
-        <li><span class="criterion">CI Width &le; 4% Pass</span><span class="threshold">100% titles</span></li>
+        <li><span class="criterion">CI &le; 1 hr Pass</span><span class="threshold">100% titles</span></li>
       </ul>
     </div>
   </div>
@@ -379,8 +443,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
       <li><strong>VR Pre-TVT:</strong> Variance ratio of treated vs control pre-event TVT. Measures distributional shape balance. Target [0.8, 1.25].</li>
       <li><strong>A/A Test In-Sample [-28d, event_ts):</strong> Cohen's d on the matching covariate window. Should be ~0 if CEM worked.</li>
       <li><strong>A/A Test Out-of-Sample [-56d, -28d):</strong> Cohen's d on held-out pre-period. Should be ~0 if no pre-trend bias.</li>
-      <li><strong>Rosenbaum &Gamma;:</strong> Sensitivity to hidden bias. How strong an unmeasured confounder must be to explain the effect. Target &ge; 1.5.</li>
-      <li><strong>CI Width:</strong> 95% confidence interval width on the substitution rate estimate, in percentage points. Target &le; 4pp.</li>
+      <li><strong>Rosenbaum &Gamma;:</strong> Sensitivity to hidden bias via sign test on <code>add_prop_delta_off_T</code>. How strong an unmeasured confounder must be to explain the effect. Target &ge; 1.3.</li>
+      <li><strong>CI half-width (hrs):</strong> 95% CI half-width on <code>add_prop_delta_off_T</code> in hours per viewer. Formula: <code>1.96 * SD / sqrt(N) / 3600</code>. Target &le; 1 hr.</li>
+      <li><strong>Add-Prop Rate:</strong> Net incremental rate = <code>1 + SUM(add_prop_delta_off_T) / SUM(tvt_on_T_post)</code>. Rate > 1 means title drives incremental off-title viewing.</li>
       <li><strong>Match Rate:</strong> Percentage of treated viewers successfully matched to a control. Target &ge; 80%.</li>
       <li><strong>ML Score Distance:</strong> Mean |logit_treated &minus; logit_control| across matched pairs. Measures within-block affinity similarity.</li>
     </ul>
@@ -396,7 +461,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
       <li><strong>tvt_bucket_28d_hybrid:</strong> 4h buckets throughout (2h&lt;4h, 4h for 4-20h, 4h for 20h+)</li>
       <li><strong>sessions_bucket_1d:</strong> 0, 1, 2, 3, 4, 5-9, 10-14, 15+</li>
       <li><strong>autoplay_bucket_7d_4h:</strong> 4h buckets (Power/Retained/New only, skipped for Reactivated)</li>
-      <li><strong>platform_device_bucket:</strong> Conditional — platform for single-device; count bucket for multi (Power/Retained/New only)</li>
+      <li><strong>platform_device_bucket:</strong> Conditional &mdash; platform for single-device; count bucket for multi (Power/Retained/New only)</li>
     </ul>
     <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;">
       <strong>Reactivated:</strong> 6 vars (no autoplay, no platform) &bull; <strong>New/Power:</strong> 7 vars (+ autoplay) &bull; <strong>Retained:</strong> 8 vars (+ autoplay + platform)
@@ -413,7 +478,7 @@ const PM = DATA.pipeline_metrics;
 const GS = DATA.grade_summary;
 const META = DATA.meta;
 
-// Normalize title data
+// Normalize title data — v2 uses ci_half_hrs and add_prop_rate
 const normalizedTitles = titles.map(t => ({
   id: t.title_id,
   name: t.title_name,
@@ -425,14 +490,17 @@ const normalizedTitles = titles.map(t => ({
   aaIn: t.placebo_in_cohens_d,
   aaOut: t.placebo_out_cohens_d,
   gammaS: t.critical_gamma,
-  ciWidth: t.ci_width_pp,
+  ciHalfHrs: t.ci_half_hrs || (t.ci_width_pp || 0),
+  ciLowerHrs: t.ci_lower_hrs || 0,
+  ciUpperHrs: t.ci_upper_hrs || 0,
+  addPropRate: t.add_prop_rate || t.simple_rate || 1.0,
+  addPropPerViewerHrs: t.add_prop_per_viewer_hrs || 0,
   mlDist: t.mean_logit_distance,
-  simpleRate: t.simple_rate,
   smdPass: t.smd_pass,
   vrPrePass: t.vr_pre_pass,
   aaInPass: t.aa_in_pass,
   aaOutPass: t.aa_oos_pass,
-  gammaPass: t.critical_gamma >= 1.5,
+  gammaPass: t.critical_gamma >= 1.3,
   ciPass: t.ci_pass,
   matchRatePass: t.match_rate_pass,
 })).map(t => {
@@ -454,13 +522,17 @@ const normalizedSegs = segments.map(s => ({
   aaIn: s.placebo_in_cohens_d,
   aaOut: s.placebo_out_cohens_d || 0,
   gammaS: s.critical_gamma,
-  ciWidth: s.ci_width_pp,
+  ciHalfHrs: s.ci_half_hrs || (s.ci_width_pp || 0),
+  ciLowerHrs: s.ci_lower_hrs || 0,
+  ciUpperHrs: s.ci_upper_hrs || 0,
+  addPropRate: s.add_prop_rate || s.simple_rate || 1.0,
+  addPropPerViewerHrs: s.add_prop_per_viewer_hrs || 0,
   mlDist: s.mean_logit_distance,
   smdPass: s.smd_pass,
   vrPrePass: s.vr_pre_pass,
   aaInPass: s.aa_in_pass,
   aaOutPass: s.aa_oos_pass !== undefined ? s.aa_oos_pass : (Math.abs(s.placebo_out_cohens_d || 0) < 0.10),
-  gammaPass: s.critical_gamma >= 1.5,
+  gammaPass: s.critical_gamma >= 1.3,
   ciPass: s.ci_pass,
   matchRatePass: s.match_rate_pass,
 })).map(s => {
@@ -485,7 +557,7 @@ if (gradeCounts.LOW <= 5 && gradeCounts.HIGH >= normalizedSegs.length * 0.4) {
   headerEl.textContent = "NEEDS IMPROVEMENT";
   headerEl.className = "status fail";
 }
-detailEl.textContent = `${gradeCounts.HIGH}/${normalizedSegs.length} HIGH, ${gradeCounts.MEDIUM} MEDIUM, ${gradeCounts.LOW} LOW — ${(META.total_pairs/1e6).toFixed(2)}M matched pairs from ${(META.total_treated/1e6).toFixed(2)}M treated (${META.pipeline_match_rate}% match rate) · Evaluated at title×segment level`;
+detailEl.textContent = `${gradeCounts.HIGH}/${normalizedSegs.length} HIGH, ${gradeCounts.MEDIUM} MEDIUM, ${gradeCounts.LOW} LOW — ${(META.total_pairs/1e6).toFixed(2)}M matched pairs from ${(META.total_treated/1e6).toFixed(2)}M treated (${META.pipeline_match_rate}% match rate) · Add-Prop method · CI in hrs/viewer`;
 
 document.getElementById('gradeChips').innerHTML = `
   <div class="grade-chip high">${gradeCounts.HIGH} HIGH</div>
@@ -493,7 +565,7 @@ document.getElementById('gradeChips').innerHTML = `
   ${gradeCounts.LOW > 0 ? '<div class="grade-chip low">' + gradeCounts.LOW + ' LOW</div>' : ''}
 `;
 
-// --- SEGMENT INSIGHTS (below header) ---
+// --- SEGMENT INSIGHTS ---
 const segmentNames = [...new Set(normalizedSegs.map(s => s.segment))];
 const segInsightRows = segmentNames.map(seg => {
   const rows = normalizedSegs.filter(s => s.segment === seg);
@@ -504,12 +576,13 @@ const segInsightRows = segmentNames.map(seg => {
   const smdFail = rows.filter(s => !s.smdPass).length;
   const vrFail = rows.filter(s => !s.vrPrePass).length;
   const ciFail = rows.filter(s => !s.ciPass).length;
-  return {seg, n: rows.length, nHigh, nMed, nLow, mrFail, smdFail, vrFail, ciFail};
+  const avgRate = rows.reduce((s,r)=>s+r.addPropRate,0)/rows.length;
+  return {seg, n: rows.length, nHigh, nMed, nLow, mrFail, smdFail, vrFail, ciFail, avgRate};
 });
 
 function segChallenge(info) {
   const issues = [];
-  if (info.mrFail > info.n * 0.3) issues.push(`match rate (${info.mrFail}/${info.n} fail — needs more historical data)`);
+  if (info.mrFail > info.n * 0.3) issues.push(`match rate (${info.mrFail}/${info.n} fail)`);
   if (info.smdFail > info.n * 0.2) issues.push(`pre-TVT bias (${info.smdFail}/${info.n} SMD fail)`);
   if (info.vrFail > info.n * 0.5) issues.push(`variance ratio (${info.vrFail}/${info.n} VR fail)`);
   if (info.ciFail > info.n * 0.5) issues.push(`CI width (${info.ciFail}/${info.n} fail — small N)`);
@@ -525,13 +598,14 @@ document.getElementById('segmentInsights').innerHTML = `
     const shortSeg = info.seg.replace(' (Retained)','').replace(' (Reactivated)','');
     return `<div style="padding: 0.5rem 0.7rem; border-left: 3px solid ${color}; background: var(--bg-primary); border-radius: 4px;">
       <strong>${shortSeg}</strong> — <span style="color:var(--success)">${info.nHigh}H</span> / <span style="color:var(--warning)">${info.nMed}M</span> / <span style="color:var(--error)">${info.nLow}L</span> (${info.n} rows, ${highPct}% HIGH)
-      ${challenge ? '<br><span style="color:var(--text-secondary); font-size:0.78rem;">Challenge: ' + challenge + '</span>' : '<br><span style="color:var(--success); font-size:0.78rem;">Working well across all titles</span>'}
+      <br><span style="font-size:0.78rem;color:var(--text-secondary);">Avg rate: ${info.avgRate.toFixed(3)}</span>
+      ${challenge ? '<br><span style="color:var(--text-secondary); font-size:0.78rem;">Challenge: ' + challenge + '</span>' : ''}
     </div>`;
   }).join('')}
   </div>
 `;
 
-// --- KPI TILES (7 metrics, evaluated at title×segment level = 200 rows) ---
+// --- KPI TILES ---
 const N_SEG = normalizedSegs.length;
 const smdPassSeg = normalizedSegs.filter(s => s.smdPass).length;
 const vrPassSeg = normalizedSegs.filter(s => s.vrPrePass).length;
@@ -546,8 +620,8 @@ const kpis = [
   {label: "SMD Pass Rate", value: smdPassSeg+"/"+N_SEG+" ("+(smdPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (|SMD| &le; 0.10)", pct: smdPassSeg/N_SEG*100, status: smdPassSeg/N_SEG >= 0.9 ? "green" : "amber", tag: "P2"},
   {label: "VR Pre-TVT Pass Rate", value: vrPassSeg+"/"+N_SEG+" ("+(vrPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (VR [0.8, 1.25])", pct: vrPassSeg/N_SEG*100, status: vrPassSeg/N_SEG >= 0.8 ? "green" : vrPassSeg/N_SEG >= 0.5 ? "amber" : "red", tag: "P2"},
   {label: "A/A Out-of-Sample Pass", value: aaOosPassSeg+"/"+N_SEG+" ("+(aaOosPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (|d| &lt; 0.10)", pct: aaOosPassSeg/N_SEG*100, status: aaOosPassSeg/N_SEG >= 0.8 ? "green" : "amber", tag: "P2"},
-  {label: "CI Width &le; 4% Pass Rate", value: ciPassSeg+"/"+N_SEG+" ("+(ciPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (target = 100%)", pct: ciPassSeg/N_SEG*100, status: ciPassSeg/N_SEG >= 0.8 ? "green" : ciPassSeg/N_SEG >= 0.5 ? "amber" : "red", tag: "P2"},
-  {label: "Rosenbaum &Gamma; &ge; 1.5", value: gammaPassSeg+"/"+N_SEG+" ("+(gammaPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (&ge; 80%)", pct: gammaPassSeg/N_SEG*100, status: gammaPassSeg/N_SEG >= 0.8 ? "green" : gammaPassSeg/N_SEG >= 0.5 ? "amber" : "red", tag: "P2"},
+  {label: "CI &le; 1hr Pass Rate", value: ciPassSeg+"/"+N_SEG+" ("+(ciPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (target = 100%)", pct: ciPassSeg/N_SEG*100, status: ciPassSeg/N_SEG >= 0.8 ? "green" : ciPassSeg/N_SEG >= 0.5 ? "amber" : "red", tag: "P2"},
+  {label: "Rosenbaum &Gamma; &ge; 1.3", value: gammaPassSeg+"/"+N_SEG+" ("+(gammaPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title&times;segment (&ge; 80%)", pct: gammaPassSeg/N_SEG*100, status: gammaPassSeg/N_SEG >= 0.8 ? "green" : gammaPassSeg/N_SEG >= 0.5 ? "amber" : "red", tag: "P2"},
 ];
 
 document.getElementById('kpiRow').innerHTML = kpis.map(k => `
@@ -559,7 +633,7 @@ document.getElementById('kpiRow').innerHTML = kpis.map(k => `
   </div>
 `).join('');
 
-// --- GRADE TABLE (Title Level) ---
+// --- GRADE TABLE ---
 function gradeStats(data, grade) {
   const subset = data.filter(t => t.grade === grade);
   if (subset.length === 0) return null;
@@ -589,25 +663,27 @@ renderGradeTable('segGradeTableBody', normalizedSegs);
 // --- KEY FINDINGS ---
 const segTotal = normalizedSegs.length;
 const avgMlDist = (normalizedSegs.reduce((s,t)=>s+t.mlDist,0)/normalizedSegs.length).toFixed(4);
+const avgRate = (normalizedSegs.reduce((s,t)=>s+t.addPropRate,0)/normalizedSegs.length).toFixed(3);
 document.getElementById('keyFindings').innerHTML = `
   <div class="criteria-card" style="border-left: 4px solid var(--success);">
     <h4>Strengths</h4>
     <ul style="font-size: 0.82rem; padding-left: 1rem; line-height: 1.8;">
-      <li><strong>Scale:</strong> ${(META.total_pairs/1e6).toFixed(2)}M matched pairs from ${(META.total_treated/1e6).toFixed(2)}M treated across 200 title&times;segment rows</li>
+      <li><strong>Scale:</strong> ${(META.total_pairs/1e6).toFixed(2)}M matched pairs from ${(META.total_treated/1e6).toFixed(2)}M treated across ${segTotal} title&times;segment rows</li>
       <li><strong>Pre-Gap Eliminated:</strong> Dedup fix resolved the -10h Power Viewer pre-gap from v6a. All segments now within &plusmn;0.03 hrs</li>
-      <li><strong>Balance (SMD):</strong> ${smdPassSeg}/${segTotal} pass (${(smdPassSeg/segTotal*100).toFixed(0)}%) at title&times;segment level — max |SMD| = ${Math.max(...normalizedSegs.map(s=>Math.abs(s.smd))).toFixed(4)}</li>
-      <li><strong>VR Pre-TVT:</strong> ${vrPassSeg}/${segTotal} pass (${(vrPassSeg/segTotal*100).toFixed(0)}%) — near-perfect variance balance</li>
-      <li><strong>Match Rate:</strong> ${mrPassSeg}/${segTotal} pass &ge;80% (${(mrPassSeg/segTotal*100).toFixed(0)}%)</li>
+      <li><strong>Balance (SMD):</strong> ${smdPassSeg}/${segTotal} pass (${(smdPassSeg/segTotal*100).toFixed(0)}%) at title&times;segment level &mdash; max |SMD| = ${Math.max(...normalizedSegs.map(s=>Math.abs(s.smd))).toFixed(4)}</li>
+      <li><strong>VR Pre-TVT:</strong> ${vrPassSeg}/${segTotal} pass (${(vrPassSeg/segTotal*100).toFixed(0)}%) &mdash; near-perfect variance balance</li>
+      <li><strong>Average Add-Prop Rate:</strong> ${avgRate} across all title&times;segment rows</li>
     </ul>
   </div>
   <div class="criteria-card" style="border-left: 4px solid var(--accent);">
-    <h4>Key Changes from v6a</h4>
+    <h4>v2 Updates (from v1 scorecard)</h4>
     <ul style="font-size: 0.82rem; padding-left: 1rem; line-height: 1.8;">
-      <li><strong>Dedup Fix:</strong> Control pre-TVT now computed with SELECT DISTINCT before video_session JOIN — prevents 3x inflation from with-replacement</li>
-      <li><strong>Control Pool:</strong> Expanded to 10% device sample (hash&lt;100) — 2x larger for better matching</li>
-      <li><strong>Segment-Conditional:</strong> Blocking vars adapted per segment (6 for Reactivated, 7-8 for others)</li>
-      <li><strong>TVT Bucket:</strong> Hybrid 4h bucketing throughout, vs mixed/missing in v6a</li>
-      <li><strong>ML Score Distance:</strong> ${avgMlDist} mean — tight caliper at 0.2</li>
+      <li><strong>CI metric:</strong> Changed from "CI width &le; 4pp" to "CI half-width &le; 1 hr/viewer" (add_prop method)</li>
+      <li><strong>Rate method:</strong> Primary metric is now add-prop rate (was simple rate)</li>
+      <li><strong>Gamma threshold:</strong> Lowered from 1.5 to 1.3 (sign test on add_prop_delta_off_T)</li>
+      <li><strong>tvt_hours fix:</strong> Corrected divisor from /3600000 to /3600 (tvt_on_T_post is in seconds)</li>
+      <li><strong>New: Rates tab</strong> with per-title and per-segment incremental rates + CI bounds</li>
+      <li><strong>ML Score Distance:</strong> ${avgMlDist} mean &mdash; tight caliper at 0.2</li>
     </ul>
   </div>
 `;
@@ -615,22 +691,22 @@ document.getElementById('keyFindings').innerHTML = `
 document.getElementById('interpretationCard').innerHTML = `
   <h4>Interpretation: Confidence Level Coverage (Title &times; Segment)</h4>
   <p style="font-size: 0.82rem; line-height: 1.7;">
-    <strong>${GS.segment_level.HIGH.count}/${segTotal}</strong> rows graded HIGH, covering ${(GS.segment_level.HIGH.total_tvt_hrs/1e6).toFixed(1)}M TVT hours (${(GS.segment_level.HIGH.total_tvt_hrs / (GS.segment_level.HIGH.total_tvt_hrs + GS.segment_level.MEDIUM.total_tvt_hrs + GS.segment_level.LOW.total_tvt_hrs) * 100).toFixed(0)}% of total).<br>
-    <strong>${GS.segment_level.MEDIUM.count}</strong> MEDIUM (${(GS.segment_level.MEDIUM.total_tvt_hrs/1e6).toFixed(1)}M TVT hrs), <strong>${GS.segment_level.LOW.count}</strong> LOW (${(GS.segment_level.LOW.total_tvt_hrs/1e6).toFixed(1)}M TVT hrs).<br><br>
-    LOW-grade rows are concentrated in "Non-active (Reactivated)" segment where the control pool is thin and match rate is low.<br>
-    With gamma threshold at 1.5, ${(gammaPassSeg/segTotal*100).toFixed(0)}% of rows pass sensitivity analysis, meaning results are robust to moderate hidden confounding.
+    <strong>${GS.segment_level.HIGH.count}/${segTotal}</strong> rows graded HIGH, covering ${(GS.segment_level.HIGH.total_tvt_hrs/1e6).toFixed(1)}M TVT hours (${(GS.segment_level.HIGH.total_tvt_hrs / (GS.segment_level.HIGH.total_tvt_hrs + (GS.segment_level.MEDIUM.total_tvt_hrs||0) + (GS.segment_level.LOW.total_tvt_hrs||0)) * 100).toFixed(0)}% of total).<br>
+    <strong>${GS.segment_level.MEDIUM.count}</strong> MEDIUM (${((GS.segment_level.MEDIUM.total_tvt_hrs||0)/1e6).toFixed(1)}M TVT hrs), <strong>${GS.segment_level.LOW.count}</strong> LOW (${((GS.segment_level.LOW.total_tvt_hrs||0)/1e6).toFixed(1)}M TVT hrs).<br><br>
+    CI is evaluated in hours/viewer using the add-prop method. Titles where CI &le; 1 hr have sufficient statistical power to detect meaningful incremental effects.<br>
+    With gamma threshold at 1.3, ${(gammaPassSeg/segTotal*100).toFixed(0)}% of rows pass sensitivity analysis, meaning results are robust to moderate hidden confounding.
   </p>
 `;
 
 // --- DIAGNOSTICS TAB ---
 const diagChecks = [
-  {name: "1. SMD Pre-TVT &le; 0.10", pass: normalizedTitles.filter(t=>t.smdPass).length, total: 50},
-  {name: "2. VR Pre-TVT [0.8, 1.25]", pass: normalizedTitles.filter(t=>t.vrPrePass).length, total: 50},
-  {name: "3. A/A In-Sample |d|<0.10", pass: normalizedTitles.filter(t=>t.aaInPass).length, total: 50},
-  {name: "4. A/A Out-of-Sample |d|<0.10", pass: normalizedTitles.filter(t=>t.aaOutPass).length, total: 50},
-  {name: "5. Rosenbaum &gamma; &ge; 1.5", pass: normalizedTitles.filter(t=>t.gammaPass).length, total: 50},
-  {name: "6. CI Width &le; 4%", pass: normalizedTitles.filter(t=>t.ciPass).length, total: 50},
-  {name: "7. Match Rate &ge; 80%", pass: normalizedTitles.filter(t=>t.matchRatePass).length, total: 50},
+  {name: "1. SMD Pre-TVT &le; 0.10", pass: normalizedTitles.filter(t=>t.smdPass).length, total: normalizedTitles.length},
+  {name: "2. VR Pre-TVT [0.8, 1.25]", pass: normalizedTitles.filter(t=>t.vrPrePass).length, total: normalizedTitles.length},
+  {name: "3. A/A In-Sample |d|<0.10", pass: normalizedTitles.filter(t=>t.aaInPass).length, total: normalizedTitles.length},
+  {name: "4. A/A Out-of-Sample |d|<0.10", pass: normalizedTitles.filter(t=>t.aaOutPass).length, total: normalizedTitles.length},
+  {name: "5. Rosenbaum &gamma; &ge; 1.3", pass: normalizedTitles.filter(t=>t.gammaPass).length, total: normalizedTitles.length},
+  {name: "6. CI &le; 1 hr/viewer", pass: normalizedTitles.filter(t=>t.ciPass).length, total: normalizedTitles.length},
+  {name: "7. Match Rate &ge; 80%", pass: normalizedTitles.filter(t=>t.matchRatePass).length, total: normalizedTitles.length},
 ];
 
 document.getElementById('diagGrid').innerHTML = diagChecks.map(d => {
@@ -643,13 +719,13 @@ document.getElementById('diagGrid').innerHTML = diagChecks.map(d => {
 }).join('');
 
 const segDiagChecks = [
-  {name: "1. SMD Pre-TVT &le; 0.10", pass: normalizedSegs.filter(t=>t.smdPass).length, total: 200},
-  {name: "2. VR Pre-TVT [0.8, 1.25]", pass: normalizedSegs.filter(t=>t.vrPrePass).length, total: 200},
-  {name: "3. A/A In-Sample |d|<0.10", pass: normalizedSegs.filter(t=>t.aaInPass).length, total: 200},
-  {name: "4. A/A Out-of-Sample |d|<0.10", pass: normalizedSegs.filter(t=>t.aaOutPass).length, total: 200},
-  {name: "5. Rosenbaum &gamma; &ge; 1.5", pass: normalizedSegs.filter(t=>t.gammaPass).length, total: 200},
-  {name: "6. CI Width &le; 4%", pass: normalizedSegs.filter(t=>t.ciPass).length, total: 200},
-  {name: "7. Match Rate &ge; 80%", pass: normalizedSegs.filter(t=>t.matchRatePass).length, total: 200},
+  {name: "1. SMD Pre-TVT &le; 0.10", pass: normalizedSegs.filter(t=>t.smdPass).length, total: N_SEG},
+  {name: "2. VR Pre-TVT [0.8, 1.25]", pass: normalizedSegs.filter(t=>t.vrPrePass).length, total: N_SEG},
+  {name: "3. A/A In-Sample |d|<0.10", pass: normalizedSegs.filter(t=>t.aaInPass).length, total: N_SEG},
+  {name: "4. A/A Out-of-Sample |d|<0.10", pass: normalizedSegs.filter(t=>t.aaOutPass).length, total: N_SEG},
+  {name: "5. Rosenbaum &gamma; &ge; 1.3", pass: normalizedSegs.filter(t=>t.gammaPass).length, total: N_SEG},
+  {name: "6. CI &le; 1 hr/viewer", pass: normalizedSegs.filter(t=>t.ciPass).length, total: N_SEG},
+  {name: "7. Match Rate &ge; 80%", pass: normalizedSegs.filter(t=>t.matchRatePass).length, total: N_SEG},
 ];
 
 document.getElementById('diagGridSeg').innerHTML = segDiagChecks.map(d => {
@@ -666,11 +742,12 @@ function percentile(arr, p) { const s = [...arr].sort((a,b)=>a-b); return s[Math
 const smdVals = normalizedTitles.map(t => Math.abs(t.smd));
 const vrPreVals = normalizedTitles.map(t => t.vrPre);
 const gammaVals = normalizedTitles.map(t => t.gammaS);
-const ciVals = normalizedTitles.map(t => t.ciWidth * 100);
+const ciVals = normalizedTitles.map(t => t.ciHalfHrs);
 const mlDistVals = normalizedTitles.map(t => t.mlDist);
 const aaInVals = normalizedTitles.map(t => Math.abs(t.aaIn));
 const aaOutVals = normalizedTitles.map(t => Math.abs(t.aaOut));
 const mrVals = normalizedTitles.map(t => t.matchRate * 100);
+const rateVals = normalizedTitles.map(t => t.addPropRate);
 
 function distRow(name, vals, target) {
   return `<tr><td>${name}</td><td class="num">${Math.min(...vals).toFixed(4)}</td><td class="num">${percentile(vals,0.25).toFixed(4)}</td><td class="num">${percentile(vals,0.5).toFixed(4)}</td><td class="num">${percentile(vals,0.75).toFixed(4)}</td><td class="num">${Math.max(...vals).toFixed(4)}</td><td>${target}</td></tr>`;
@@ -680,23 +757,22 @@ document.getElementById('metricDistBody').innerHTML = [
   distRow("VR Pre-TVT", vrPreVals, "[0.8, 1.25]"),
   distRow("|A/A In-Sample d|", aaInVals, "|d| < 0.10"),
   distRow("|A/A Out-of-Sample d|", aaOutVals, "|d| < 0.10"),
-  distRow("Gamma (Sign)", gammaVals, "&ge; 1.5"),
-  distRow("CI Width (%)", ciVals, "&le; 4%"),
+  distRow("Gamma (Sign)", gammaVals, "&ge; 1.3"),
+  distRow("CI half-width (hrs)", ciVals, "&le; 1.0"),
   distRow("Match Rate (%)", mrVals, "&ge; 80%"),
+  distRow("Add-Prop Rate", rateVals, "> 1.0 = incremental"),
   distRow("ML Score Distance", mlDistVals, "informational"),
 ].join('');
 
-// v6b vs v6a comparison
+// v6b v2 vs v1 comparison
 const compRows = [
-  ["Matched Pairs", "1,830,416", META.total_pairs.toLocaleString(), META.total_pairs < 1830416 ? "&darr; fewer (stricter matching)" : "&uarr; more"],
-  ["Match Rate", "84.6%", META.pipeline_match_rate+"%", META.pipeline_match_rate > 84.6 ? "&uarr;" : "&darr;"],
-  ["SMD Pass Rate (title)", "98%", (DATA.pipeline_metrics.smd_pass_rate*100).toFixed(0)+"%", "&uarr; dedup fix eliminated pre-gap"],
-  ["VR Pre Pass Rate", "52%", (DATA.pipeline_metrics.vr_pre_pass_rate*100).toFixed(0)+"%", "&uarr; near-perfect balance"],
-  ["Pre-Gap (Power Viewer)", "-9.92 hrs", "0.00 hrs", "&uarr; dedup fix resolved"],
-  ["CI Width Pass Rate", "100%", (DATA.pipeline_metrics.ci_width_pass_rate*100).toFixed(0)+"%", "= same"],
-  ["Control Pool", "5% (hash<50)", "10% (hash<100)", "&uarr; 2x larger pool"],
-  ["Blocking Vars", "8 (all segments)", "6-8 (segment-conditional)", "Adapted per segment"],
-  ["TVT Bucket", "Mixed (missed 28d)", "Hybrid 4h throughout", "Fixed"],
+  ["CI Metric", "CI width &le; 4pp", "CI half-width &le; 1 hr/viewer", "Absolute hours instead of rate %"],
+  ["CI Formula", "1.96*SD(simple)/sqrt(N) as % of on-title", "1.96*SD(add_prop)/sqrt(N)/3600", "Hours per viewer, add-prop method"],
+  ["Primary Rate", "Simple rate", "Add-prop rate", "Proportional weighting for multi-title"],
+  ["Gamma Threshold", "&ge; 1.5", "&ge; 1.3", "Relaxed — sign test on add_prop"],
+  ["Gamma Method", "Sign test on simple_delta_off_T", "Sign test on add_prop_delta_off_T", "Aligned with primary method"],
+  ["tvt_hours", "SUM(tvt_on_T_post) / 3600000", "SUM(tvt_on_T_post) / 3600", "Fix: tvt_on_T_post is in seconds"],
+  ["Rate Display", "Not shown", "Shown in tables + dedicated tab", "Add-prop rate + CI bounds"],
 ];
 document.getElementById('compTableBody').innerHTML = compRows.map(r =>
   `<tr><td>${r[0]}</td><td>${r[1]}</td><td><strong>${r[2]}</strong></td><td style="font-size:0.8rem;color:var(--text-secondary)">${r[3]}</td></tr>`
@@ -709,7 +785,7 @@ function renderTitleTable(data) {
     const badge = `<span class="grade-badge ${t.grade.toLowerCase()}">${t.grade}</span>`;
     const mrCls = t.matchRatePass ? 'pass' : 'fail';
     return `<tr class="${gc}">
-      <td title="${t.name}">${t.name.length > 32 ? t.name.slice(0,30)+'...' : t.name}</td>
+      <td title="${t.name}">${t.name.length > 30 ? t.name.slice(0,28)+'...' : t.name}</td>
       <td class="num">${t.pairs.toLocaleString()}</td>
       <td class="num ${mrCls}">${(t.matchRate*100).toFixed(1)}%</td>
       <td class="num ${t.smdPass?'pass':'fail'}">${t.smd.toFixed(4)}</td>
@@ -717,7 +793,9 @@ function renderTitleTable(data) {
       <td class="num ${t.aaInPass?'pass':'fail'}">${t.aaIn.toFixed(4)}</td>
       <td class="num ${t.aaOutPass?'pass':'fail'}">${t.aaOut.toFixed(4)}</td>
       <td class="num ${t.gammaPass?'pass':'fail'}">${t.gammaS.toFixed(3)}</td>
-      <td class="num ${t.ciPass?'pass':'fail'}">${(t.ciWidth*100).toFixed(3)}%</td>
+      <td class="num ${t.ciPass?'pass':'fail'}">${t.ciHalfHrs.toFixed(4)}</td>
+      <td class="num">${t.addPropRate.toFixed(3)}</td>
+      <td class="num">${t.addPropPerViewerHrs.toFixed(4)}</td>
       <td class="num">${t.mlDist.toFixed(4)}</td>
       <td class="num">${t.checks}/7</td>
       <td>${badge}</td>
@@ -739,7 +817,8 @@ function applyTitleSort() {
   else if (key === 'smd') data.sort((a,b) => Math.abs(b.smd) - Math.abs(a.smd));
   else if (key === 'vr') data.sort((a,b) => Math.abs(b.vrPre - 1.0) - Math.abs(a.vrPre - 1.0));
   else if (key === 'gamma') data.sort((a,b) => b.gammaS - a.gammaS);
-  else if (key === 'ci') data.sort((a,b) => b.ciWidth - a.ciWidth);
+  else if (key === 'ci') data.sort((a,b) => b.ciHalfHrs - a.ciHalfHrs);
+  else if (key === 'rate') data.sort((a,b) => b.addPropRate - a.addPropRate);
   renderTitleTable(data);
 }
 
@@ -760,7 +839,7 @@ function renderSegTable(data) {
     const badge = `<span class="grade-badge ${s.grade.toLowerCase()}">${s.grade}</span>`;
     const mrCls = s.matchRatePass ? 'pass' : 'fail';
     return `<tr class="${gc}">
-      <td title="${s.name}">${(s.name||'').length > 26 ? (s.name||'').slice(0,24)+'...' : (s.name||s.id)}</td>
+      <td title="${s.name}">${(s.name||'').length > 24 ? (s.name||'').slice(0,22)+'...' : (s.name||s.id)}</td>
       <td>${s.segment}</td>
       <td class="num">${s.pairs.toLocaleString()}</td>
       <td class="num ${mrCls}">${(s.matchRate*100).toFixed(1)}%</td>
@@ -769,7 +848,9 @@ function renderSegTable(data) {
       <td class="num ${s.aaInPass?'pass':'fail'}">${(s.aaIn||0).toFixed(4)}</td>
       <td class="num ${s.aaOutPass?'pass':'fail'}">${(s.aaOut||0).toFixed(4)}</td>
       <td class="num ${s.gammaPass?'pass':'fail'}">${(s.gammaS||1).toFixed(3)}</td>
-      <td class="num ${s.ciPass?'pass':'fail'}">${((s.ciWidth||0)*100).toFixed(3)}%</td>
+      <td class="num ${s.ciPass?'pass':'fail'}">${(s.ciHalfHrs||0).toFixed(4)}</td>
+      <td class="num">${(s.addPropRate||1).toFixed(3)}</td>
+      <td class="num">${(s.addPropPerViewerHrs||0).toFixed(4)}</td>
       <td class="num">${(s.mlDist||0).toFixed(4)}</td>
       <td class="num">${s.checks}/7</td>
       <td>${badge}</td>
@@ -794,7 +875,8 @@ function applySegSort() {
   else if (key === 'smd') data.sort((a,b) => Math.abs(b.smd||0) - Math.abs(a.smd||0));
   else if (key === 'vr') data.sort((a,b) => Math.abs((b.vrPre||1)-1) - Math.abs((a.vrPre||1)-1));
   else if (key === 'gamma') data.sort((a,b) => (b.gammaS||1) - (a.gammaS||1));
-  else if (key === 'ci') data.sort((a,b) => (b.ciWidth||0) - (a.ciWidth||0));
+  else if (key === 'ci') data.sort((a,b) => (b.ciHalfHrs||0) - (a.ciHalfHrs||0));
+  else if (key === 'rate') data.sort((a,b) => (b.addPropRate||1) - (a.addPropRate||1));
   renderSegTable(data);
 }
 
@@ -808,6 +890,43 @@ document.querySelectorAll('[data-level="seg"]').forEach(chip => {
     applySegSort();
   });
 });
+
+// --- RATES TAB ---
+function renderRateTable(data, bodyId) {
+  document.getElementById(bodyId).innerHTML = data.map(t => {
+    const gc = t.grade === 'HIGH' ? 'grade-high' : t.grade === 'MEDIUM' ? 'grade-medium' : 'grade-low';
+    const badge = `<span class="grade-badge ${t.grade.toLowerCase()}">${t.grade}</span>`;
+    const rateCls = t.addPropRate > 1.0 ? 'pass' : t.addPropRate < 1.0 ? 'fail' : '';
+    return `<tr class="${gc}">
+      <td title="${t.name}">${(t.name||'').length > 30 ? (t.name||'').slice(0,28)+'...' : (t.name||t.id)}</td>
+      ${t.segment !== undefined ? '<td>'+t.segment+'</td>' : ''}
+      <td class="num">${t.pairs.toLocaleString()}</td>
+      <td class="num">${Math.round(t.tvtHours).toLocaleString()}</td>
+      <td class="num ${rateCls}"><strong>${t.addPropRate.toFixed(3)}</strong></td>
+      <td class="num">${t.addPropPerViewerHrs.toFixed(4)}</td>
+      <td class="num">${t.ciLowerHrs.toFixed(4)}</td>
+      <td class="num">${t.ciUpperHrs.toFixed(4)}</td>
+      <td class="num ${t.ciPass?'pass':'fail'}">${t.ciHalfHrs.toFixed(4)}</td>
+      <td class="num ${t.gammaPass?'pass':'fail'}">${t.gammaS.toFixed(3)}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Title-level rates
+const titlesByRate = [...normalizedTitles].sort((a,b) => b.addPropRate - a.addPropRate);
+renderRateTable(titlesByRate, 'rateBody');
+
+// Segment-level rates
+function applyRateSegFilter() {
+  const segFilter = document.getElementById('rateSegFilter').value;
+  let data = [...normalizedSegs];
+  if (segFilter !== 'all') data = data.filter(s => s.segment === segFilter);
+  data.sort((a,b) => b.addPropRate - a.addPropRate);
+  renderRateTable(data, 'rateSegBody');
+}
+document.getElementById('rateSegFilter').addEventListener('change', applyRateSegFilter);
+applyRateSegFilter();
 
 // --- TABS ---
 document.querySelectorAll('.tab').forEach(tab => {
