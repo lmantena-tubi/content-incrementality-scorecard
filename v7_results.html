@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>V7 — Content Incrementality Scatter Charts</title>
+<title>Content Incrementality (April 2026) v7 Results</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,8 +29,8 @@
 </head>
 <body>
 
-<h1>Content Incrementality v7 — Rate Scatter Charts</h1>
-<p class="subtitle">397 titles · 4 viewer segments · min 30 matched pairs · sorted by April 2026 title TVT</p>
+<h1>Content Incrementality (April 2026) v7 Results</h1>
+<p class="subtitle">397 titles · 4 viewer segments · min 30 matched pairs</p>
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="tab-rank">Incrementality Rank</button>
@@ -135,6 +135,14 @@
       <option value="incrTvt">Incremental TVT</option>
       <option value="ratio">Ratio (selected window)</option>
       <option value="altRatio">Ratio (other window)</option>
+      <option value="segTvt_3">Power Viewer Seg TVT</option>
+      <option value="segIncr_3">Power Viewer Incr TVT</option>
+      <option value="segTvt_0">Retained Seg TVT</option>
+      <option value="segIncr_0">Retained Incr TVT</option>
+      <option value="segTvt_2">Reactivated Seg TVT</option>
+      <option value="segIncr_2">Reactivated Incr TVT</option>
+      <option value="segTvt_1">New (M1) Seg TVT</option>
+      <option value="segIncr_1">New (M1) Incr TVT</option>
     </select>
     <label style="margin-left:20px;">Order:</label>
     <select id="rankOrder">
@@ -713,10 +721,19 @@ function buildRankTable() {
   // Sort
   const order = document.getElementById('rankOrder').value;
   const dir = order === 'asc' ? 1 : -1;
+  const getSegVal = (t, segIdx, field) => {
+    const s = t.segs[segIdx];
+    if (!s) return 0;
+    if (field === 'tvt') return s.segTvt || 0;
+    if (field === 'incr') return (s.rate != null ? s.rate * s.segTvt : 0);
+    return 0;
+  };
   if (sortBy === 'aprilTvt') list.sort((a,b) => dir * (a.titleTvt - b.titleTvt));
   else if (sortBy === 'incrTvt') list.sort((a,b) => dir * (a.incrTvt - b.incrTvt));
   else if (sortBy === 'altRatio') list.sort((a,b) => dir * (a.altRatio - b.altRatio));
   else if (sortBy === 'incrRank') list.sort((a,b) => dir * (a.incrTvt - b.incrTvt));
+  else if (sortBy.startsWith('segTvt_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'tvt') - getSegVal(b,si,'tvt'))); }
+  else if (sortBy.startsWith('segIncr_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'incr') - getSegVal(b,si,'incr'))); }
   else list.sort((a,b) => dir * (a.ratio - b.ratio));
 
   const fmt = v => v==null?'—':v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e3?(v/1e3).toFixed(1)+'K':v.toFixed(0);
