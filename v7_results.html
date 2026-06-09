@@ -30,7 +30,7 @@
 <body>
 
 <h1>Content Incrementality (April 2026) v7 Results</h1>
-<p class="subtitle">397 titles · 4 viewer segments · min 30 matched pairs</p>
+<p class="subtitle">400 titles · 4 viewer segments · min 30 matched pairs</p>
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="tab-rank">Incrementality Rank</button>
@@ -125,8 +125,8 @@
   <div class="controls">
     <label>Window:</label>
     <select id="rankWindow">
-      <option value="28d" selected>28d</option>
-      <option value="7d">7d</option>
+      <option value="28d">28d</option>
+      <option value="7d" selected>7d</option>
     </select>
     <label style="margin-left:20px;">Sort by:</label>
     <select id="rankSort">
@@ -135,14 +135,20 @@
       <option value="incrTvt">Incremental TVT</option>
       <option value="ratio">Ratio (selected window)</option>
       <option value="altRatio">Ratio (other window)</option>
+      <option value="detrPct">Detrimental%</option>
+      <option value="oadPct">One-and-Done%</option>
       <option value="segTvt_3">Power Viewer Seg TVT</option>
       <option value="segIncr_3">Power Viewer Incr TVT</option>
+      <option value="segRate_3">Power Viewer Rate</option>
       <option value="segTvt_0">Retained Seg TVT</option>
       <option value="segIncr_0">Retained Incr TVT</option>
+      <option value="segRate_0">Retained Rate</option>
       <option value="segTvt_2">Reactivated Seg TVT</option>
       <option value="segIncr_2">Reactivated Incr TVT</option>
+      <option value="segRate_2">Reactivated Rate</option>
       <option value="segTvt_1">New (M1) Seg TVT</option>
       <option value="segIncr_1">New (M1) Incr TVT</option>
+      <option value="segRate_1">New (M1) Rate</option>
     </select>
     <label style="margin-left:20px;">Order:</label>
     <select id="rankOrder">
@@ -709,6 +715,26 @@ function buildRankTable() {
     t.altIncrTvt = altIncrTvt;
     t.ratio = t.titleTvt > 0 ? incrTvt / t.titleTvt : 0;
     t.altRatio = t.titleTvt > 0 ? altIncrTvt / t.titleTvt : 0;
+
+    // Detrimental% and One-and-Done% for low-incrementality titles (aggregate rate < 0.1)
+    const aggRate = t.titleTvt > 0 ? incrTvt / t.titleTvt : 0;
+    t.detrPct = null;
+    t.oadPct = null;
+    if (aggRate < 0.1) {
+      // seg indices: 0=Retained, 1=New(M1), 2=Reactivated, 3=Power Viewer
+      const contribs = {};
+      [0,1,2,3].forEach(si => {
+        const s = t.segs[si];
+        contribs[si] = (s && s.rate != null) ? s.rate * s.segTvt : 0;
+      });
+      const negPool = [0,1,2,3].reduce((sum, si) => sum + (contribs[si] < 0 ? contribs[si] : 0), 0);
+      if (negPool < 0) {
+        const detrNeg = (contribs[0] < 0 ? contribs[0] : 0) + (contribs[3] < 0 ? contribs[3] : 0);
+        const oadNeg = (contribs[1] < 0 ? contribs[1] : 0) + (contribs[2] < 0 ? contribs[2] : 0);
+        t.detrPct = Math.abs(detrNeg) / Math.abs(negPool) * 100;
+        t.oadPct = Math.abs(oadNeg) / Math.abs(negPool) * 100;
+      }
+    }
     return t;
   });
 
@@ -726,17 +752,21 @@ function buildRankTable() {
     if (!s) return 0;
     if (field === 'tvt') return s.segTvt || 0;
     if (field === 'incr') return (s.rate != null ? s.rate * s.segTvt : 0);
+    if (field === 'rate') return s.rate != null ? s.rate : 0;
     return 0;
   };
   if (sortBy === 'aprilTvt') list.sort((a,b) => dir * (a.titleTvt - b.titleTvt));
   else if (sortBy === 'incrTvt') list.sort((a,b) => dir * (a.incrTvt - b.incrTvt));
   else if (sortBy === 'altRatio') list.sort((a,b) => dir * (a.altRatio - b.altRatio));
   else if (sortBy === 'incrRank') list.sort((a,b) => dir * (a.incrTvt - b.incrTvt));
+  else if (sortBy === 'detrPct') list.sort((a,b) => dir * ((a.detrPct||0) - (b.detrPct||0)));
+  else if (sortBy === 'oadPct') list.sort((a,b) => dir * ((a.oadPct||0) - (b.oadPct||0)));
   else if (sortBy.startsWith('segTvt_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'tvt') - getSegVal(b,si,'tvt'))); }
   else if (sortBy.startsWith('segIncr_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'incr') - getSegVal(b,si,'incr'))); }
+  else if (sortBy.startsWith('segRate_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'rate') - getSegVal(b,si,'rate'))); }
   else list.sort((a,b) => dir * (a.ratio - b.ratio));
 
-  const fmt = v => v==null?'—':v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e3?(v/1e3).toFixed(1)+'K':v.toFixed(0);
+  const fmt = v => {if(v==null)return'—';const a=Math.abs(v),s=v<0?'-':'';if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+(a/1e3).toFixed(1)+'K';return s+a.toFixed(0);};
   const segOrder = [3,0,2,1]; // Power, Retained, Reactivated, New
   const segLabels = {0:'Retained',1:'New (M1)',2:'Reactivated',3:'Power Viewer'};
   const segColors = {0:'#1D9E75',1:'#378ADD',2:'#D85A30',3:'#534AB7'};
@@ -752,6 +782,8 @@ function buildRankTable() {
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Incr TVT ('+window+')</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Ratio ('+window+')</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Ratio ('+altLabel+')</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;">Detrimental%</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">One-and-Done%</th>';
   segOrder.forEach(si => {
     html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;" colspan="3"><span style="color:'+segColors[si]+'">'+segLabels[si]+'</span><br><span style="font-weight:400; font-size:11px;">Seg TVT | Incr TVT | Rate</span></th>';
   });
@@ -769,6 +801,8 @@ function buildRankTable() {
     html += '<td style="padding:5px 8px; font-weight:600;">'+fmt(t.incrTvt)+'</td>';
     html += '<td style="padding:5px 8px;">'+(t.ratio*100).toFixed(1)+'%</td>';
     html += '<td style="padding:5px 8px; color:#666;">'+(t.altRatio*100).toFixed(1)+'%</td>';
+    html += '<td style="padding:5px 8px; border-left:2px solid #eee; font-weight:600; color:#c00;">'+(t.detrPct != null ? t.detrPct.toFixed(1)+'%' : '—')+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600; color:#D85A30;">'+(t.oadPct != null ? t.oadPct.toFixed(1)+'%' : '—')+'</td>';
     segOrder.forEach(si => {
       const s = t.segs[si];
       if (s) {
