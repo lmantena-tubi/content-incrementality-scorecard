@@ -299,8 +299,8 @@ function buildRateTvtChart(opts) {
         x: {
           type: 'logarithmic',
           title:{display:true, text:'June 1st 2026 Segment TVT (hours, log scale)', font:{size:12}},
-          min: 10000,
-          max: 4000000,
+          min: 30,
+          max: 100000,
           ticks: {
             callback: v => v >= 1000000 ? (v/1000000)+'M' : v >= 1000 ? (v/1000)+'K' : v
           }
@@ -398,15 +398,15 @@ function buildIncrTvt() {
         x: {
           type: 'logarithmic',
           title:{display:true, text:'June 1st 2026 Title TVT (hours, log scale)', font:{size:12}},
-          min: 150000,
-          max: 6000000,
+          min: 300,
+          max: 200000,
           ticks: { callback: v => v >= 1000000 ? (v/1000000)+'M' : v >= 1000 ? (v/1000)+'K' : v }
         },
         y: {
           type: 'logarithmic',
           title:{display:true, text:'Incremental TVT (hours, log scale)', font:{size:12}},
-          min: 20000,
-          max: 6000000,
+          min: 10,
+          max: 100000,
           ticks: { callback: v => v >= 1000000 ? (v/1000000)+'M' : v >= 1000 ? (v/1000)+'K' : v }
         }
       },
