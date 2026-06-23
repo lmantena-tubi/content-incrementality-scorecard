@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v8c Daily Rate Volatility — June 1-11, 2026</title>
+<style>
+:root{--bg:#f8f9fa;--card:#fff;--border:#dee2e6;--primary:#1a4f8b;--accent:#2d7dd2;--text:#212529;--muted:#6c757d;--green:#1D9E75;--blue:#378ADD;--orange:#D85A30;--purple:#534AB7;--red:#dc3545}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.header{background:var(--primary);color:#fff;padding:20px 32px}
+.header h1{font-size:22px;font-weight:600}
+.header p{opacity:0.8;margin-top:4px;font-size:13px}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);background:#fff;padding:0 32px}
+.tab{padding:12px 20px;cursor:pointer;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.content{padding:24px 32px;max-width:1600px}
+.panel{display:none}
+.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+.card h3{font-size:15px;margin-bottom:12px;color:var(--primary)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.metric-box{background:var(--bg);border-radius:6px;padding:16px;text-align:center}
+.metric-box .value{font-size:28px;font-weight:700;color:var(--primary)}
+.metric-box .label{font-size:12px;color:var(--muted);margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--primary);color:#fff;padding:8px 10px;text-align:left;font-weight:500;position:sticky;top:0}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+tr:hover td{background:#f0f4f8}
+.seg-retained{color:var(--green);font-weight:600}
+.seg-new{color:var(--blue);font-weight:600}
+.seg-reactivated{color:var(--orange);font-weight:600}
+.seg-power{color:var(--purple);font-weight:600}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-high{background:#fde8e0;color:#c0392b}
+.badge-mixed{background:#fff3cd;color:#856404}
+.badge-signal{background:#d4edda;color:#155724}
+.badge-unresolved{background:#e8e0f0;color:#6c3483}
+.controls{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.controls label{font-weight:500;font-size:13px}
+.controls select,.controls input{padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px}
+.controls select{min-width:200px}
+.chart-container{position:relative;width:100%;height:400px;margin-top:12px}
+canvas{width:100%!important;height:100%!important}
+.table-scroll{max-height:600px;overflow-y:auto;border:1px solid var(--border);border-radius:6px}
+.legend{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px}
+.legend-dot{width:12px;height:12px;border-radius:50%}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.seg-card{border-radius:8px;padding:16px;color:#fff}
+.seg-card h4{font-size:13px;opacity:0.85;margin-bottom:8px}
+.seg-card .big{font-size:24px;font-weight:700}
+.seg-card .detail{font-size:11px;opacity:0.8;margin-top:6px}
+@media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>v8c Daily Rate Volatility Analysis</h1>
+  <p>398 titles · 4 viewer segments · June 1–11, 2026 · Variance decomposition (1d) + rolling stability (3d/7d)</p>
+</div>
+<div class="tabs">
+  <div class="tab active" data-tab="summary">Overall Summary</div>
+  <div class="tab" data-tab="segments">Title × Segment Detail</div>
+  <div class="tab" data-tab="daily">Daily Trends</div>
+</div>
+<div class="content">
+
+<!-- TAB 1: Overall Summary -->
+<div class="panel active" id="panel-summary">
+  <div class="card">
+    <h3>Key Findings</h3>
+    <ul style="list-style:none;padding:0;margin:0">
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;line-height:1.6"><strong style="color:#155724">High-pair segments (Retained, Power Viewer — top 100 titles or 1000+ pairs) are stable</strong> — any 3–5 day window works for incrementality rates. No weekend seasonality compared to confidence intervals.</li>
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;line-height:1.6"><strong style="color:#856404">Low-pair segments need 7d pooling</strong> — not because the signal drifts, but because per-day SE is too large to resolve it.</li>
+      <li style="padding:10px 0;font-size:14px;line-height:1.6"><strong style="color:#c0392b">Only 3.8% of cells are genuinely unstable</strong> — the signal itself rarely moves day-to-day.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Stability by Pair Density</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">More pairs/day → lower noise → more stable daily rates.</p>
+    <div class="table-scroll">
+      <table id="pair-bucket-table">
+        <thead><tr><th>Pairs/Day</th><th># Cells</th><th>% Low Drift</th><th>% Moderate</th><th>% High Drift</th><th>% Unresolved</th><th>Signal SD</th><th>Sign Agree 1d</th><th>Sign Agree 7d</th><th>Avg SD 1d</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #c5d5ea">
+    <h3 style="margin-bottom:8px">What is Noise Share?</h3>
+    <p style="font-size:13px;line-height:1.7;color:#333">
+      When we measure a title's incrementality rate on different days, the rate bounces around. <strong>Noise share</strong> tells us <em>why</em> it bounces:
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0">
+      <div style="background:#fef5f3;border-radius:6px;padding:14px;border-left:4px solid #c0392b">
+        <strong style="color:#c0392b">Noise share ≈ 1.0 (noise-dominated)</strong><br>
+        <span style="font-size:12px;color:#555">The day-to-day bounce is just sampling randomness — like getting slightly different poll results with different samples. The <em>true</em> rate isn't actually changing. Fix: pool more days or pairs to average out the noise.</span>
+      </div>
+      <div style="background:#eafaf1;border-radius:6px;padding:14px;border-left:4px solid #1D9E75">
+        <strong style="color:#1D9E75">Noise share ≈ 0 (signal-dominated)</strong><br>
+        <span style="font-size:12px;color:#555">The day-to-day bounce reflects <em>real</em> variation — the true rate genuinely differs Monday vs. Wednesday (e.g., due to competing content). Pooling helps precision but won't eliminate the swings.</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#555;margin-top:4px">
+      <strong>Formula:</strong> noise_share = avg(daily SE²) / observed_variance(daily rates). Valid only for the 1d post-window where daily estimates are non-overlapping. The 3d/7d windows overlap between consecutive dates, so their variance decomposition is invalid — we report rolling stability (SD, sign agreement) only.
+    </p>
+    <p style="font-size:12px;color:#555;margin-top:6px">
+      <span style="color:#c0392b;font-weight:600">Noise</span> = noise_share &gt; 0.9 · <span style="color:#856404;font-weight:600">Mixed</span> = 0.5–0.9 · <span style="color:#155724;font-weight:600">Signal</span> = &lt; 0.5
+    </p>
+    <div class="grid" id="noise-dist" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(135deg,#f5faf7,#edf7f0);border:1px solid #b8dcc8">
+    <h3 style="margin-bottom:8px">Rate Stability Tiers (Signal CV)</h3>
+    <p style="font-size:13px;line-height:1.7;color:#333">
+      <strong>Signal CV</strong> = Signal SD / |mean rate| — measures how much the <em>true</em> rate (after removing sampling noise) varies day-to-day relative to its level.
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin:12px 0">
+      <div style="background:#fff;border-radius:6px;padding:12px;border-left:4px solid #155724">
+        <strong style="color:#155724">Low Drift</strong><br>
+        <span style="font-size:11px;color:#555">CV &lt; 0.15, noise_share ≤ 0.9</span><br>
+        <span style="font-size:12px;color:#555">Stable AND we can see through the noise.</span>
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:12px;border-left:4px solid #856404">
+        <strong style="color:#856404">Moderate drift</strong><br>
+        <span style="font-size:11px;color:#555">CV 0.15–0.40</span><br>
+        <span style="font-size:12px;color:#555">Real variation exists but bounded.</span>
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:12px;border-left:4px solid #c0392b">
+        <strong style="color:#c0392b">High drift</strong><br>
+        <span style="font-size:11px;color:#555">CV &gt; 0.40 or mean ≈ 0</span><br>
+        <span style="font-size:12px;color:#555">Definitively unstable OR rate crosses zero.</span>
+      </div>
+      <div style="background:#fff;border-radius:6px;padding:12px;border-left:4px solid #6c3483">
+        <strong style="color:#6c3483">Unresolved</strong><br>
+        <span style="font-size:11px;color:#555">CV &lt; 0.15, noise_share &gt; 0.9</span><br>
+        <span style="font-size:12px;color:#555">Can't measure stability — need more pairs or longer pooling.</span>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#555">Signal SD = √max(0, SD² − avg_SE²) — the irreducible day-to-day variation after removing sampling noise.</p>
+    <div class="grid" id="tier-dist" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- TAB 2: Title × Segment Detail -->
+<div class="panel" id="panel-segments">
+  <div class="controls">
+    <label>Segment:</label>
+    <select id="seg-filter">
+      <option value="all">All Segments</option>
+      <option value="Active non-power (Retained)">Retained</option>
+      <option value="New (M1)">New (M1)</option>
+      <option value="Non-active (Reactivated)">Reactivated</option>
+      <option value="Power Viewer">Power Viewer</option>
+    </select>
+    <label>Sort by:</label>
+    <select id="seg-sort">
+      <option value="pairs">Pairs/Day ↓</option>
+      <option value="noise">Noise Share ↑</option>
+      <option value="signal">Signal SD ↓</option>
+      <option value="sign">Sign Agree ↑</option>
+      <option value="rate">Mean Rate ↓</option>
+    </select>
+    <label>Min pairs/day:</label>
+    <input type="number" id="seg-min-pairs" value="0" min="0" step="50" style="width:80px">
+    <label><input type="checkbox" id="seg-hide-low"> Hide low confidence</label>
+  </div>
+  <div class="table-scroll" style="max-height:700px">
+    <table id="seg-table">
+      <thead><tr>
+        <th>Title</th><th>Segment</th><th>Pairs/Day</th><th>Tier</th>
+        <th>Noise Share</th><th>Signal SD</th><th>Signal CV</th><th>DOW Share</th>
+        <th>Mean Rate 1d</th><th>SD 1d</th><th>Sign% 1d</th>
+        <th>SD 3d</th><th>Sign% 3d</th>
+        <th>SD 7d</th><th>Sign% 7d</th>
+        <th>Days</th><th>Low Conf</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB 3: Daily Trends -->
+<div class="panel" id="panel-daily">
+  <div class="controls">
+    <label>Title:</label>
+    <input type="text" id="daily-title-search" list="title-datalist" placeholder="Search title..." style="min-width:300px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
+    <datalist id="title-datalist"></datalist>
+    <select id="daily-title" style="min-width:300px"></select>
+    <label>Window:</label>
+    <select id="daily-window">
+      <option value="1">1d</option>
+      <option value="3">3d</option>
+      <option value="7" selected>7d</option>
+    </select>
+  </div>
+  <div class="legend">
+    <div class="legend-item" data-seg="Active non-power (Retained)" style="cursor:pointer"><div class="legend-dot" style="background:var(--green)"></div>Retained</div>
+    <div class="legend-item" data-seg="New (M1)" style="cursor:pointer"><div class="legend-dot" style="background:var(--blue)"></div>New (M1)</div>
+    <div class="legend-item" data-seg="Non-active (Reactivated)" style="cursor:pointer"><div class="legend-dot" style="background:var(--orange)"></div>Reactivated</div>
+    <div class="legend-item" data-seg="Power Viewer" style="cursor:pointer"><div class="legend-dot" style="background:var(--purple)"></div>Power Viewer</div>
+  </div>
+  <div class="card">
+    <h3 id="daily-chart-title">Daily Rates</h3>
+    <canvas id="daily-chart"></canvas>
+  </div>
+  <div class="card">
+    <h3>Segment Summary for Selected Title</h3>
+    <table id="daily-summary-table">
+      <thead><tr><th>Segment</th><th>Pairs/Day</th><th>Mean Rate</th><th>SD</th><th>Noise Share (1d)</th><th>Sign Agree</th><th>Tier</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Daily Detail</h3>
+    <div class="table-scroll" style="max-height:400px">
+      <table id="daily-detail-table">
+        <thead><tr><th>Date</th><th>Segment</th><th>Rate</th><th>Pairs</th><th>SE</th><th>Rate ± 1.96 SE</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="v8c_volatility_data.js"></script>
+<script>
+const SEG_COLORS = {
+  'Active non-power (Retained)': '#1D9E75',
+  'New (M1)': '#378ADD',
+  'Non-active (Reactivated)': '#D85A30',
+  'Power Viewer': '#534AB7'
+};
+const SEG_SHORT = {
+  'Active non-power (Retained)': 'Retained',
+  'New (M1)': 'New (M1)',
+  'Non-active (Reactivated)': 'Reactivated',
+  'Power Viewer': 'Power Viewer'
+};
+const SEG_ORDER = ['Active non-power (Retained)','New (M1)','Non-active (Reactivated)','Power Viewer'];
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    if(tab.dataset.tab === 'daily') setTimeout(renderDailyTrends, 50);
+  });
+});
+
+// Signal CV tier helper
+function getSignalCV(d) {
+  const signalSD = Math.sqrt(Math.max(0, d.excess_var_1d || 0));
+  const meanRate = Math.abs(d.mean_rate_1d || 0);
+  if(meanRate < 0.05) return Infinity; // near-zero mean → unstable
+  return signalSD / meanRate;
+}
+function getTier(d) {
+  const cv = getSignalCV(d);
+  if(cv < 0.15 && d.noise_share_1d > 0.9) return 'Unresolved';
+  if(cv < 0.15) return 'Low Drift';
+  if(cv <= 0.40) return 'Moderate drift';
+  return 'High drift';
+}
+function getTierBadge(d) {
+  const tier = getTier(d);
+  const cls = tier === 'Low Drift' ? 'badge-signal' : tier === 'Moderate drift' ? 'badge-mixed' : tier === 'Unresolved' ? 'badge-unresolved' : 'badge-high';
+  return `<span class="badge ${cls}">${tier}</span>`;
+}
+
+// ============ TAB 1: OVERALL SUMMARY ============
+function renderSummary() {
+  const valid = STAB_DATA.filter(d => !d.is_low_confidence);
+
+  // Noise distribution
+  const buckets = [{label:'>0.9 (Noise)',cls:'badge-high'},{label:'0.5–0.9 (Mixed)',cls:'badge-mixed'},{label:'<0.5 (Signal)',cls:'badge-signal'}];
+  let distHtml = '';
+  SEG_ORDER.forEach(seg => {
+    const rows = valid.filter(d => d.user_segment === seg);
+    const hi = rows.filter(d => d.noise_share_1d > 0.9).length;
+    const mid = rows.filter(d => d.noise_share_1d >= 0.5 && d.noise_share_1d <= 0.9).length;
+    const lo = rows.filter(d => d.noise_share_1d < 0.5).length;
+    const pcts = [hi,mid,lo].map(v => ((v/rows.length)*100).toFixed(0));
+    distHtml += `<div class="metric-box">
+      <div style="font-weight:600;color:${SEG_COLORS[seg]};margin-bottom:8px">${SEG_SHORT[seg]}</div>
+      <div style="display:flex;gap:4px;justify-content:center">
+        <span class="badge badge-high">${pcts[0]}% noise</span>
+        <span class="badge badge-mixed">${pcts[1]}% mixed</span>
+        <span class="badge badge-signal">${pcts[2]}% signal</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${rows.length} cells</div>
+    </div>`;
+  });
+  document.getElementById('noise-dist').innerHTML = distHtml;
+
+  // Tier distribution
+  let tierHtml = '';
+  SEG_ORDER.forEach(seg => {
+    const rows = valid.filter(d => d.user_segment === seg);
+    const locked = rows.filter(d => getTier(d) === 'Low Drift').length;
+    const moderate = rows.filter(d => getTier(d) === 'Moderate drift').length;
+    const high = rows.filter(d => getTier(d) === 'High drift').length;
+    const unresolved = rows.filter(d => getTier(d) === 'Unresolved').length;
+    const pcts = [locked, moderate, high, unresolved].map(v => ((v/rows.length)*100).toFixed(0));
+    tierHtml += `<div class="metric-box">
+      <div style="font-weight:600;color:${SEG_COLORS[seg]};margin-bottom:8px">${SEG_SHORT[seg]}</div>
+      <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+        <span class="badge badge-signal">${pcts[0]}% low drift</span>
+        <span class="badge badge-mixed">${pcts[1]}% moderate</span>
+        <span class="badge badge-high">${pcts[2]}% high drift</span>
+        <span class="badge badge-unresolved">${pcts[3]}% unresolved</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">${rows.length} cells</div>
+    </div>`;
+  });
+  document.getElementById('tier-dist').innerHTML = tierHtml;
+
+  // Pair bucket table
+  const pairBuckets = [
+    {label:'5000+', min:5000, max:Infinity},
+    {label:'2000–5000', min:2000, max:5000},
+    {label:'1000–2000', min:1000, max:2000},
+    {label:'500–1000', min:500, max:1000},
+    {label:'200–500', min:200, max:500},
+    {label:'100–200', min:100, max:200},
+    {label:'50–100', min:50, max:100},
+    {label:'30–50', min:0, max:50}
+  ];
+  let tbodyHtml = '';
+  pairBuckets.forEach(b => {
+    const rows = valid.filter(d => d.avg_pairs_per_day >= b.min && d.avg_pairs_per_day < b.max);
+    if(rows.length === 0) return;
+    const avg = (arr, fn) => arr.reduce((s,d) => s + (fn(d)||0), 0) / arr.length;
+    const pctLocked = ((rows.filter(d => getTier(d) === 'Low Drift').length / rows.length) * 100).toFixed(0);
+    const pctModerate = ((rows.filter(d => getTier(d) === 'Moderate drift').length / rows.length) * 100).toFixed(0);
+    const pctHighDrift = ((rows.filter(d => getTier(d) === 'High drift').length / rows.length) * 100).toFixed(0);
+    const pctUnresolved = ((rows.filter(d => getTier(d) === 'Unresolved').length / rows.length) * 100).toFixed(0);
+    tbodyHtml += `<tr>
+      <td><strong>${b.label}</strong></td>
+      <td>${rows.length}</td>
+      <td><span class="badge badge-signal">${pctLocked}%</span></td>
+      <td><span class="badge badge-mixed">${pctModerate}%</span></td>
+      <td><span class="badge badge-high">${pctHighDrift}%</span></td>
+      <td><span class="badge badge-unresolved">${pctUnresolved}%</span></td>
+      <td>${Math.sqrt(avg(rows, d=>d.excess_var_1d)).toFixed(3)}</td>
+      <td>${(avg(rows, d=>d.sign_agree_1d)*100).toFixed(1)}%</td>
+      <td>${(avg(rows, d=>d.sign_agree_7d)*100).toFixed(1)}%</td>
+      <td>${avg(rows, d=>d.sd_daily_rate_1d).toFixed(3)}</td>
+    </tr>`;
+  });
+  document.querySelector('#pair-bucket-table tbody').innerHTML = tbodyHtml;
+
+}
+
+// ============ TAB 2: TITLE × SEGMENT TABLE ============
+function renderSegTable() {
+  const segF = document.getElementById('seg-filter').value;
+  const sortF = document.getElementById('seg-sort').value;
+  const minPairs = parseInt(document.getElementById('seg-min-pairs').value) || 0;
+  const hideLow = document.getElementById('seg-hide-low').checked;
+
+  let data = STAB_DATA.slice();
+  if(segF !== 'all') data = data.filter(d => d.user_segment === segF);
+  if(minPairs > 0) data = data.filter(d => d.avg_pairs_per_day >= minPairs);
+  if(hideLow) data = data.filter(d => !d.is_low_confidence);
+
+  const sortFns = {
+    pairs: (a,b) => (b.avg_pairs_per_day||0) - (a.avg_pairs_per_day||0),
+    noise: (a,b) => (a.noise_share_1d||99) - (b.noise_share_1d||99),
+    signal: (a,b) => (b.excess_var_1d||0) - (a.excess_var_1d||0),
+    sign: (a,b) => (a.sign_agree_1d||99) - (b.sign_agree_1d||99),
+    rate: (a,b) => (b.mean_rate_1d||0) - (a.mean_rate_1d||0)
+  };
+  data.sort(sortFns[sortF]);
+
+  const fmt = (v,d=2) => v == null ? '—' : v.toFixed(d);
+  const pct = v => v == null ? '—' : (v*100).toFixed(1)+'%';
+  const segCls = s => s.includes('Retained')?'seg-retained':s.includes('New')?'seg-new':s.includes('Non-active')?'seg-reactivated':'seg-power';
+
+  let html = '';
+  data.slice(0, 500).forEach(d => {
+    const nsBadge = d.noise_share_1d > 0.9 ? 'badge-high' : d.noise_share_1d >= 0.5 ? 'badge-mixed' : 'badge-signal';
+    const cv = getSignalCV(d);
+    const cvStr = cv === Infinity ? '∞' : cv.toFixed(2);
+    html += `<tr>
+      <td>${d.title_name}</td>
+      <td class="${segCls(d.user_segment)}">${SEG_SHORT[d.user_segment]}</td>
+      <td>${Math.round(d.avg_pairs_per_day||0)}</td>
+      <td>${getTierBadge(d)}</td>
+      <td><span class="badge ${nsBadge}">${pct(d.noise_share_1d)}</span></td>
+      <td>${fmt(d.excess_var_1d ? Math.sqrt(d.excess_var_1d) : 0, 3)}</td>
+      <td>${cvStr}</td>
+      <td>${pct(d.dow_share_1d)}</td>
+      <td>${fmt(d.mean_rate_1d, 3)}</td>
+      <td>${fmt(d.sd_daily_rate_1d, 3)}</td>
+      <td>${pct(d.sign_agree_1d)}</td>
+      <td>${fmt(d.sd_daily_rate_3d, 3)}</td>
+      <td>${pct(d.sign_agree_3d)}</td>
+      <td>${fmt(d.sd_daily_rate_7d, 3)}</td>
+      <td>${pct(d.sign_agree_7d)}</td>
+      <td>${d.n_days_1d||'—'}</td>
+      <td>${d.is_low_confidence ? '⚠️' : ''}</td>
+    </tr>`;
+  });
+  document.querySelector('#seg-table tbody').innerHTML = html;
+}
+
+['seg-filter','seg-sort','seg-min-pairs','seg-hide-low'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderSegTable);
+  document.getElementById(id).addEventListener('input', renderSegTable);
+});
+
+// ============ TAB 3: DAILY TRENDS ============
+
+// Segment visibility state (all visible by default)
+const segVisible = {'Active non-power (Retained)':true, 'New (M1)':true, 'Non-active (Reactivated)':true, 'Power Viewer':true};
+
+// Legend click toggles segment visibility
+document.querySelectorAll('.legend-item[data-seg]').forEach(el => {
+  el.addEventListener('click', () => {
+    const seg = el.dataset.seg;
+    segVisible[seg] = !segVisible[seg];
+    el.style.opacity = segVisible[seg] ? '1' : '0.3';
+    el.style.textDecoration = segVisible[seg] ? 'none' : 'line-through';
+    renderDailyTrends();
+  });
+});
+
+function renderDailyTrends() {
+  const titleName = document.getElementById('daily-title').value;
+  const postWin = parseInt(document.getElementById('daily-window').value);
+  if(!titleName) return;
+
+  const titleDaily = DAILY_DATA.filter(d => d.title_name === titleName && d.post_window_days === postWin);
+  const titleStab = STAB_DATA.filter(d => d.title_name === titleName);
+
+  document.getElementById('daily-chart-title').textContent = `${titleName} — ${postWin}d Post-Window Daily Rates`;
+
+  // Draw chart
+  const canvas = document.getElementById('daily-chart');
+  const ctx = canvas.getContext('2d');
+
+  const dpr = self.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const W = rect.width || 900;
+  const H = 420;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Collect all dates and rates
+  const dates = [...new Set(titleDaily.map(d => d.event_date))].sort();
+  if(dates.length === 0) {
+    ctx.fillStyle = '#666';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data for this title/window combination', W/2, H/2);
+    renderDailySummary(titleStab, postWin);
+    renderDailyDetail(titleDaily);
+    return;
+  }
+
+  // Chart margins
+  const ml = 65, mr = 30, mt = 25, mb = 55;
+  const cw = W - ml - mr;
+  const ch = H - mt - mb;
+
+  // Find rate range including CIs (only visible segments)
+  let minR = Infinity, maxR = -Infinity;
+  titleDaily.filter(d => segVisible[d.user_segment]).forEach(d => {
+    if(d.rate == null) return;
+    const se = d.se_rate || 0;
+    minR = Math.min(minR, d.rate - 1.96 * se);
+    maxR = Math.max(maxR, d.rate + 1.96 * se);
+  });
+  let pad = (maxR - minR) * 0.12 || 0.2;
+  minR -= pad; maxR += pad;
+
+  // Helper: data to pixel
+  const xPx = (i) => ml + (i / (dates.length - 1 || 1)) * cw;
+  const yPx = (v) => mt + ch * (maxR - v) / (maxR - minR);
+
+  // Draw Y gridlines
+  ctx.strokeStyle = '#e8e8e8';
+  ctx.lineWidth = 1;
+  ctx.font = '11px -apple-system, sans-serif';
+  ctx.fillStyle = '#666';
+  ctx.textAlign = 'right';
+  const nGrid = 6;
+  for(let i = 0; i <= nGrid; i++) {
+    const val = minR + (maxR - minR) * (nGrid - i) / nGrid;
+    const y = mt + (ch * i / nGrid);
+    ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(ml + cw, y); ctx.stroke();
+    ctx.fillText(val.toFixed(2), ml - 8, y + 4);
+  }
+
+  // Draw zero line
+  if(minR < 0 && maxR > 0) {
+    const y0 = yPx(0);
+    ctx.save();
+    ctx.strokeStyle = '#999'; ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(ml, y0); ctx.lineTo(ml+cw, y0); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Draw rate=1 reference if in range
+  if(minR < 1 && maxR > 1) {
+    const y1 = yPx(1);
+    ctx.save();
+    ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(ml, y1); ctx.lineTo(ml+cw, y1); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#999'; ctx.textAlign = 'left'; ctx.font = '10px sans-serif';
+    ctx.fillText('rate=1', ml+cw+4, y1+3);
+  }
+
+  // X axis labels
+  ctx.fillStyle = '#444'; ctx.textAlign = 'center'; ctx.font = '11px sans-serif';
+  dates.forEach((dt, i) => {
+    const x = xPx(i);
+    // Vertical gridline (light)
+    ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, mt); ctx.lineTo(x, mt+ch); ctx.stroke();
+    // Label
+    const day = dt.slice(8);
+    const mon = dt.slice(5,7);
+    ctx.fillText(`${mon}/${day}`, x, H - mb + 18);
+  });
+
+  // Y axis label
+  ctx.save();
+  ctx.fillStyle = '#666'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  ctx.translate(15, mt + ch/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Additive Proportional Rate', 0, 0);
+  ctx.restore();
+
+  // Draw each segment: CI whiskers + scatter dots + connecting line
+  const segOffsets = {'Active non-power (Retained)': -1.5, 'New (M1)': -0.5, 'Non-active (Reactivated)': 0.5, 'Power Viewer': 1.5};
+
+  SEG_ORDER.forEach(seg => {
+    if(!segVisible[seg]) return;
+    const segData = titleDaily.filter(d => d.user_segment === seg);
+    if(segData.length === 0) return;
+    const color = SEG_COLORS[seg];
+    const xOff = segOffsets[seg] * 3; // slight horizontal offset to avoid overlap
+
+    // Build points array aligned to dates
+    const points = dates.map((dt, i) => {
+      const d = segData.find(r => r.event_date === dt);
+      if(!d || d.rate == null) return null;
+      return {
+        x: xPx(i) + xOff,
+        y: yPx(d.rate),
+        yHi: yPx(d.rate + 1.96*(d.se_rate||0)),
+        yLo: yPx(d.rate - 1.96*(d.se_rate||0)),
+        rate: d.rate,
+        se: d.se_rate
+      };
+    });
+
+    // Draw CI whiskers (vertical lines with caps)
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    points.forEach(p => {
+      if(!p) return;
+      ctx.beginPath(); ctx.moveTo(p.x, p.yHi); ctx.lineTo(p.x, p.yLo); ctx.stroke();
+      // Caps
+      ctx.beginPath(); ctx.moveTo(p.x-3, p.yHi); ctx.lineTo(p.x+3, p.yHi); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x-3, p.yLo); ctx.lineTo(p.x+3, p.yLo); ctx.stroke();
+    });
+
+    // Draw connecting line (thin)
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    let first = true;
+    points.forEach(p => {
+      if(!p) {first = true; return;}
+      if(first){ctx.moveTo(p.x, p.y); first=false;} else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    // Draw scatter dots
+    ctx.fillStyle = color;
+    points.forEach(p => {
+      if(!p) return;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill();
+      // White border for visibility
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.stroke();
+    });
+  });
+
+  renderDailySummary(titleStab, postWin);
+  renderDailyDetail(titleDaily);
+}
+
+function renderDailySummary(titleStab, postWin) {
+  const fmt = (v,d=3) => v == null ? '—' : v.toFixed(d);
+  const pct = v => v == null ? '—' : (v*100).toFixed(1)+'%';
+  let html = '';
+  SEG_ORDER.forEach(seg => {
+    const d = titleStab.find(r => r.user_segment === seg);
+    if(!d) return;
+    const meanRate = postWin===1 ? d.mean_rate_1d : postWin===3 ? d.mean_rate_3d : d.mean_rate_7d;
+    const sd = postWin===1 ? d.sd_daily_rate_1d : postWin===3 ? d.sd_daily_rate_3d : d.sd_daily_rate_7d;
+    const sign = postWin===1 ? d.sign_agree_1d : postWin===3 ? d.sign_agree_3d : d.sign_agree_7d;
+    const segCls = seg.includes('Retained')?'seg-retained':seg.includes('New')?'seg-new':seg.includes('Non-active')?'seg-reactivated':'seg-power';
+    html += `<tr>
+      <td class="${segCls}">${SEG_SHORT[seg]}</td>
+      <td>${Math.round(d.avg_pairs_per_day||0)}</td>
+      <td>${fmt(meanRate)}</td>
+      <td>${fmt(sd)}</td>
+      <td><span class="badge ${d.noise_share_1d > 0.9 ? 'badge-high' : d.noise_share_1d >= 0.5 ? 'badge-mixed' : 'badge-signal'}">${pct(d.noise_share_1d)}</span></td>
+      <td>${pct(sign)}</td>
+      <td>${getTierBadge(d)}</td>
+    </tr>`;
+  });
+  document.querySelector('#daily-summary-table tbody').innerHTML = html;
+}
+
+function renderDailyDetail(titleDaily) {
+  const segCls = s => s.includes('Retained')?'seg-retained':s.includes('New')?'seg-new':s.includes('Non-active')?'seg-reactivated':'seg-power';
+  let html = '';
+  titleDaily.sort((a,b) => a.event_date.localeCompare(b.event_date) || SEG_ORDER.indexOf(a.user_segment) - SEG_ORDER.indexOf(b.user_segment));
+  titleDaily.forEach(d => {
+    const ci = d.rate != null && d.se_rate != null ? `[${(d.rate-1.96*d.se_rate).toFixed(3)}, ${(d.rate+1.96*d.se_rate).toFixed(3)}]` : '—';
+    html += `<tr>
+      <td>${d.event_date ? d.event_date.slice(5) : '—'}</td>
+      <td class="${segCls(d.user_segment)}">${SEG_SHORT[d.user_segment]}</td>
+      <td>${d.rate != null ? d.rate.toFixed(3) : '—'}</td>
+      <td>${d.n_pairs || '—'}</td>
+      <td>${d.se_rate != null ? d.se_rate.toFixed(4) : '—'}</td>
+      <td style="font-size:11px">${ci}</td>
+    </tr>`;
+  });
+  document.querySelector('#daily-detail-table tbody').innerHTML = html;
+}
+
+// Populate title dropdown + datalist
+function populateTitleDropdown() {
+  const titles = [...new Set(STAB_DATA.map(d => d.title_name))].sort();
+  const sel = document.getElementById('daily-title');
+  const datalist = document.getElementById('title-datalist');
+  titles.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+    const dlOpt = document.createElement('option');
+    dlOpt.value = t;
+    datalist.appendChild(dlOpt);
+  });
+  const defaultTitle = titles.includes("Michael Jackson's This Is It") ? "Michael Jackson's This Is It" : titles[0];
+  sel.value = defaultTitle;
+  document.getElementById('daily-title-search').value = defaultTitle;
+}
+
+// Sync search input → dropdown
+document.getElementById('daily-title-search').addEventListener('change', function() {
+  const sel = document.getElementById('daily-title');
+  const titles = [...sel.options].map(o => o.value);
+  if(titles.includes(this.value)) {
+    sel.value = this.value;
+    renderDailyTrends();
+  }
+});
+document.getElementById('daily-title-search').addEventListener('input', function() {
+  const sel = document.getElementById('daily-title');
+  const titles = [...sel.options].map(o => o.value);
+  if(titles.includes(this.value)) {
+    sel.value = this.value;
+    renderDailyTrends();
+  }
+});
+
+// Sync dropdown → search input
+document.getElementById('daily-title').addEventListener('change', function() {
+  document.getElementById('daily-title-search').value = this.value;
+  renderDailyTrends();
+});
+document.getElementById('daily-window').addEventListener('change', renderDailyTrends);
+
+// Init
+populateTitleDropdown();
+renderSummary();
+renderSegTable();
+renderDailyTrends();
+</script>
+</body>
+</html>
