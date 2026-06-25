@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Content Incrementality (June 2026 - June 1-7) v8b Results — Search+Deeplink Adjusted</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e6ea; }
+  .tab-btn { padding: 10px 22px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+  .controls label { font-size: 13px; font-weight: 600; color: #1B3A5C; }
+  .controls select { font-family: Calibri; font-size: 13px; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; }
+  .legend { display: flex; gap: 20px; margin-bottom: 1rem; font-size: 13px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .chart-title { font-size: 16px; font-weight: 600; color: #2E75B6; margin-bottom: 8px; }
+  .scatter-wrap { position: relative; width: 100%; height: 620px; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality (June 2026 - June 1-7) v8b Results — Search+Deeplink Adjusted</h1>
+<p class="subtitle">398 titles · 4 viewer segments · min 30 matched pairs · 7d post-period · 11 event dates pooled · Search+Deeplink TVT treated as 100% incremental</p>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-rank">Incrementality Rank</button>
+  <button class="tab-btn" data-tab="tab-incr">Incremental TVT vs Title TVT Scatter</button>
+  <button class="tab-btn" data-tab="tab-search">Single Title Summary</button>
+  <button class="tab-btn" data-tab="tab-tvt7">7d Rate vs Segment TVT Scatter</button>
+</div>
+
+<!-- TAB: 7d Rate vs Segment TVT -->
+<div class="tab-panel" id="tab-tvt7">
+  <div class="summary-box">
+    <b>Reading:</b> Each point is one title×segment cell. X = June 1-7 segment TVT (hours, log scale), Y = 7d winsorized additive proportional rate.
+    Vertical whiskers show 95% CI on rate. Reference line at rate=1.0 (no incremental effect).
+  </div>
+  <div class="controls">
+    <label>Titles:</label>
+    <select id="tvt7PageSelect"></select>
+    <label style="margin-left:20px;">Min pairs:</label>
+    <select id="tvt7PairsFilter">
+      <option value="30">30</option>
+      <option value="100" selected>100</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+    </select>
+  </div>
+  <div class="legend" id="legend3"></div>
+  <div class="chart-title" id="tvt7Title"></div>
+  <div class="scatter-wrap"><canvas id="tvt7Chart"></canvas></div>
+</div>
+
+<!-- TAB: Single Title Summary -->
+<div class="tab-panel" id="tab-search">
+  <div class="summary-box">
+    <b>Search+Deeplink Adjusted Formula:</b> Total Incr TVT = Search+Deeplink TVT (100% incremental) + Rate × Non-Search-Deeplink TVT.<br>
+    Deeplink is identified by attribution fields (attribution_type, attribution_campaign, attribution_medium all non-empty).<br>
+    Enter a title name (partial match) or program ID to see the breakdown.
+  </div>
+  <div class="controls">
+    <label>Title:</label>
+    <input type="text" id="titleSearchInput" placeholder="Search by title name or program ID..." style="font-family:Calibri; font-size:13px; padding:5px 10px; border:1px solid #ccc; border-radius:4px; width:300px;">
+    <button id="titleSearchBtn" style="font-family:Calibri; font-size:13px; padding:5px 14px; background:#2E75B6; color:#fff; border:none; border-radius:4px; cursor:pointer;">Search</button>
+  </div>
+  <div id="searchResults" style="margin-top:1rem;"></div>
+</div>
+
+<!-- TAB: Incrementality Rank -->
+<div class="tab-panel active" id="tab-rank">
+  <div class="summary-box">
+    <b>Search+Deeplink Adjusted Incremental TVT</b> = Search+Deeplink TVT (treated as 100% incremental) + Rate × Non-Search-Deeplink TVT per segment.<br>
+    <b>Old Incr TVT</b> = Rate × Total Seg TVT (original formula for comparison).<br>
+    <span style="color:#666;">Deeplink = sessions where attribution_type, attribution_campaign, and attribution_medium are all non-empty.</span>
+  </div>
+  <div class="controls">
+    <label>Sort by:</label>
+    <select id="rankSort">
+      <option value="incrRank">Search+DL Incr TVT Rank</option>
+      <option value="juneTvt">June 1-7 Movie TVT Rank</option>
+      <option value="searchIncrTvt">Search+DL Incr TVT</option>
+      <option value="searchTvt">Search+DL TVT</option>
+      <option value="searchDlShare">Search+DL Share %</option>
+      <option value="oldIncrTvt">Old Incr TVT</option>
+      <option value="ratio">Ratio (Search+DL Adj)</option>
+      <option value="segTvt_3">Power Viewer Seg TVT</option>
+      <option value="segRate_3">Power Viewer Rate</option>
+      <option value="segTvt_0">Retained Seg TVT</option>
+      <option value="segRate_0">Retained Rate</option>
+      <option value="segTvt_2">Reactivated Seg TVT</option>
+      <option value="segRate_2">Reactivated Rate</option>
+      <option value="segTvt_1">New (M1) Seg TVT</option>
+      <option value="segRate_1">New (M1) Rate</option>
+    </select>
+    <label style="margin-left:20px;">Order:</label>
+    <select id="rankOrder">
+      <option value="desc" selected>Desc</option>
+      <option value="asc">Asc</option>
+    </select>
+    <label style="margin-left:20px;">Min pairs:</label>
+    <select id="rankPairs">
+      <option value="30">30</option>
+      <option value="100" selected>100</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+    </select>
+  </div>
+  <div id="rankTable" style="margin-top:1rem; overflow-x:auto;"></div>
+</div>
+
+<!-- TAB: Incremental TVT vs Title TVT -->
+<div class="tab-panel" id="tab-incr">
+  <div class="summary-box">
+    <b>Reading:</b> Each point is one title. X = June 1-7 title TVT (hours, log scale), Y = Search+DL Adjusted Incremental TVT = Σ(Search+DL TVT + Rate × Non-Search-DL TVT) across segments (hours).
+    Diagonal = title TVT (100% incremental).
+  </div>
+  <div class="controls">
+    <label>Min pairs (per segment):</label>
+    <select id="incrPairsFilter">
+      <option value="30">30</option>
+      <option value="100" selected>100</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+    </select>
+  </div>
+  <div class="legend" id="legend4"></div>
+  <div class="chart-title" id="incrTitle">Search+Deeplink Adjusted Incremental TVT vs Title TVT</div>
+  <div class="scatter-wrap"><canvas id="incrChart"></canvas></div>
+</div>
+
+<script>
+// DATA: [title_id, title_name, seg_idx, seg_tvt(june1-7), rate_7d, n_pairs, title_tvt(june1-7), ci_lo_7d_hrs, ci_hi_7d_hrs, incr_hrs_7d, ci_lo_rate_7d, ci_hi_rate_7d, search_deeplink_tvt, non_search_deeplink_tvt]
+</script>
+<script src="v8b_search_deeplink_incr_data.js"></script>
+<script>
+const SEG = [
+  {key:'Active non-power (Retained)', color:'#1D9E75', label:'Retained'},
+  {key:'New (M1)', color:'#378ADD', label:'New (M1)'},
+  {key:'Non-active (Reactivated)', color:'#D85A30', label:'Reactivated'},
+  {key:'Power Viewer', color:'#534AB7', label:'Power Viewer'}
+];
+
+['legend3'].forEach(id => {
+  const el = document.getElementById(id);
+  SEG.forEach(s => { el.innerHTML += '<span><span class="dot" style="background:'+s.color+'"></span>'+s.label+'</span>'; });
+});
+const leg4 = document.getElementById('legend4');
+leg4.innerHTML = '<span><span class="dot" style="background:#2E75B6"></span>Search+DL Adj Incr TVT</span><span><span class="dot" style="background:#D85A30"></span>Old Incr TVT</span>';
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+const titleTvt = {};
+ALL.forEach(r => { if (!titleTvt[r[1]] || r[6] > titleTvt[r[1]]) titleTvt[r[1]] = r[6]; });
+const rankedTitles = Object.keys(titleTvt).sort((a,b) => titleTvt[b] - titleTvt[a]);
+const nTitles = rankedTitles.length;
+const PAGE_SIZE = 100;
+const nPages = Math.ceil(nTitles / PAGE_SIZE);
+
+['tvt7PageSelect'].forEach(selId => {
+  const sel = document.getElementById(selId);
+  for (let i = 0; i < nPages; i++) {
+    const s = i*PAGE_SIZE+1, e = Math.min((i+1)*PAGE_SIZE, nTitles);
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = 'Top ' + s + '–' + e;
+    sel.appendChild(opt);
+  }
+});
+
+// ==================== 7d RATE vs SEGMENT TVT ====================
+let tvt7Chart = null;
+
+function buildRateTvtChart(opts) {
+  const page = +document.getElementById(opts.pageSelId).value;
+  const minPairs = +document.getElementById(opts.pairsSelId).value;
+
+  const s = page*PAGE_SIZE+1, e = Math.min((page+1)*PAGE_SIZE, nTitles);
+  const pageTitles = new Set(rankedTitles.slice(page*PAGE_SIZE, page*PAGE_SIZE+PAGE_SIZE));
+  const filtered = ALL.filter(r => pageTitles.has(r[1]) && r[5] >= minPairs && r[4] !== null && r[3] > 0);
+
+  document.getElementById(opts.titleId).textContent = opts.chartLabel + ' (Top ' + s + '–' + e + ')';
+  if (opts.chart) opts.chart.destroy();
+
+  const datasets = SEG.map((seg, si) => ({
+    label: seg.label,
+    data: filtered.filter(r => r[2]===si).map(r => ({x:r[3], y:r[4], title:r[1], n_pairs:r[5], ci_lo:r[10], ci_hi:r[11]})),
+    backgroundColor: seg.color + 'AA',
+    borderColor: seg.color,
+    borderWidth: 1,
+    pointRadius: 5,
+    pointHoverRadius: 7
+  }));
+
+  const rateRefPlugin = {
+    id: 'rateRef_'+opts.canvasId,
+    afterDraw(chart) {
+      const ctx = chart.ctx, yS = chart.scales.y, area = chart.chartArea;
+      const yPx = yS.getPixelForValue(1.0);
+      if (yPx < area.top || yPx > area.bottom) return;
+      ctx.save();
+      ctx.strokeStyle = '#aaa';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(area.left, yPx); ctx.lineTo(area.right, yPx); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#999'; ctx.font = '11px Calibri'; ctx.textAlign = 'right';
+      ctx.fillText('rate = 1.0', area.right - 5, yPx - 6);
+      ctx.restore();
+    }
+  };
+
+  const ciVertPlugin = {
+    id: 'ciVert_'+opts.canvasId,
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx, yS = chart.scales.y, area = chart.chartArea;
+      chart.data.datasets.forEach((ds, di) => {
+        const meta = chart.getDatasetMeta(di);
+        meta.data.forEach((pt, i) => {
+          const d = ds.data[i];
+          if (!d || d.ci_lo == null || d.ci_hi == null) return;
+          const yL = Math.min(yS.getPixelForValue(d.ci_lo), area.bottom);
+          const yH = Math.max(yS.getPixelForValue(d.ci_hi), area.top);
+          ctx.save();
+          ctx.strokeStyle = ds.borderColor;
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = 0.35;
+          ctx.beginPath(); ctx.moveTo(pt.x, yL); ctx.lineTo(pt.x, yH); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(pt.x-2, yL); ctx.lineTo(pt.x+2, yL); ctx.moveTo(pt.x-2, yH); ctx.lineTo(pt.x+2, yH); ctx.stroke();
+          ctx.restore();
+        });
+      });
+    }
+  };
+
+  const newChart = new Chart(document.getElementById(opts.canvasId), {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'logarithmic',
+          title:{display:true, text:'June 1-7 Segment TVT (hours, log scale)', font:{size:12}},
+          min: 100,
+          max: 700000,
+          ticks: {
+            callback: v => v >= 1000000 ? (v/1000000)+'M' : v >= 1000 ? (v/1000)+'K' : v
+          }
+        },
+        y: { title:{display:true, text:opts.yLabel, font:{size:12}}, min:-2, max:2 }
+      },
+      plugins: {
+        legend:{display:true, position:'top'},
+        tooltip:{callbacks:{
+          label: ctx => {
+            const p=ctx.raw;
+            const tvtStr = p.x >= 1000000 ? (p.x/1000000).toFixed(1)+'M' : (p.x/1000).toFixed(0)+'K';
+            return [`${p.title} (${ctx.dataset.label})`, `Rate: ${p.y.toFixed(3)} [${p.ci_lo.toFixed(3)}, ${p.ci_hi.toFixed(3)}]`, `Seg TVT: ${tvtStr} hrs, pairs: ${p.n_pairs.toLocaleString()}`];
+          }
+        }}
+      }
+    },
+    plugins: [rateRefPlugin, ciVertPlugin]
+  });
+  return newChart;
+}
+
+function buildTvt7() {
+  tvt7Chart = buildRateTvtChart({
+    pageSelId:'tvt7PageSelect', pairsSelId:'tvt7PairsFilter', titleId:'tvt7Title',
+    canvasId:'tvt7Chart', chart:tvt7Chart,
+    rateIdx:4, ciLoIdx:10, ciHiIdx:11,
+    chartLabel:'7d Additive Proportional Rate vs June 1-7 Segment TVT',
+    yLabel:'Additive Proportional Rate (7d wz)'
+  });
+}
+
+// ==================== INCREMENTAL TVT vs TITLE TVT ====================
+let incrChart = null;
+
+function buildIncrTvt() {
+  const minPairs = +document.getElementById('incrPairsFilter').value;
+
+  const titleData = {};
+  ALL.forEach(r => {
+    if (r[5] < minPairs || r[3] <= 0) return;
+    const title = r[1];
+    if (!titleData[title]) titleData[title] = { titleTvt: r[6], searchIncr: 0, oldIncr: 0, segs: 0 };
+    if (r[4] !== null) {
+      const searchDlTvt = r[12] || 0;
+      const nonSearchDlTvt = r[13] || 0;
+      titleData[title].searchIncr += searchDlTvt + r[4] * nonSearchDlTvt;
+      titleData[title].oldIncr += r[4] * r[3];
+      titleData[title].segs++;
+    }
+  });
+
+  const dataNew = [], dataOld = [];
+  Object.entries(titleData).forEach(([title, d]) => {
+    if (d.titleTvt > 0 && d.segs > 0) {
+      if (d.searchIncr > 0) dataNew.push({x: d.titleTvt, y: d.searchIncr, title});
+      if (d.oldIncr > 0) dataOld.push({x: d.titleTvt, y: d.oldIncr, title});
+    }
+  });
+
+  if (incrChart) incrChart.destroy();
+
+  const diagonalPlugin = {
+    id: 'diag_incr',
+    afterDraw(chart) {
+      const ctx = chart.ctx, xS = chart.scales.x, yS = chart.scales.y;
+      const startV = Math.max(xS.min, yS.min > 0 ? yS.min : xS.min);
+      const endV = Math.min(xS.max, yS.max);
+      const x1 = xS.getPixelForValue(startV), y1 = yS.getPixelForValue(startV);
+      const x2 = xS.getPixelForValue(endV), y2 = yS.getPixelForValue(endV);
+      ctx.save();
+      ctx.strokeStyle = '#aaa';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#999'; ctx.font = '11px Calibri'; ctx.textAlign = 'right';
+      ctx.fillText('Incr TVT = Title TVT', x2-5, y2-8);
+      ctx.restore();
+    }
+  };
+
+  incrChart = new Chart(document.getElementById('incrChart'), {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Search+DL Adj Incr TVT',
+          data: dataNew,
+          backgroundColor: '#2E75B6AA',
+          borderColor: '#2E75B6',
+          borderWidth: 1,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        },
+        {
+          label: 'Old Incr TVT',
+          data: dataOld,
+          backgroundColor: '#D85A3066',
+          borderColor: '#D85A30',
+          borderWidth: 1,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'logarithmic',
+          title:{display:true, text:'June 1-7 Title TVT (hours, log scale)', font:{size:12}},
+          min: 2000,
+          max: 1500000,
+          ticks: { callback: v => v >= 1000000 ? (v/1000000)+'M' : v >= 1000 ? (v/1000)+'K' : v }
+        },
+        y: {
+          type: 'logarithmic',
+          title:{display:true, text:'Incremental TVT (hours, log scale)', font:{size:12}},
+          min: 50,
+          max: 1500000,
+          ticks: { callback: v => v >= 1000000 ? (v/1000000)+'M' : v >= 1000 ? (v/1000)+'K' : v }
+        }
+      },
+      plugins: {
+        legend:{display:true, position:'top'},
+        tooltip:{callbacks:{
+          label: ctx => {
+            const p=ctx.raw;
+            const fmt = v => v >= 1000000 ? (v/1000000).toFixed(2)+'M' : (v/1000).toFixed(0)+'K';
+            return [`${p.title}`, `Title TVT: ${fmt(p.x)} hrs`, `Incr TVT: ${fmt(p.y)} hrs`, `Ratio: ${(p.y/p.x*100).toFixed(1)}%`];
+          }
+        }}
+      }
+    },
+    plugins: [diagonalPlugin]
+  });
+}
+
+document.getElementById('tvt7PageSelect').addEventListener('change', buildTvt7);
+document.getElementById('tvt7PairsFilter').addEventListener('change', buildTvt7);
+document.getElementById('incrPairsFilter').addEventListener('change', buildIncrTvt);
+
+buildTvt7();
+buildIncrTvt();
+
+// ==================== SINGLE TITLE SUMMARY ====================
+function searchTitle() {
+  const query = document.getElementById('titleSearchInput').value.trim().toLowerCase();
+  const resultsDiv = document.getElementById('searchResults');
+  if (!query) { resultsDiv.innerHTML = '<p style="color:#999;">Enter a title name to search.</p>'; return; }
+
+  const matches = ALL.filter(r => r[1].toLowerCase().includes(query) || r[0].toString().includes(query));
+  const titleSet = [...new Set(matches.map(r => r[1]))];
+
+  if (titleSet.length === 0) { resultsDiv.innerHTML = '<p style="color:#c00;">No titles found matching "'+query+'".</p>'; return; }
+  if (titleSet.length > 10) { resultsDiv.innerHTML = '<p style="color:#c00;">'+titleSet.length+' titles match — please refine your search.</p>'; return; }
+
+  const fmt = v => {if(v==null)return'—';const a=Math.abs(v),s=v<0?'-':'';if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+(a/1e3).toFixed(1)+'K';return s+a.toFixed(0);};
+
+  let html = '';
+  titleSet.forEach(title => {
+    const rows = ALL.filter(r => r[1] === title);
+    const titleId = rows[0][0];
+    const titleTvtVal = rows[0][6];
+
+    html += '<div style="margin-bottom:2rem; border:1px solid #e2e6ea; border-radius:8px; padding:16px;">';
+    html += '<h2 style="font-size:18px; color:#1B3A5C; margin-bottom:4px;">'+title+'</h2>';
+    html += '<p style="font-size:13px; color:#666; margin-bottom:12px;">Program ID: <b>'+titleId+'</b> · June 1-7 Title TVT: <b>'+(titleTvtVal>=1e6?(titleTvtVal/1e6).toFixed(2)+'M':(titleTvtVal/1e3).toFixed(0)+'K')+' hrs</b></p>';
+
+    html += '<table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px;">';
+    html += '<thead><tr style="background:#f0f4f8; text-align:left;">';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Segment</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">N Pairs</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Total Seg TVT</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Search+DL TVT</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Non-Search-DL TVT</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">7d Rate</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">7d Rate 95% CI</th>';
+    html += '</tr></thead><tbody>';
+
+    let totalSearchIncr = 0, totalOldIncr = 0, totalSearchDlTvt = 0;
+    rows.forEach(r => {
+      const segName = SEG[r[2]] ? SEG[r[2]].label : 'Unknown';
+      const segColor = SEG[r[2]] ? SEG[r[2]].color : '#666';
+      const segTvt = r[3];
+      const rate7 = r[4];
+      const nPairs = r[5];
+      const ciLo7 = r[10], ciHi7 = r[11];
+      const searchDlTvt = r[12] || 0;
+      const nonSearchDlTvt = r[13] || 0;
+
+      if (rate7 !== null) {
+        totalSearchIncr += searchDlTvt + rate7 * nonSearchDlTvt;
+        totalOldIncr += rate7 * segTvt;
+      }
+      totalSearchDlTvt += searchDlTvt;
+
+      html += '<tr style="border-bottom:1px solid #eee;">';
+      html += '<td style="padding:6px 10px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+segColor+';margin-right:6px;vertical-align:middle;"></span>'+segName+'</td>';
+      html += '<td style="padding:6px 10px;">'+(nPairs?nPairs.toLocaleString():'—')+'</td>';
+      html += '<td style="padding:6px 10px;">'+fmt(segTvt)+'</td>';
+      html += '<td style="padding:6px 10px; color:#2E75B6; font-weight:600;">'+fmt(searchDlTvt)+'</td>';
+      html += '<td style="padding:6px 10px;">'+fmt(nonSearchDlTvt)+'</td>';
+      html += '<td style="padding:6px 10px; font-weight:600;">'+(rate7!==null?rate7.toFixed(4):'—')+'</td>';
+      html += '<td style="padding:6px 10px;">'+(ciLo7!==null?'['+ciLo7.toFixed(4)+', '+ciHi7.toFixed(4)+']':'—')+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<div style="background:#f8f9fa; border:1px solid #e2e6ea; border-radius:6px; padding:12px 16px; font-size:13px;">';
+    html += '<b style="color:#1B3A5C;">Search+Deeplink Adjusted Incremental TVT Computation</b>';
+    html += '<p style="margin:6px 0 4px; color:#555;">Formula: Incr TVT = Search+DL TVT (100%) + Rate × Non-Search-DL TVT per segment</p>';
+
+    html += '<table style="width:100%; border-collapse:collapse; margin:8px 0; font-size:12px;">';
+    html += '<thead><tr style="text-align:left;"><th style="padding:4px 8px;">Segment</th><th style="padding:4px 8px;">Search+DL TVT</th><th style="padding:4px 8px;">Rate × Non-Search-DL TVT</th><th style="padding:4px 8px;">Segment Total</th></tr></thead><tbody>';
+    rows.forEach(r => {
+      const segName = SEG[r[2]] ? SEG[r[2]].label : 'Unknown';
+      const rate7 = r[4];
+      const searchDlTvt = r[12] || 0;
+      const nonSearchDlTvt = r[13] || 0;
+      const nonSearchDlIncr = rate7 !== null ? rate7 * nonSearchDlTvt : null;
+      const segTotal = rate7 !== null ? searchDlTvt + nonSearchDlIncr : null;
+      html += '<tr style="border-bottom:1px solid #eee;">';
+      html += '<td style="padding:4px 8px;">'+segName+'</td>';
+      html += '<td style="padding:4px 8px; color:#2E75B6;">'+fmt(searchDlTvt)+'</td>';
+      html += '<td style="padding:4px 8px;">'+(rate7!==null ? rate7.toFixed(4)+' × '+fmt(nonSearchDlTvt)+' = <b>'+fmt(nonSearchDlIncr)+'</b>' : '—')+'</td>';
+      html += '<td style="padding:4px 8px; font-weight:600;">'+fmt(segTotal)+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<p style="margin-top:8px; font-size:14px;"><b style="color:#2E75B6;">Search+DL Adj Incr TVT: '+fmt(totalSearchIncr)+' hrs</b> ('+((totalSearchIncr/titleTvtVal)*100).toFixed(1)+'% of title TVT)</p>';
+    html += '<p style="font-size:13px; color:#666;">Old Incr TVT: '+fmt(totalOldIncr)+' hrs ('+((totalOldIncr/titleTvtVal)*100).toFixed(1)+'%) · Search+DL TVT alone: '+fmt(totalSearchDlTvt)+' hrs</p>';
+    html += '</div></div>';
+  });
+
+  resultsDiv.innerHTML = html;
+}
+
+document.getElementById('titleSearchBtn').addEventListener('click', searchTitle);
+document.getElementById('titleSearchInput').addEventListener('keypress', e => { if (e.key==='Enter') searchTitle(); });
+
+// ==================== INCREMENTALITY RANK ====================
+function buildRankTable() {
+  const sortBy = document.getElementById('rankSort').value;
+  const minPairs = +document.getElementById('rankPairs').value;
+
+  const titles = {};
+  ALL.forEach(r => {
+    if (r[5] < minPairs || r[3] <= 0) return;
+    const name = r[1];
+    const titleId = r[0];
+    if (!titles[name]) titles[name] = { name, titleId, titleTvt: r[6], segs: {} };
+    if (r[4] !== null) {
+      if (!titles[name].segs[r[2]]) titles[name].segs[r[2]] = { segTvt: r[3], nPairs: r[5], searchDlTvt: r[12]||0, nonSearchDlTvt: r[13]||0 };
+      titles[name].segs[r[2]].rate = r[4];
+    }
+  });
+
+  const list = Object.values(titles).map(t => {
+    let searchIncrTvt = 0, oldIncrTvt = 0, totalSearchDlTvt = 0;
+    Object.values(t.segs).forEach(s => {
+      if (s.rate != null) {
+        searchIncrTvt += s.searchDlTvt + s.rate * s.nonSearchDlTvt;
+        oldIncrTvt += s.rate * s.segTvt;
+        totalSearchDlTvt += s.searchDlTvt;
+      }
+    });
+    t.searchIncrTvt = searchIncrTvt;
+    t.oldIncrTvt = oldIncrTvt;
+    t.totalSearchDlTvt = totalSearchDlTvt;
+    t.searchDlShare = t.titleTvt > 0 ? totalSearchDlTvt / t.titleTvt : 0;
+    t.ratio = t.titleTvt > 0 ? searchIncrTvt / t.titleTvt : 0;
+    return t;
+  });
+
+  const byTvt = [...list].sort((a,b) => b.titleTvt - a.titleTvt);
+  byTvt.forEach((t, i) => { t.tvtRank = i + 1; });
+  const byIncr = [...list].sort((a,b) => b.searchIncrTvt - a.searchIncrTvt);
+  byIncr.forEach((t, i) => { t.incrRank = i + 1; });
+
+  const order = document.getElementById('rankOrder').value;
+  const dir = order === 'asc' ? 1 : -1;
+  const getSegVal = (t, segIdx, field) => {
+    const s = t.segs[segIdx];
+    if (!s) return 0;
+    if (field === 'tvt') return s.segTvt || 0;
+    if (field === 'rate') return s.rate != null ? s.rate : 0;
+    return 0;
+  };
+  if (sortBy === 'juneTvt') list.sort((a,b) => dir * (a.titleTvt - b.titleTvt));
+  else if (sortBy === 'searchIncrTvt') list.sort((a,b) => dir * (a.searchIncrTvt - b.searchIncrTvt));
+  else if (sortBy === 'searchTvt') list.sort((a,b) => dir * (a.totalSearchDlTvt - b.totalSearchDlTvt));
+  else if (sortBy === 'searchDlShare') list.sort((a,b) => dir * (a.searchDlShare - b.searchDlShare));
+  else if (sortBy === 'oldIncrTvt') list.sort((a,b) => dir * (a.oldIncrTvt - b.oldIncrTvt));
+  else if (sortBy === 'incrRank') list.sort((a,b) => dir * (a.searchIncrTvt - b.searchIncrTvt));
+  else if (sortBy === 'ratio') list.sort((a,b) => dir * (a.ratio - b.ratio));
+  else if (sortBy.startsWith('segTvt_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'tvt') - getSegVal(b,si,'tvt'))); }
+  else if (sortBy.startsWith('segRate_')) { const si = +sortBy.split('_')[1]; list.sort((a,b) => dir * (getSegVal(a,si,'rate') - getSegVal(b,si,'rate'))); }
+  else list.sort((a,b) => dir * (a.searchIncrTvt - b.searchIncrTvt));
+
+  const fmt = v => {if(v==null)return'—';const a=Math.abs(v),s=v<0?'-':'';if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+(a/1e3).toFixed(1)+'K';return s+a.toFixed(0);};
+  const segOrder = [3,0,2,1];
+  const segLabels = {0:'Retained',1:'New (M1)',2:'Reactivated',3:'Power Viewer'};
+  const segColors = {0:'#1D9E75',1:'#378ADD',2:'#D85A30',3:'#534AB7'};
+
+  let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+  html += '<thead><tr style="background:#f0f4f8; text-align:left;">';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">#</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Search+DL Rank</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">TVT Rank</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Program ID</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Program Name</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">June 1-7 Movie TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; color:#2E75B6; font-weight:700;">Search+DL TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; color:#2E75B6;">S+DL Share</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Non-S-DL Incr TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; color:#2E75B6; font-weight:700;">Total Incr TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Old Incr TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Ratio</th>';
+  segOrder.forEach(si => {
+    html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;" colspan="4"><span style="color:'+segColors[si]+'">'+segLabels[si]+'</span><br><span style="font-weight:400; font-size:11px;">S+DL | Non-S-DL | Incr | Rate</span></th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  list.forEach((t, idx) => {
+    const bgColor = idx % 2 === 0 ? '#fff' : '#fafbfc';
+    const nonSearchDlIncr = t.searchIncrTvt - t.totalSearchDlTvt;
+    html += '<tr style="background:'+bgColor+'; border-bottom:1px solid #eee;">';
+    html += '<td style="padding:5px 8px; color:#999;">'+(idx+1)+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600; color:#2E75B6;">'+t.incrRank+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600; color:#D85A30;">'+t.tvtRank+'</td>';
+    html += '<td style="padding:5px 8px; color:#888; font-size:11px;">'+t.titleId+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600;">'+t.name+'</td>';
+    html += '<td style="padding:5px 8px;">'+fmt(t.titleTvt)+'</td>';
+    html += '<td style="padding:5px 8px; color:#2E75B6; font-weight:600;">'+fmt(t.totalSearchDlTvt)+'</td>';
+    html += '<td style="padding:5px 8px; color:#2E75B6;">'+(t.searchDlShare*100).toFixed(1)+'%</td>';
+    html += '<td style="padding:5px 8px;">'+fmt(nonSearchDlIncr)+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:700; color:#2E75B6;">'+fmt(t.searchIncrTvt)+'</td>';
+    html += '<td style="padding:5px 8px; color:#888;">'+fmt(t.oldIncrTvt)+'</td>';
+    html += '<td style="padding:5px 8px;">'+(t.ratio*100).toFixed(1)+'%</td>';
+    segOrder.forEach(si => {
+      const s = t.segs[si];
+      if (s) {
+        const segNonSearchDlIncr = s.rate * s.nonSearchDlTvt;
+        html += '<td style="padding:5px 8px; border-left:2px solid #eee; color:#2E75B6;">'+fmt(s.searchDlTvt)+'</td>';
+        html += '<td style="padding:5px 8px;">'+fmt(s.nonSearchDlTvt)+'</td>';
+        html += '<td style="padding:5px 8px;">'+fmt(segNonSearchDlIncr)+'</td>';
+        html += '<td style="padding:5px 8px;">'+s.rate.toFixed(4)+'</td>';
+      } else {
+        html += '<td style="padding:5px 8px; border-left:2px solid #eee; color:#ccc;">—</td>';
+        html += '<td style="padding:5px 8px; color:#ccc;">—</td>';
+        html += '<td style="padding:5px 8px; color:#ccc;">—</td>';
+        html += '<td style="padding:5px 8px; color:#ccc;">—</td>';
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<p style="margin-top:8px; font-size:12px; color:#666;">Showing '+list.length+' titles with ≥'+minPairs+' pairs per segment · Total Incr TVT = Search+DL TVT + Rate × Non-Search-DL TVT</p>';
+
+  document.getElementById('rankTable').innerHTML = html;
+}
+
+document.getElementById('rankSort').addEventListener('change', buildRankTable);
+document.getElementById('rankOrder').addEventListener('change', buildRankTable);
+document.getElementById('rankPairs').addEventListener('change', buildRankTable);
+buildRankTable();
+</script>
+</body>
+</html>
