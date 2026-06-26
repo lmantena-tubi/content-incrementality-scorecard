@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v8b Incrementality Rate by Event Source</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8f9fa;color:#333;padding:20px}
+h1{font-size:1.4rem;margin-bottom:4px}
+.subtitle{color:#666;font-size:0.85rem;margin-bottom:16px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #ddd;padding-bottom:0}
+.tab{padding:8px 16px;cursor:pointer;border-radius:6px 6px 0 0;background:#e9ecef;font-size:0.85rem;font-weight:500;border:1px solid #ddd;border-bottom:none;transition:background 0.15s}
+.tab.active{background:#fff;border-bottom:2px solid #fff;margin-bottom:-2px;color:#1a73e8}
+.panel{display:none;background:#fff;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.panel.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:0.78rem}
+th{position:sticky;top:0;background:#f1f3f5;padding:6px 8px;text-align:right;border-bottom:2px solid #ccc;white-space:nowrap;font-weight:600}
+th:nth-child(1),th:nth-child(2),th:nth-child(3){text-align:left}
+td{padding:5px 8px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap}
+td:nth-child(1),td:nth-child(2),td:nth-child(3){text-align:left}
+tr:hover{background:#f8f9ff}
+.filters{display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:0.82rem}
+.filters label{font-weight:500}
+.filters select,.filters input{padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.82rem}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:14px;text-align:center}
+.stat-card .value{font-size:1.5rem;font-weight:700;color:#1a73e8}
+.stat-card .label{font-size:0.78rem;color:#666;margin-top:4px}
+.legend{display:flex;gap:16px;margin-bottom:12px;font-size:0.8rem}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.chart-container{position:relative;height:550px;margin:10px 0}
+.rate-bar{display:inline-block;height:12px;border-radius:2px;vertical-align:middle}
+.positive{color:#1D9E75}
+.negative{color:#c00}
+</style>
+</head>
+<body>
+<h1>Content Incrementality v8b — Rate by Event Source</h1>
+<p class="subtitle">Search+Deeplink vs Other (organic/recommendation) · Top 400 Movies · June 1–7, 2026</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab(0)">Summary</div>
+  <div class="tab" onclick="showTab(1)">Rate Comparison</div>
+  <div class="tab" onclick="showTab(2)">Single Title</div>
+  <div class="tab" onclick="showTab(3)">Scatter</div>
+</div>
+
+<div class="panel active" id="panel0"></div>
+<div class="panel" id="panel1"></div>
+<div class="panel" id="panel2"></div>
+<div class="panel" id="panel3"></div>
+
+<script src="v8b_incr_by_event_source_data.js"></script>
+<script>
+// [title_id, title_name, seg_idx, seg_tvt, title_tvt, orig_rate, orig_n_pairs, other_rate, other_n_pairs, other_ci_lo, other_ci_hi, sdl_rate, sdl_n_pairs, sdl_ci_lo, sdl_ci_hi]
+const SEG = [
+  {key:'Active non-power (Retained)', color:'#1D9E75', label:'Retained'},
+  {key:'New (M1)', color:'#378ADD', label:'New (M1)'},
+  {key:'Non-active (Reactivated)', color:'#D85A30', label:'Reactivated'},
+  {key:'Power Viewer', color:'#534AB7', label:'Power Viewer'}
+];
+
+const fmt = v => {if(v==null||v===undefined)return'—';const a=Math.abs(v),s=v<0?'-':'';if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+(a/1e3).toFixed(1)+'K';return s+a.toFixed(0);};
+const fmtR = v => v==null?'—':v.toFixed(4);
+const fmtPct = v => v==null?'—':(v*100).toFixed(1)+'%';
+
+// Group by title
+function groupByTitle(minPairs=30) {
+  const titles = {};
+  ALL.forEach(r => {
+    const tid = r[0];
+    if (!titles[tid]) titles[tid] = {id:tid, name:r[1], title_tvt:r[4], segments:{}};
+    const seg = r[2];
+    titles[tid].segments[seg] = {
+      seg_tvt:r[3], orig_rate:r[5], orig_n:r[6],
+      other_rate:r[7], other_n:r[8], other_ci_lo:r[9], other_ci_hi:r[10],
+      sdl_rate:r[11], sdl_n:r[12], sdl_ci_lo:r[13], sdl_ci_hi:r[14]
+    };
+  });
+  return Object.values(titles);
+}
+
+function showTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  if(idx===0) renderSummary();
+  if(idx===1) renderComparison();
+  if(idx===2) renderSingleTitle();
+  if(idx===3) renderScatter();
+}
+
+function renderSummary() {
+  const panel = document.getElementById('panel0');
+  const minP = 30;
+
+  // Compute stats per segment × source
+  const stats = {};
+  ALL.forEach(r => {
+    const seg = r[2];
+    if (!stats[seg]) stats[seg] = {other_rates:[], sdl_rates:[], other_n:0, sdl_n:0};
+    if (r[8] >= minP && r[7] != null) { stats[seg].other_rates.push(r[7]); stats[seg].other_n += r[8]; }
+    if (r[12] >= minP && r[11] != null) { stats[seg].sdl_rates.push(r[11]); stats[seg].sdl_n += r[12]; }
+  });
+
+  // Overall
+  let allOther = [], allSdl = [], sdlHigher = 0, otherHigher = 0, totalCells = 0;
+  ALL.forEach(r => {
+    if (r[8] >= minP && r[12] >= minP && r[7] != null && r[11] != null) {
+      totalCells++;
+      allOther.push(r[7]);
+      allSdl.push(r[11]);
+      if (r[11] > r[7]) sdlHigher++;
+      else otherHigher++;
+    }
+  });
+
+  const median = arr => { const s=[...arr].sort((a,b)=>a-b); const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; };
+  const mean = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+
+  let html = '<div class="stat-cards">';
+  html += `<div class="stat-card"><div class="value">${totalCells}</div><div class="label">Title×Segment cells with both sources (≥${minP} pairs each)</div></div>`;
+  html += `<div class="stat-card"><div class="value">${sdlHigher}</div><div class="label">Cells where Search+DL rate > Other rate</div></div>`;
+  html += `<div class="stat-card"><div class="value">${otherHigher}</div><div class="label">Cells where Other rate > Search+DL rate</div></div>`;
+  html += `<div class="stat-card"><div class="value">${((sdlHigher/totalCells)*100).toFixed(1)}%</div><div class="label">% cells where Search+DL wins</div></div>`;
+  html += '</div>';
+
+  html += '<h3 style="margin:16px 0 8px;font-size:0.95rem">Median Rate by Segment × Source (≥30 pairs)</h3>';
+  html += '<table><tr><th style="text-align:left">Segment</th><th>Other Rate (median)</th><th>Other Rate (mean)</th><th>Other Cells</th><th>Search+DL Rate (median)</th><th>Search+DL Rate (mean)</th><th>S+DL Cells</th><th>Diff (S+DL − Other) median</th></tr>';
+  for (let i=0; i<4; i++) {
+    const s = stats[i];
+    if (!s) continue;
+    const oMed = s.other_rates.length ? median(s.other_rates) : null;
+    const oMean = s.other_rates.length ? mean(s.other_rates) : null;
+    const sMed = s.sdl_rates.length ? median(s.sdl_rates) : null;
+    const sMean = s.sdl_rates.length ? mean(s.sdl_rates) : null;
+    const diff = (oMed!=null && sMed!=null) ? sMed - oMed : null;
+    html += `<tr><td style="text-align:left;color:${SEG[i].color};font-weight:600">${SEG[i].label}</td>`;
+    html += `<td>${fmtR(oMed)}</td><td>${fmtR(oMean)}</td><td>${s.other_rates.length}</td>`;
+    html += `<td>${fmtR(sMed)}</td><td>${fmtR(sMean)}</td><td>${s.sdl_rates.length}</td>`;
+    html += `<td class="${diff!=null&&diff>0?'positive':'negative'}">${diff!=null?diff.toFixed(4):'—'}</td></tr>`;
+  }
+  html += '</table>';
+
+  html += '<h3 style="margin:16px 0 8px;font-size:0.95rem">Overall (all segments pooled)</h3>';
+  html += '<table><tr><th style="text-align:left">Source</th><th>Median Rate</th><th>Mean Rate</th><th>Total Pairs</th></tr>';
+  html += `<tr><td style="text-align:left">Other</td><td>${fmtR(median(allOther))}</td><td>${fmtR(mean(allOther))}</td><td>${fmt(allOther.reduce((a,_,__,arr)=>a,0))}</td></tr>`;
+  html += `<tr><td style="text-align:left">Search+DL</td><td>${fmtR(median(allSdl))}</td><td>${fmtR(mean(allSdl))}</td><td>${fmt(allSdl.reduce((a,_,__,arr)=>a,0))}</td></tr>`;
+  html += '</table>';
+
+  html += `<p style="margin-top:16px;font-size:0.82rem;color:#666"><strong>Interpretation:</strong> Rate > 1 means the title generates more off-title viewing than the on-title viewing itself. Rate < 1 means the title generates less. Comparing Search+DL vs Other shows whether search-discovered viewers generate more or less incremental off-title viewing than organically-discovered viewers.</p>`;
+
+  panel.innerHTML = html;
+}
+
+function renderComparison() {
+  const panel = document.getElementById('panel1');
+  const minPairs = 30;
+
+  let html = '<div class="filters">';
+  html += '<label>Segment:</label><select id="cmpSeg"><option value="-1">All</option><option value="0">Retained</option><option value="1">New (M1)</option><option value="2">Reactivated</option><option value="3">Power Viewer</option></select>';
+  html += '<label>Min pairs (each source):</label><input type="number" id="cmpMin" value="30" style="width:60px">';
+  html += '<label>Sort:</label><select id="cmpSort"><option value="tvt">Title TVT</option><option value="diff">Rate Diff (S+DL − Other)</option><option value="sdl">Search+DL Rate</option><option value="other">Other Rate</option><option value="sdl_n">S+DL Pairs</option></select>';
+  html += '<label>Order:</label><select id="cmpOrder"><option value="desc">Desc</option><option value="asc">Asc</option></select>';
+  html += '<button onclick="buildCmpTable()" style="padding:4px 12px;border-radius:4px;border:1px solid #ccc;cursor:pointer">Apply</button>';
+  html += '</div>';
+  html += '<div id="cmpTableWrap"></div>';
+  panel.innerHTML = html;
+  buildCmpTable();
+}
+
+function buildCmpTable() {
+  const segFilter = parseInt(document.getElementById('cmpSeg').value);
+  const minP = parseInt(document.getElementById('cmpMin').value) || 30;
+  const sortBy = document.getElementById('cmpSort').value;
+  const order = document.getElementById('cmpOrder').value;
+
+  // Filter rows
+  let rows = ALL.filter(r => {
+    if (segFilter >= 0 && r[2] !== segFilter) return false;
+    if (r[8] < minP && r[12] < minP) return false;
+    return true;
+  });
+
+  // For the table, group by title+seg and show side by side
+  const grouped = {};
+  rows.forEach(r => {
+    const key = r[0] + '|' + r[2];
+    if (!grouped[key]) grouped[key] = {id:r[0], name:r[1], seg:r[2], seg_tvt:r[3], title_tvt:r[4], orig_rate:r[5], orig_n:r[6]};
+    grouped[key].other_rate = r[7];
+    grouped[key].other_n = r[8];
+    grouped[key].other_ci_lo = r[9];
+    grouped[key].other_ci_hi = r[10];
+    grouped[key].sdl_rate = r[11];
+    grouped[key].sdl_n = r[12];
+    grouped[key].sdl_ci_lo = r[13];
+    grouped[key].sdl_ci_hi = r[14];
+  });
+
+  let items = Object.values(grouped).filter(g => (g.other_n >= minP || g.sdl_n >= minP));
+
+  const diff = g => (g.sdl_rate!=null && g.other_rate!=null) ? g.sdl_rate - g.other_rate : -999;
+
+  const sortFn = {
+    tvt: (a,b) => (b.title_tvt||0) - (a.title_tvt||0),
+    diff: (a,b) => diff(b) - diff(a),
+    sdl: (a,b) => (b.sdl_rate||0) - (a.sdl_rate||0),
+    other: (a,b) => (b.other_rate||0) - (a.other_rate||0),
+    sdl_n: (a,b) => (b.sdl_n||0) - (a.sdl_n||0),
+  }[sortBy] || ((a,b)=>0);
+
+  items.sort(sortFn);
+  if (order === 'asc') items.reverse();
+
+  let html = `<p style="font-size:0.8rem;color:#666;margin-bottom:8px">Showing ${items.length} title×segment cells</p>`;
+  html += '<div style="max-height:600px;overflow-y:auto"><table>';
+  html += '<tr><th style="text-align:left">#</th><th style="text-align:left">Title</th><th style="text-align:left">Segment</th><th>Seg TVT</th><th>Combined Rate</th><th>Other Rate</th><th>Other Pairs</th><th>Other CI</th><th>S+DL Rate</th><th>S+DL Pairs</th><th>S+DL CI</th><th>Diff</th></tr>';
+
+  items.slice(0, 500).forEach((g, i) => {
+    const d = diff(g);
+    const dStr = d === -999 ? '—' : d.toFixed(4);
+    const dClass = d > 0 ? 'positive' : d < 0 ? 'negative' : '';
+    html += `<tr>`;
+    html += `<td style="text-align:left">${i+1}</td>`;
+    html += `<td style="text-align:left;max-width:180px;overflow:hidden;text-overflow:ellipsis">${g.name}</td>`;
+    html += `<td style="text-align:left;color:${SEG[g.seg].color}">${SEG[g.seg].label}</td>`;
+    html += `<td>${fmt(g.seg_tvt)}</td>`;
+    html += `<td>${fmtR(g.orig_rate)}</td>`;
+    html += `<td>${fmtR(g.other_rate)}</td>`;
+    html += `<td>${g.other_n||0}</td>`;
+    html += `<td style="font-size:0.7rem">${g.other_ci_lo!=null?g.other_ci_lo.toFixed(2):'—'} – ${g.other_ci_hi!=null?g.other_ci_hi.toFixed(2):'—'}</td>`;
+    html += `<td>${fmtR(g.sdl_rate)}</td>`;
+    html += `<td>${g.sdl_n||0}</td>`;
+    html += `<td style="font-size:0.7rem">${g.sdl_ci_lo!=null?g.sdl_ci_lo.toFixed(2):'—'} – ${g.sdl_ci_hi!=null?g.sdl_ci_hi.toFixed(2):'—'}</td>`;
+    html += `<td class="${dClass}" style="font-weight:600">${dStr}</td>`;
+    html += `</tr>`;
+  });
+  html += '</table></div>';
+  document.getElementById('cmpTableWrap').innerHTML = html;
+}
+
+function renderSingleTitle() {
+  const panel = document.getElementById('panel2');
+  let html = '<div class="filters">';
+  html += '<label>Search:</label><input type="text" id="stSearch" placeholder="Title name or ID" style="width:250px">';
+  html += '<button onclick="buildSingleTitle()" style="padding:4px 12px;border-radius:4px;border:1px solid #ccc;cursor:pointer">Find</button>';
+  html += '</div>';
+  html += '<div id="stResult"></div>';
+  panel.innerHTML = html;
+  document.getElementById('stSearch').addEventListener('keydown', e => { if(e.key==='Enter') buildSingleTitle(); });
+}
+
+function buildSingleTitle() {
+  const q = document.getElementById('stSearch').value.toLowerCase().trim();
+  if (!q) return;
+
+  // Find matching rows
+  const matches = ALL.filter(r => r[1].toLowerCase().includes(q) || r[0] === q);
+  if (matches.length === 0) {
+    document.getElementById('stResult').innerHTML = '<p>No titles found.</p>';
+    return;
+  }
+
+  // Group by title
+  const titles = {};
+  matches.forEach(r => {
+    if (!titles[r[0]]) titles[r[0]] = {id:r[0], name:r[1], title_tvt:r[4], rows:[]};
+    titles[r[0]].rows.push(r);
+  });
+
+  let html = '';
+  Object.values(titles).slice(0, 5).forEach(t => {
+    html += `<h3 style="margin:16px 0 8px">${t.name} (${t.id}) — Title TVT: ${fmt(t.title_tvt)} hrs</h3>`;
+    html += '<table><tr><th style="text-align:left">Segment</th><th>Seg TVT</th><th>Combined Rate</th><th>Other Rate</th><th>Other Pairs</th><th>Other CI</th><th>S+DL Rate</th><th>S+DL Pairs</th><th>S+DL CI</th><th>Diff</th><th>S+DL %</th></tr>';
+
+    t.rows.sort((a,b) => a[2] - b[2]);
+    let totalOtherN = 0, totalSdlN = 0;
+    t.rows.forEach(r => {
+      const seg = r[2];
+      const d = (r[11]!=null && r[7]!=null) ? r[11] - r[7] : null;
+      const pctSdl = (r[12] && r[8]) ? (r[12]/(r[8]+r[12])*100).toFixed(1)+'%' : '—';
+      totalOtherN += r[8]||0;
+      totalSdlN += r[12]||0;
+      html += `<tr>`;
+      html += `<td style="text-align:left;color:${SEG[seg].color};font-weight:600">${SEG[seg].label}</td>`;
+      html += `<td>${fmt(r[3])}</td>`;
+      html += `<td>${fmtR(r[5])}</td>`;
+      html += `<td>${fmtR(r[7])}</td>`;
+      html += `<td>${r[8]||0}</td>`;
+      html += `<td style="font-size:0.72rem">[${r[9]!=null?r[9].toFixed(3):'—'}, ${r[10]!=null?r[10].toFixed(3):'—'}]</td>`;
+      html += `<td>${fmtR(r[11])}</td>`;
+      html += `<td>${r[12]||0}</td>`;
+      html += `<td style="font-size:0.72rem">[${r[13]!=null?r[13].toFixed(3):'—'}, ${r[14]!=null?r[14].toFixed(3):'—'}]</td>`;
+      html += `<td class="${d!=null&&d>0?'positive':'negative'}" style="font-weight:600">${d!=null?d.toFixed(4):'—'}</td>`;
+      html += `<td>${pctSdl}</td>`;
+      html += `</tr>`;
+    });
+
+    html += `<tr style="border-top:2px solid #ccc;font-weight:600"><td style="text-align:left">Total</td><td></td><td></td><td></td><td>${totalOtherN}</td><td></td><td></td><td>${totalSdlN}</td><td></td><td></td><td>${((totalSdlN/(totalOtherN+totalSdlN))*100).toFixed(1)}%</td></tr>`;
+    html += '</table>';
+  });
+
+  document.getElementById('stResult').innerHTML = html;
+}
+
+let scatterChart = null;
+function renderScatter() {
+  const panel = document.getElementById('panel3');
+  let html = '<div class="filters">';
+  html += '<label>Min pairs (each source):</label><input type="number" id="scMin" value="30" style="width:60px">';
+  html += '<label>Segment:</label><select id="scSeg"><option value="-1">All</option><option value="0">Retained</option><option value="1">New (M1)</option><option value="2">Reactivated</option><option value="3">Power Viewer</option></select>';
+  html += '<button onclick="buildScatter()" style="padding:4px 12px;border-radius:4px;border:1px solid #ccc;cursor:pointer">Apply</button>';
+  html += '</div>';
+  html += '<div class="legend"><span><span class="dot" style="background:#1D9E75"></span>Retained</span><span><span class="dot" style="background:#378ADD"></span>New (M1)</span><span><span class="dot" style="background:#D85A30"></span>Reactivated</span><span><span class="dot" style="background:#534AB7"></span>Power Viewer</span></div>';
+  html += '<div class="chart-container"><canvas id="scatterCanvas"></canvas></div>';
+  panel.innerHTML = html;
+  buildScatter();
+}
+
+function buildScatter() {
+  const minP = parseInt(document.getElementById('scMin').value) || 30;
+  const segFilter = parseInt(document.getElementById('scSeg').value);
+
+  const points = [];
+  ALL.forEach(r => {
+    if (segFilter >= 0 && r[2] !== segFilter) return;
+    if (r[8] < minP || r[12] < minP) return;
+    if (r[7] == null || r[11] == null) return;
+    points.push({x: r[7], y: r[11], seg: r[2], name: r[1], id: r[0]});
+  });
+
+  // Group by segment
+  const datasets = SEG.map((s, i) => ({
+    label: s.label,
+    data: points.filter(p => p.seg === i).map(p => ({x:p.x, y:p.y, name:p.name})),
+    backgroundColor: s.color + '80',
+    borderColor: s.color,
+    borderWidth: 1,
+    pointRadius: 4,
+    pointHoverRadius: 7
+  }));
+
+  const ctx = document.getElementById('scatterCanvas').getContext('2d');
+  if (scatterChart) scatterChart.destroy();
+
+  scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {datasets},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw.name}: Other=${ctx.raw.x.toFixed(3)}, S+DL=${ctx.raw.y.toFixed(3)}`
+          }
+        },
+        legend: {position:'top'}
+      },
+      scales: {
+        x: {title:{display:true, text:'Other Rate (organic/recommendation)'}, min:-2, max:4},
+        y: {title:{display:true, text:'Search+DL Rate'}, min:-2, max:4}
+      }
+    },
+    plugins: [{
+      id: 'diagonal',
+      beforeDraw(chart) {
+        const {ctx, scales:{x,y}} = chart;
+        const xMin = Math.max(x.min, y.min);
+        const xMax = Math.min(x.max, y.max);
+        ctx.save();
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5,5]);
+        ctx.beginPath();
+        ctx.moveTo(x.getPixelForValue(xMin), y.getPixelForValue(xMin));
+        ctx.lineTo(x.getPixelForValue(xMax), y.getPixelForValue(xMax));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// Init
+renderSummary();
+</script>
+</body>
+</html>
