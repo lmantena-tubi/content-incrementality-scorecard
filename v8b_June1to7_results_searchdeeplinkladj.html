@@ -139,7 +139,7 @@
 </div>
 
 <script>
-// DATA: [title_id, title_name, seg_idx, seg_tvt(june1-7), rate_7d, n_pairs, title_tvt(june1-7), ci_lo_7d_hrs, ci_hi_7d_hrs, incr_hrs_7d, ci_lo_rate_7d, ci_hi_rate_7d, search_deeplink_tvt, non_search_deeplink_tvt]
+// DATA: [title_id, title_name, seg_idx, seg_tvt(june1-7), rate_7d, n_pairs, title_tvt(june1-7), ci_lo_7d_hrs, ci_hi_7d_hrs, incr_hrs_7d, ci_lo_rate_7d, ci_hi_rate_7d, search_deeplink_tvt, non_search_deeplink_tvt, deal_after_jul15]
 </script>
 <script src="v8b_search_deeplink_incr_data.js"></script>
 <script>
@@ -512,7 +512,7 @@ function buildRankTable() {
     if (r[5] < minPairs || r[3] <= 0) return;
     const name = r[1];
     const titleId = r[0];
-    if (!titles[name]) titles[name] = { name, titleId, titleTvt: r[6], segs: {} };
+    if (!titles[name]) titles[name] = { name, titleId, titleTvt: r[6], dealAfterJul15: r[14], segs: {} };
     if (r[4] !== null) {
       if (!titles[name].segs[r[2]]) titles[name].segs[r[2]] = { segTvt: r[3], nPairs: r[5], searchDlTvt: r[12]||0, nonSearchDlTvt: r[13]||0 };
       titles[name].segs[r[2]].rate = r[4];
@@ -580,6 +580,7 @@ function buildRankTable() {
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; color:#2E75B6; font-weight:700;">Total Incr TVT</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Old Incr TVT</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Ratio</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Deal &gt; Jul 15</th>';
   segOrder.forEach(si => {
     html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;" colspan="4"><span style="color:'+segColors[si]+'">'+segLabels[si]+'</span><br><span style="font-weight:400; font-size:11px;">S+DL | Non-S-DL | Incr | Rate</span></th>';
   });
@@ -601,6 +602,7 @@ function buildRankTable() {
     html += '<td style="padding:5px 8px; font-weight:700; color:#2E75B6;">'+fmt(t.searchIncrTvt)+'</td>';
     html += '<td style="padding:5px 8px; color:#888;">'+fmt(t.oldIncrTvt)+'</td>';
     html += '<td style="padding:5px 8px;">'+(t.ratio*100).toFixed(1)+'%</td>';
+    html += '<td style="padding:5px 8px; text-align:center; font-weight:600; color:'+(t.dealAfterJul15===1?'#1D9E75':t.dealAfterJul15===0?'#c00':'#999')+'">'+(t.dealAfterJul15===1?'Yes':t.dealAfterJul15===0?'No':'—')+'</td>';
     segOrder.forEach(si => {
       const s = t.segs[si];
       if (s) {
