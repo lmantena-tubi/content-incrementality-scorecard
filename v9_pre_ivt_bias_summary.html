@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>v9 Pre-Period IVT Bias Summary — Implications for v10 Matching</title>
+<title>v9 Pre-Period IVT vs TVT Balance — 7d &amp; 28d — Implications for v10 Matching</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; max-width: 1600px; margin: 0 auto; }
@@ -10,7 +10,7 @@
   h2 { font-size: 18px; font-weight: 600; color: #2E75B6; margin: 2rem 0 0.8rem 0; }
   h3 { font-size: 15px; font-weight: 600; color: #1B3A5C; margin: 1.2rem 0 0.5rem 0; }
   .subtitle { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
-  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e6ea; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e6ea; flex-wrap: wrap; }
   .tab-btn { padding: 10px 22px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
   .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
   .tab-btn:hover { color: #2E75B6; }
@@ -26,32 +26,36 @@
   .card-value.warn { color: #f5a623; }
   .card-detail { font-size: 12px; color: #888; margin-top: 4px; }
 
-  .alert-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 14px 18px; margin-bottom: 1.5rem; font-size: 13px; line-height: 1.6; }
-  .alert-box b { color: #856404; }
-  .finding-box { background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; padding: 14px 18px; margin-bottom: 1rem; font-size: 13px; line-height: 1.7; }
-  .finding-box b { color: #721c24; }
+  .alert-box { background: #e7f3ff; border: 1px solid #b3d7ff; border-radius: 6px; padding: 14px 18px; margin-bottom: 1.5rem; font-size: 13px; line-height: 1.6; }
+  .alert-box b { color: #1B3A5C; }
+  .finding-box { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 14px 18px; margin-bottom: 1rem; font-size: 13px; line-height: 1.7; }
+  .finding-box b { color: #856404; }
   .action-box { background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; padding: 14px 18px; margin-bottom: 1rem; font-size: 13px; line-height: 1.7; }
   .action-box b { color: #155724; }
   .info-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 14px 18px; margin-bottom: 1rem; font-size: 13px; line-height: 1.7; }
   .info-box b { color: #1B3A5C; }
 
   table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; font-size: 13px; }
-  th { background: #2E75B6; color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; font-size: 12px; white-space: nowrap; position: sticky; top: 0; z-index: 2; cursor: pointer; }
-  th:hover { background: #1a5a8e; }
+  th { background: #2E75B6; color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; font-size: 12px; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
   td { padding: 7px 12px; border-bottom: 1px solid #eee; }
   tr:hover td { background: #f0f6ff; }
   .mono { font-family: 'Consolas', monospace; font-size: 12px; }
   .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
   .badge-pass { background: #d4edda; color: #155724; }
   .badge-fail { background: #f8d7da; color: #721c24; }
-  .pos { color: #e74c3c; }
-  .neg { color: #155724; }
+  .ctrl { color: #c07000; }
+  .trt { color: #2E75B6; }
 
   .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
   .controls label { font-size: 13px; font-weight: 600; color: #1B3A5C; }
   .controls select, .controls input { font-family: Calibri; font-size: 13px; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; }
   .controls input { width: 220px; }
   .row-count { font-size: 12px; color: #888; margin-bottom: 0.5rem; }
+
+  .seg-toggle { display: inline-flex; border: 1px solid #2E75B6; border-radius: 5px; overflow: hidden; }
+  .seg-toggle button { padding: 5px 14px; font-size: 12px; font-weight: 600; background: #fff; color: #2E75B6; border: none; cursor: pointer; border-right: 1px solid #cbdff2; }
+  .seg-toggle button:last-child { border-right: none; }
+  .seg-toggle button.active { background: #2E75B6; color: #fff; }
 
   .implication-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
   @media (max-width: 900px) { .implication-grid { grid-template-columns: 1fr; } }
@@ -62,195 +66,160 @@
 </head>
 <body>
 
-<h1>v9 Pre-Period IVT Bias Summary</h1>
-<p class="subtitle">Content Incrementality v9 &middot; June 2026 (Organic Discovery, US) &middot; 400 titles &middot; 34.9M matched pairs &middot; 7-day pre-event window</p>
+<h1>v9 Pre-Period Balance: IVT vs TVT, 7-day &amp; 28-day windows</h1>
+<p class="subtitle">Content Incrementality v9 &middot; June 2026 (Organic Discovery, US) &middot; 400 titles &middot; 34.9M matched pairs &middot; anchoring matches the matching pipeline (treated&nbsp;&rarr;&nbsp;own <code>event_ts</code>; control&nbsp;&rarr;&nbsp;midnight of <code>event_date</code>)</p>
+
+<div class="alert-box">
+  <b>Apples-to-apples read.</b> This report measures pre-period engagement four ways &mdash; <b>IVT&nbsp;7d</b>, <b>IVT&nbsp;28d</b>, <b>TVT&nbsp;7d</b>, <b>TVT&nbsp;28d</b> &mdash; on the same matched pairs, through the identical <code>video_session</code> scan, differing only in metric (intentional vs total view time) and pre-window length. Both sides use the pipeline's true anchoring: treated windows end at the viewer's own <code>event_ts</code>; control windows end at <b>midnight of <code>event_date</code></b>. TVT is what v9 matches on (the 28d bucket); IVT is the unmatched intentional component we are evaluating for v10.
+</div>
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="tab-summary">Key Findings</button>
   <button class="tab-btn" data-tab="tab-segment">Segment Analysis</button>
   <button class="tab-btn" data-tab="tab-titleseg">Title &times; Segment Detail</button>
-  <button class="tab-btn" data-tab="tab-impact">Impact on Results</button>
   <button class="tab-btn" data-tab="tab-v10">v10 Recommendation</button>
 </div>
 
 <!-- TAB 1: Key Findings -->
 <div class="tab-panel active" id="tab-summary">
 
-  <div class="alert-box">
-    <b>Finding:</b> Treated viewers have systematically higher pre-period IVT (Intentional View Time) than their matched controls across all segments and 85&ndash;97% of titles.
-    This indicates the v9 matching (which matches on TVT) is selecting treated viewers who are more intentional watchers &mdash; i.e., they watch more non-autoplay content.
-    <br><br><b>Interpretation:</b> TVT-matched pairs are NOT IVT-balanced. Treated viewers appear to be more "intentional" (less autoplay-driven) than controls, inflating IVT-based treatment effects.
-    <br><br><b>SMD masks the problem:</b> The pooled SMD passes everywhere (all |SMD| &lt; 0.10), but this averages across segments with very different IVT base levels. The actual treated vs control IVT shows consistent +6% to +20% relative gaps at segment level. Variance Ratio (VR = Var_treated / Var_control) fails at 43&ndash;73% of title&times;segment cells &mdash; treated viewers have systematically more spread.
+  <div class="finding-box">
+    <b>Headline:</b> With correct anchoring, <b>TVT matching already balances IVT reasonably well.</b> At the <b>7-day</b> window IVT is nearly balanced (95% of title&times;segment cells pass SMD, pooled gap &minus;3.3%, near-50/50 direction). At the <b>28-day</b> window a small <b>residual</b> remains: control carries slightly more intentional pre-viewing (73% of cells control-higher, pooled gap &minus;5.6%), but even there 91% of cells still pass SMD. This is much smaller than an earlier (buggy) estimate that had used a mismatched control anchor and reported 56% SMD pass / 91% control-higher for IVT(7d) &mdash; that reading is <b>retracted</b>.
+  </div>
+
+  <h3>Four-way balance summary (title&times;segment cells, |SMD| &le; 0.10 pass; N = 1,597 cells)</h3>
+  <table>
+    <tr>
+      <th>Metric &times; Window</th>
+      <th>What it is</th>
+      <th>SMD Pass Rate</th>
+      <th>VR Pass Rate</th>
+      <th>% Cells Control-Higher</th>
+      <th>Median |SMD|</th>
+      <th>P95 |SMD|</th>
+    </tr>
+    <tr style="background:#eef7ff;">
+      <td><b>TVT 28d</b></td><td>Matched variable</td>
+      <td class="mono" style="color:#4caf50;">100.0%</td>
+      <td class="mono" style="color:#f5a623;">65.0%</td>
+      <td class="mono">8.3%</td>
+      <td class="mono">0.004</td><td class="mono">0.014</td>
+    </tr>
+    <tr style="background:#eef7ff;">
+      <td><b>TVT 7d</b></td><td>Total view time, 7d</td>
+      <td class="mono" style="color:#4caf50;">100.0%</td>
+      <td class="mono" style="color:#f5a623;">71.8%</td>
+      <td class="mono">7.5%</td>
+      <td class="mono">0.019</td><td class="mono">0.050</td>
+    </tr>
+    <tr>
+      <td><b>IVT 7d</b></td><td>Intentional, 7d (unmatched)</td>
+      <td class="mono" style="color:#4caf50;">95.3%</td>
+      <td class="mono" style="color:#f5a623;">81.8%</td>
+      <td class="mono">57.8%</td>
+      <td class="mono">0.024</td><td class="mono">0.099</td>
+    </tr>
+    <tr>
+      <td><b>IVT 28d</b></td><td>Intentional, 28d (unmatched)</td>
+      <td class="mono" style="color:#4caf50;">90.8%</td>
+      <td class="mono" style="color:#f5a623;">75.8%</td>
+      <td class="mono ctrl">73.0%</td>
+      <td class="mono">0.025</td><td class="mono">0.120</td>
+    </tr>
+  </table>
+  <div class="info-box">
+    <b>How to read this.</b> Matching drives the matched variable (TVT&nbsp;28d) to near-perfect mean balance (100% SMD pass, median |SMD| 0.004). Because IVT is a component of TVT, matching on TVT <b>indirectly</b> balances IVT too &mdash; strongly at 7d (95%) and still well at 28d (91%). The one persistent signature of an <em>unmatched</em> covariate is <b>direction</b>: at 28d, control sits higher in 73% of cells (vs ~8% for TVT), i.e. TVT-matched treated viewers reach the same total time with a marginally more autoplay-heavy mix. Variance (VR) is the looser dimension across all four, driven by Power Viewer's heavy-tail dispersion.
   </div>
 
   <div class="cards">
     <div class="card">
-      <div class="card-label">SMD Pass Rate (|SMD| &le; 0.10)</div>
-      <div class="card-value warn">97.7%</div>
-      <div class="card-detail">1,560/1,597 title&times;segment cells pass &mdash; 37 fail</div>
+      <div class="card-label">IVT 7d &mdash; SMD Pass (cell)</div>
+      <div class="card-value pass">95.3%</div>
+      <div class="card-detail">381/400 title 'all' cells &mdash; near balanced</div>
     </div>
     <div class="card">
-      <div class="card-label">Variance Ratio Pass (0.80&ndash;1.25)</div>
-      <div class="card-value fail">37.8%</div>
-      <div class="card-detail">Only 603/1,597 title&times;segment cells pass</div>
+      <div class="card-label">IVT 28d &mdash; SMD Pass (cell)</div>
+      <div class="card-value pass">90.8%</div>
+      <div class="card-detail">363/400 &mdash; small residual at longer window</div>
     </div>
     <div class="card">
-      <div class="card-label">Treated Has Higher IVT</div>
-      <div class="card-value fail">92.1%</div>
-      <div class="card-detail">1,471/1,597 title&times;segment cells</div>
+      <div class="card-label">IVT 28d Control-Higher</div>
+      <div class="card-value warn">73.0%</div>
+      <div class="card-detail">directional residual (vs 8.3% for TVT 28d)</div>
     </div>
     <div class="card">
-      <div class="card-label">Mean |Pre-Gap| (All Cells)</div>
-      <div class="card-value warn">75.7 hrs</div>
-      <div class="card-detail">Treated 7d pre-IVT exceeds control on avg</div>
+      <div class="card-label">Pooled IVT gap (7d / 28d)</div>
+      <div class="card-value" style="color:#1B3A5C;">&minus;3.3% / &minus;5.6%</div>
+      <div class="card-detail">treated 13.4 vs 13.9 hrs (7d); 46.2 vs 48.9 (28d)</div>
     </div>
     <div class="card">
-      <div class="card-label">Median |Abs SMD|</div>
-      <div class="card-value pass">0.031</div>
-      <div class="card-detail">Higher than title-level (0.018) &mdash; segment detail reveals more bias</div>
+      <div class="card-label">Matched var (TVT 28d) SMD Pass</div>
+      <div class="card-value pass">100.0%</div>
+      <div class="card-detail">mean |SMD| 0.005 &mdash; essentially exact</div>
     </div>
     <div class="card">
       <div class="card-label">Total Matched Pairs</div>
       <div class="card-value" style="color:#1B3A5C;">34.9M</div>
-      <div class="card-detail">Across 400 titles &times; 4 segments = 1,597 cells</div>
+      <div class="card-detail">400 titles &times; 4 segments = 1,597 cells</div>
     </div>
   </div>
 
-  <h3>SMD Comparison: IVT vs TVT (title &times; segment level)</h3>
+  <h3>Directionality by segment &mdash; pooled gap = treated &minus; control (hrs)</h3>
+  <p style="color:#555; font-size:13px; margin:4px 0 10px;">Positive = treated higher; <span class="ctrl">negative = control higher</span>. Compare the intentional (IVT) columns against the matched total-time (TVT) columns at each window.</p>
   <table>
-    <tr><th>Metric</th><th>SMD Pre-TVT (matched variable)</th><th>SMD Pre-IVT (unmatched)</th><th>Interpretation</th></tr>
     <tr>
-      <td>Pass Rate (|SMD| &le; 0.10)</td>
-      <td class="mono" style="color:#4caf50;">99.1% (1,582/1,597)</td>
-      <td class="mono" style="color:#f5a623;">97.7% (1,560/1,597)</td>
-      <td>IVT has 2.5&times; more failures (37 vs 15)</td>
+      <th>Segment</th>
+      <th>IVT 7d gap</th><th>IVT 28d gap</th>
+      <th>TVT 7d gap</th><th>TVT 28d gap</th>
     </tr>
-    <tr>
-      <td>VR Pass Rate (0.80&ndash;1.25)</td>
-      <td class="mono" style="color:#4caf50;">84.5% (1,350/1,597)</td>
-      <td class="mono" style="color:#e74c3c;">37.8% (603/1,597)</td>
-      <td>IVT variance wildly imbalanced &mdash; matching does not control it</td>
-    </tr>
-    <tr>
-      <td>Median |SMD|</td>
-      <td class="mono">0.033</td>
-      <td class="mono">0.031</td>
-      <td>Similar medians &mdash; SMD alone cannot distinguish the two</td>
-    </tr>
-    <tr>
-      <td>P95 |SMD|</td>
-      <td class="mono">0.080</td>
-      <td class="mono">0.085</td>
-      <td>IVT tail slightly worse but both below 0.10 threshold</td>
-    </tr>
-    <tr>
-      <td>Max |SMD|</td>
-      <td class="mono">0.186</td>
-      <td class="mono">0.183</td>
-      <td>Both have outliers &mdash; comparable magnitude</td>
-    </tr>
+    <tr><td>Active non-power (Retained)</td>
+      <td class="mono ctrl">&minus;0.01 (&minus;0.1%)</td><td class="mono ctrl">&minus;1.17 (&minus;5.5%)</td>
+      <td class="mono trt">+0.48 (+6.0%)</td><td class="mono trt">+0.02 (+0.1%)</td></tr>
+    <tr><td>New (M1)</td>
+      <td class="mono ctrl">&minus;0.01 (&minus;0.2%)</td><td class="mono ctrl">&minus;0.78 (&minus;7.2%)</td>
+      <td class="mono trt">+0.60 (+7.8%)</td><td class="mono trt">+0.04 (+0.3%)</td></tr>
+    <tr><td>Non-active (Reactivated)</td>
+      <td class="mono trt">+0.22 (+21.1%)</td><td class="mono ctrl">&minus;0.25 (&minus;9.1%)</td>
+      <td class="mono trt">+0.48 (+36.7%)</td><td class="mono trt">+0.08 (+2.3%)</td></tr>
+    <tr><td>Power Viewer</td>
+      <td class="mono ctrl">&minus;1.25 (&minus;4.6%)</td><td class="mono ctrl">&minus;5.57 (&minus;5.6%)</td>
+      <td class="mono trt">+0.68 (+1.5%)</td><td class="mono trt">+1.24 (+0.7%)</td></tr>
+    <tr style="background:#f0f6ff; font-weight:600;"><td>ALL</td>
+      <td class="mono ctrl">&minus;0.46 (&minus;3.3%)</td><td class="mono ctrl">&minus;2.74 (&minus;5.6%)</td>
+      <td class="mono trt">+0.56 (+2.5%)</td><td class="mono trt">+0.48 (+0.6%)</td></tr>
   </table>
-  <div class="info-box" style="margin-top: 0.8rem;">
-    <b>Key insight:</b> SMD distributions for TVT and IVT are nearly identical &mdash; medians, P95, and max are all comparable. The <b>only diagnostic that distinguishes them is Variance Ratio</b>: TVT (which is matched) has 84.5% VR pass, while IVT (unmatched) has only 37.8%.
-    This confirms SMD is not sensitive enough to detect the IVT imbalance; you need VR or direct gap inspection.
-  </div>
-
-  <h3>The Bias Pattern</h3>
   <div class="info-box">
-    <b>SMD passes but VR fails.</b> This means:
-    <br>&bull; The <b>means</b> of pre-IVT are close (small standardized difference) &mdash; matching on TVT does partially balance IVT means.
-    <br>&bull; But the <b>variance</b> of treated-group IVT is systematically higher (VR &gt; 1.25 in 42&ndash;58% of titles).
-    <br>&bull; The direction is always the same: treated viewers have MORE spread in intentional viewing.
-    <br><br><b>Why SMD is misleading here:</b>
-    <br>&bull; Power Viewers average 3,300+ hrs IVT pre-period. A 200 hr gap is only 6% of the mean &mdash; the denominator (pooled std dev) is enormous, so SMD looks small.
-    <br>&bull; But 200 hrs of "free" IVT in the treated group biases IVT-based incrementality estimates significantly.
-    <br>&bull; <b>Look at the actual IVT values and % gap in the Title &times; Segment tab</b> to see the real picture.
-    <br><br><b>Why this matters for incrementality:</b>
-    <br>&bull; Treated viewers are more "intentional" watchers pre-event &rarr; they would naturally have higher IVT post-event regardless of treatment.
-    <br>&bull; This inflates IVT-based effects and partially explains why IVT DiD rates are higher than TVT rates for the same titles.
-    <br>&bull; The Power Viewer segment shows a +198 hr pre-gap (6.1% relative), meaning PV treated viewers have significantly more intentional viewing capacity.
+    <b>The tell.</b> On the matched variable (TVT), gaps are tiny and lean <em>treated-higher</em> at 28d (+0.6% pooled) &mdash; matching is exact. On IVT the pooled gap flips <em>control-higher</em> and grows with window length (&minus;3.3% at 7d &rarr; &minus;5.6% at 28d). The same viewers matched on total time carry marginally less <em>intentional</em> pre-history, and the deficit accumulates over the longer look-back. It stays inside standardized thresholds (all four segment SMDs |&le;|0.07 at both windows) but is directionally one-sided &mdash; the classic residual of leaving a correlated covariate out of the match.
   </div>
-
-  <h3>Directionality Summary (pre_gap &gt; 0 = treated higher)</h3>
-  <table>
-    <tr><th>Segment</th><th>% Titles Treated Higher</th><th>Avg Treated IVT (hrs)</th><th>Avg Control IVT (hrs)</th><th>Avg Gap (hrs)</th><th>Relative Gap %</th></tr>
-    <tr><td>Active non-power (Retained)</td><td class="pos">97.3%</td><td class="mono">282.9</td><td class="mono">253.9</td><td class="mono pos">+29.1</td><td class="pos">+11.4%</td></tr>
-    <tr><td>New (M1)</td><td class="pos">93.8%</td><td class="mono">363.4</td><td class="mono">314.6</td><td class="mono pos">+48.8</td><td class="pos">+15.5%</td></tr>
-    <tr><td>Non-active (Reactivated)</td><td class="pos">85.4%</td><td class="mono">47.1</td><td class="mono">39.3</td><td class="mono pos">+7.8</td><td class="pos">+19.9%</td></tr>
-    <tr><td>Power Viewer</td><td class="pos">92.0%</td><td class="mono">3,467.8</td><td class="mono">3,269.4</td><td class="mono pos">+198.4</td><td class="pos">+6.1%</td></tr>
-  </table>
 
 </div>
 
 <!-- TAB 2: Segment Analysis -->
 <div class="tab-panel" id="tab-segment">
 
-  <h2>Aggregate Segment-Level Results (Across All 400 Titles)</h2>
+  <h2>Segment-Level Balance (across all 400 titles)</h2>
 
-  <table>
-    <tr><th>Segment</th><th>N Pairs</th><th>Treated Pre-IVT (hrs)</th><th>Control Pre-IVT (hrs)</th><th>Gap (hrs)</th><th>SMD</th><th>SMD Pass</th><th>VR</th><th>VR Pass</th></tr>
-    <tr>
-      <td>Active non-power (Retained)</td><td class="mono">18.4M</td>
-      <td class="mono">262.6</td><td class="mono">234.1</td><td class="mono pos">+28.5</td>
-      <td class="mono">0.037</td><td><span class="badge badge-pass">PASS</span></td>
-      <td class="mono">1.178</td><td><span class="badge badge-pass">PASS</span></td>
-    </tr>
-    <tr>
-      <td>New (M1)</td><td class="mono">2.0M</td>
-      <td class="mono">298.8</td><td class="mono">252.4</td><td class="mono pos">+46.4</td>
-      <td class="mono">0.046</td><td><span class="badge badge-pass">PASS</span></td>
-      <td class="mono">1.355</td><td><span class="badge badge-fail">FAIL</span></td>
-    </tr>
-    <tr>
-      <td>Non-active (Reactivated)</td><td class="mono">1.6M</td>
-      <td class="mono">41.4</td><td class="mono">34.5</td><td class="mono pos">+6.9</td>
-      <td class="mono">0.015</td><td><span class="badge badge-pass">PASS</span></td>
-      <td class="mono">1.153</td><td><span class="badge badge-pass">PASS</span></td>
-    </tr>
-    <tr>
-      <td>Power Viewer</td><td class="mono">13.0M</td>
-      <td class="mono">3,302.1</td><td class="mono">3,139.9</td><td class="mono pos">+162.2</td>
-      <td class="mono">0.020</td><td><span class="badge badge-pass">PASS</span></td>
-      <td class="mono">1.257</td><td><span class="badge badge-fail">FAIL</span></td>
-    </tr>
-    <tr style="background:#f0f6ff; font-weight:600;">
-      <td>ALL</td><td class="mono">34.9M</td>
-      <td class="mono">1,383.1</td><td class="mono">1,304.9</td><td class="mono pos">+78.2</td>
-      <td class="mono">0.015</td><td><span class="badge badge-pass">PASS</span></td>
-      <td class="mono">1.243</td><td><span class="badge badge-pass">PASS</span></td>
-    </tr>
-  </table>
-
-  <h3>Title-Level Pass Rates by Segment</h3>
-  <table>
-    <tr><th>Segment</th><th>N Titles</th><th>SMD Pass Rate</th><th>VR Pass Rate</th><th>Avg |SMD|</th><th>Avg |Gap| (hrs)</th></tr>
-    <tr><td>Active non-power (Retained)</td><td>400</td><td class="pass">99.5%</td><td class="fail">53.3%</td><td class="mono">0.038</td><td class="mono">29.3</td></tr>
-    <tr><td>New (M1)</td><td>400</td><td class="pass">96.0%</td><td class="fail">26.8%</td><td class="mono">0.050</td><td class="mono">52.1</td></tr>
-    <tr><td>Non-active (Reactivated)</td><td>397</td><td class="pass">95.2%</td><td class="fail">30.2%</td><td class="mono">0.029</td><td class="mono">9.3</td></tr>
-    <tr><td>Power Viewer</td><td>400</td><td class="pass">100.0%</td><td class="fail">40.8%</td><td class="mono">0.027</td><td class="mono">211.6</td></tr>
-    <tr style="background:#f0f6ff; font-weight:600;"><td>All (pooled)</td><td>400</td><td class="pass">100.0%</td><td class="fail">43.3%</td><td class="mono">0.018</td><td class="mono">97.3</td></tr>
-  </table>
-
-  <h3>Variance Ratio Failure Direction</h3>
-  <div class="info-box">
-    <b>VR &gt; 1.25</b> means treated has higher variance; <b>VR &lt; 0.80</b> means control has higher variance.
-    The overwhelmingly dominant direction is <b>VR &gt; 1.25</b> (treated variance too high).
+  <div class="controls">
+    <label>Metric &amp; window:</label>
+    <div class="seg-toggle" id="segMetricToggle">
+      <button data-mw="ivt7" class="active">IVT 7d</button>
+      <button data-mw="ivt28">IVT 28d</button>
+      <button data-mw="tvt7">TVT 7d</button>
+      <button data-mw="tvt28">TVT 28d</button>
+    </div>
+    <span id="segMetricNote" style="font-size:12px;color:#888;margin-left:8px;"></span>
   </div>
-  <table>
-    <tr><th>Segment</th><th>N Titles</th><th>VR &gt; 1.25 (treated higher)</th><th>VR &lt; 0.80 (control higher)</th><th>VR in range (pass)</th></tr>
-    <tr><td>Active non-power (Retained)</td><td>400</td><td class="pos">42.8% (171)</td><td>4.0% (16)</td><td>53.3% (213)</td></tr>
-    <tr><td>New (M1)</td><td>400</td><td class="pos">57.5% (230)</td><td>15.8% (63)</td><td>26.8% (107)</td></tr>
-    <tr><td>Non-active (Reactivated)</td><td>397</td><td class="pos">41.8% (166)</td><td>28.0% (111)</td><td>30.2% (120)</td></tr>
-    <tr><td>Power Viewer</td><td>400</td><td class="pos">52.3% (209)</td><td>7.0% (28)</td><td>40.8% (163)</td></tr>
-  </table>
 
-  <h3>VR Percentile Distribution</h3>
   <table>
-    <tr><th>Segment</th><th>Median VR</th><th>P75 VR</th><th>P95 VR</th></tr>
-    <tr><td>Active non-power (Retained)</td><td class="mono">1.205</td><td class="mono">1.403</td><td class="mono">1.863</td></tr>
-    <tr><td>New (M1)</td><td class="mono">1.362</td><td class="mono">1.765</td><td class="mono">3.329</td></tr>
-    <tr><td>Non-active (Reactivated)</td><td class="mono">1.126</td><td class="mono">1.583</td><td class="mono">4.213</td></tr>
-    <tr><td>Power Viewer</td><td class="mono">1.266</td><td class="mono">1.543</td><td class="mono">2.450</td></tr>
+    <tr><th>Segment</th><th>N Pairs</th><th>Treated (hrs)</th><th>Control (hrs)</th><th>Gap (hrs)</th><th>Rel Gap %</th><th>SMD</th><th>SMD Pass</th><th>VR</th><th>VR Pass</th></tr>
+    <tbody id="segAggBody"></tbody>
+  </table>
+  <div class="info-box" id="segAggNote"></div>
+
+  <h3>Title-Level Pass Rates by Segment (current metric &amp; window)</h3>
+  <table>
+    <tr><th>Segment</th><th>N Titles</th><th>SMD Pass Rate</th><th>VR Pass Rate</th><th>Avg |SMD|</th><th>Avg |Gap| (hrs)</th><th>% Cells Control-Higher</th></tr>
+    <tbody id="segTitleBody"></tbody>
   </table>
 
 </div>
@@ -258,17 +227,25 @@
 <!-- TAB 3: Title × Segment Detail -->
 <div class="tab-panel" id="tab-titleseg">
 
-  <h2>All Titles &times; Segments &mdash; Pre-Period IVT (7d) Treated vs Control</h2>
+  <h2>All Titles &times; Segments &mdash; Treated vs Control Pre-Period</h2>
 
   <div class="info-box">
-    <b>Treated IVT</b> and <b>Control IVT</b> are the mean 7-day pre-event IVT in hours for matched pairs.
-    <b>Gap</b> = Treated &minus; Control (positive = treated has more intentional viewing).
-    <b>% Gap</b> = Gap / Control &times; 100 (relative excess).
-    <b>VR</b> = Variance Ratio (Var_treated / Var_control). Pass = [0.80, 1.25].
+    <b>Treated</b> and <b>Control</b> are the mean pre-event engagement in hours for matched pairs, in the selected metric &amp; window.
+    <b>Gap</b> = Treated &minus; Control (<span class="ctrl">negative = control higher</span>).
+    <b>% Gap</b> = Gap / Control &times; 100.
+    <b>VR</b> = Var_treated / Var_control; pass = [0.80, 1.25]. <b>SMD</b> pass = |SMD| &le; 0.10.
+    Cells require &ge; 30 pairs.
   </div>
 
   <div class="controls">
-    <label>Segment:</label>
+    <label>Metric &amp; window:</label>
+    <div class="seg-toggle" id="tblMetricToggle">
+      <button data-mw="ivt7" class="active">IVT 7d</button>
+      <button data-mw="ivt28">IVT 28d</button>
+      <button data-mw="tvt7">TVT 7d</button>
+      <button data-mw="tvt28">TVT 28d</button>
+    </div>
+    <label style="margin-left:16px;">Segment:</label>
     <select id="segFilter">
       <option value="all">All Segments</option>
       <option value="Active non-power (Retained)">Retained</option>
@@ -278,24 +255,21 @@
     </select>
     <label style="margin-left:16px;">Sort by:</label>
     <select id="sortBy">
-      <option value="gap_desc">Gap (hrs) Desc</option>
-      <option value="gap_asc">Gap (hrs) Asc</option>
-      <option value="pct_desc">% Gap Desc</option>
-      <option value="pct_asc">% Gap Asc</option>
+      <option value="gap_desc">|Gap| (hrs) Desc</option>
+      <option value="gap_asc">|Gap| (hrs) Asc</option>
+      <option value="pct_desc">|% Gap| Desc</option>
+      <option value="smd_desc">|SMD| Desc</option>
       <option value="vr_desc">VR Desc</option>
       <option value="vr_asc">VR Asc</option>
-      <option value="smd_desc">|SMD| Desc</option>
-      <option value="treated_desc">Treated IVT Desc</option>
+      <option value="treated_desc">Treated Desc</option>
       <option value="pairs_desc">N Pairs Desc</option>
       <option value="name_asc">Title Name A-Z</option>
     </select>
-    <label style="margin-left:16px;">VR Filter:</label>
-    <select id="vrFilter">
+    <label style="margin-left:16px;">Fails:</label>
+    <select id="failFilter">
       <option value="all">All</option>
-      <option value="fail">VR Fail Only</option>
-      <option value="pass">VR Pass Only</option>
-      <option value="high">VR > 1.25 (treated higher var)</option>
-      <option value="low">VR < 0.80 (control higher var)</option>
+      <option value="smd_fail">SMD Fail Only</option>
+      <option value="vr_fail">VR Fail Only</option>
     </select>
     <label style="margin-left:16px;">Search:</label>
     <input type="text" id="titleSearch" placeholder="Filter by title name...">
@@ -306,17 +280,17 @@
     <table id="biasTable">
       <thead>
         <tr>
-          <th data-col="name">Title</th>
-          <th data-col="seg">Segment</th>
-          <th data-col="pairs">N Pairs</th>
-          <th data-col="treated">Treated IVT (hrs)</th>
-          <th data-col="control">Control IVT (hrs)</th>
-          <th data-col="gap">Gap (hrs)</th>
-          <th data-col="pct">% Gap</th>
-          <th data-col="smd">SMD</th>
-          <th data-col="vr">VR</th>
-          <th data-col="smd_pass">SMD</th>
-          <th data-col="vr_pass">VR</th>
+          <th>Title</th>
+          <th>Segment</th>
+          <th>N Pairs</th>
+          <th id="thT">Treated (hrs)</th>
+          <th id="thC">Control (hrs)</th>
+          <th>Gap (hrs)</th>
+          <th>% Gap</th>
+          <th>SMD</th>
+          <th>VR</th>
+          <th>SMD</th>
+          <th>VR</th>
         </tr>
       </thead>
       <tbody id="biasBody"></tbody>
@@ -324,137 +298,161 @@
   </div>
 </div>
 
-<!-- TAB 4: Impact on Results -->
-<div class="tab-panel" id="tab-impact">
-
-  <h2>How Pre-IVT Bias Affects v9 Results</h2>
-
-  <div class="finding-box">
-    <b>Core Problem:</b> v9 matches on TVT (total view time = IVT + autoplay). Two viewers with the same TVT can have very different IVT/autoplay splits.
-    By selecting treated viewers from organic discovery (homepage clicks), we're preferentially selecting intentional viewers.
-    Their matched controls (same TVT) may achieve that TVT via more autoplay, creating a systematic IVT imbalance.
-  </div>
-
-  <h3>v9 Results Comparison: TVT Rate vs IVT DiD Rate (avg across titles)</h3>
-  <table>
-    <tr><th>Segment</th><th>TVT Add-Prop Rate (v9)</th><th>IVT DiD Rate (v9)</th><th>Gap</th><th>Interpretation</th></tr>
-    <tr>
-      <td>Active non-power (Retained)</td>
-      <td class="mono">0.174</td><td class="mono">0.690</td><td class="mono pos">+0.516</td>
-      <td>IVT rate much higher &mdash; bias inflates effect</td>
-    </tr>
-    <tr>
-      <td>New (M1)</td>
-      <td class="mono">-0.127</td><td class="mono">0.451</td><td class="mono pos">+0.578</td>
-      <td>TVT shows displacement; IVT shows gain &mdash; contradictory</td>
-    </tr>
-    <tr>
-      <td>Non-active (Reactivated)</td>
-      <td class="mono">0.482</td><td class="mono">0.755</td><td class="mono pos">+0.273</td>
-      <td>IVT uplift consistent but inflated</td>
-    </tr>
-    <tr>
-      <td>Power Viewer</td>
-      <td class="mono">0.383</td><td class="mono">1.046</td><td class="mono pos">+0.663</td>
-      <td>IVT &gt; 1.0 &mdash; implausible; likely inflated by pre-IVT bias. Should fall below 1.0 after matching on IVT.</td>
-    </tr>
-  </table>
-
-  <div class="info-box">
-    <b>Reading the gap:</b> The TVT rate (v9 primary results) shows net displacement (rates well below 1.0). The IVT DiD rate shows less displacement because it removes autoplay effects.
-    However, the IVT DiD rates are <b>inflated</b> by the pre-period IVT bias: treated viewers already had higher IVT, so even with DiD, the residual bias pushes rates up.
-    <br><br>
-    <b>Power Viewer IVT DiD &gt; 1.0:</b> While a rate &gt; 1.0 is technically possible (a title bringing in more off-title TVT than its own on-title TVT), it is rare and implausible at the segment average level.
-    The +6.1% pre-IVT gap and VR = 1.257 strongly suggest this is inflated by bias. After matching on IVT in v10, Power Viewer IVT rate should fall below 1.0.
-    The DiD removes level differences, but cannot fully correct the variance-level imbalance that remains.
-  </div>
-
-  <h3>Causal Pathway</h3>
-  <div class="info-box" style="font-size:14px;">
-    <b>1. Organic discovery selects intentional viewers:</b> HomePage click &rarr; treated viewer has demonstrated intentional behavior.
-    <br><b>2. TVT matching finds "same TVT" controls:</b> But same TVT &ne; same IVT. Controls may have more autoplay in their viewing mix.
-    <br><b>3. Pre-period shows the gap:</b> Treated 7d pre-IVT &gt; Control 7d pre-IVT across 92&ndash;97% of titles.
-    <br><b>4. Post-period inherits the gap:</b> Even with DiD, the variance imbalance means the treated group's IVT grows faster.
-    <br><b>5. Result:</b> IVT-based effects are overstated. TVT-based effects (which include autoplay) are more balanced but mix intentional + autoplay.
-  </div>
-
-</div>
 
 <!-- TAB 5: v10 Recommendation -->
 <div class="tab-panel" id="tab-v10">
 
-  <h2>Recommendation: Match on IVT in v10</h2>
+  <h2>Recommendation for v10 Matching</h2>
 
   <div class="action-box">
-    <b>v10 Action:</b> Add pre-period IVT (or IVT share) as a matching variable in the propensity model.
-    This will ensure treated and control groups are balanced on intentional viewing behavior, not just total viewing.
+    <b>v10 Action (modest, targeted):</b> The corrected balance is good, so adding IVT to the match is a <b>precision/robustness</b> refinement rather than a fix for a large confound. The highest-value, lowest-cost move is to <b>match on the 28d window</b> (already done for TVT) and, optionally, add a coarse <b>IVT-share / autoplay-mix</b> block to close the one-sided 28d IVT residual and tighten Power Viewer variance. Do <b>not</b> over-constrain small segments (New, Reactivated) with a fine IVT bucket.
   </div>
 
-  <h3>Why Matching on TVT Alone Is Insufficient</h3>
+  <h3>Where TVT-only matching leaves a residual</h3>
   <div class="implication-grid">
     <div class="info-box">
       <b>Current (v9):</b>
-      <br>&bull; Matches on: pre-7d TVT bucket, platform, tenure, content mode
-      <br>&bull; Result: TVT balanced, IVT imbalanced
-      <br>&bull; VR pass rate: 43% (IVT variance)
-      <br>&bull; Direction: treated higher 92&ndash;97% of titles
+      <br>&bull; Matches on: pre-28d TVT bucket, platform, tenure, content mode
+      <br>&bull; TVT balanced to near-exact (100% SMD pass, mean |SMD| 0.005)
+      <br>&bull; IVT indirectly balanced: 95% (7d) / 91% (28d) SMD pass
+      <br>&bull; Residual: control-higher IVT at 28d (73% of cells, &minus;5.6% pooled); VR loose on Power Viewer
     </div>
     <div class="info-box">
       <b>Proposed (v10):</b>
-      <br>&bull; Add: pre-7d IVT (or IVT/TVT ratio) to matching
-      <br>&bull; Goal: Balance both TVT AND IVT distributions
-      <br>&bull; Expected: VR pass rate should rise to 80%+
-      <br>&bull; Cleaner causal estimate of intentional viewing effects
+      <br>&bull; Add: a coarse pre-period <b>IVT-share</b> (IVT&nbsp;/&nbsp;TVT) block, or a 2&ndash;3 bin IVT bucket
+      <br>&bull; Goal: neutralize the one-sided 28d IVT direction &amp; tighten VR
+      <br>&bull; Expected: IVT 28d SMD pass &rarr; ~95%+, control-higher &rarr; ~50%, Power Viewer VR closer to [0.80, 1.25]
+      <br>&bull; Guardrail: keep match rate &ge; 70% on New / Reactivated
     </div>
   </div>
 
-  <h3>Implementation Options</h3>
+  <h3>Implementation options</h3>
   <table>
     <tr><th>Option</th><th>Matching Variable</th><th>Pros</th><th>Cons</th></tr>
     <tr>
-      <td><b>A. IVT bucket</b></td>
-      <td>Pre-7d IVT bucketed (like TVT bucket)</td>
-      <td>Direct balance on IVT level; simple CEM block</td>
-      <td>Reduces match pool (more constraints); may over-constrain small segments</td>
+      <td><b>A. IVT-share block</b></td>
+      <td>Pre-28d (IVT / TVT) in 2&ndash;3 coarse bins</td>
+      <td>Directly targets the autoplay-mix that drives the residual; complementary to TVT; light on match pool</td>
+      <td>Ratio noisy for low-TVT viewers (Reactivated)</td>
     </tr>
     <tr>
-      <td><b>B. IVT/TVT ratio</b></td>
-      <td>Pre-7d (IVT / TVT) as continuous or bucketed</td>
-      <td>Balances the intentional vs autoplay MIX; complementary to TVT matching</td>
-      <td>Ratio can be noisy for low-TVT viewers</td>
+      <td><b>B. IVT bucket</b></td>
+      <td>Pre-28d IVT bucketed like the TVT bucket</td>
+      <td>Balances IVT level directly; simple CEM block</td>
+      <td>Reduces match pool; may over-constrain small segments</td>
     </tr>
     <tr>
-      <td><b>C. IVT + TVT dual block</b></td>
-      <td>Block on both TVT bucket AND IVT bucket</td>
-      <td>Strongest balance guarantee</td>
-      <td>Most restrictive; may reduce match rates significantly</td>
+      <td><b>C. Dual TVT + IVT block</b></td>
+      <td>Block on both TVT and IVT buckets</td>
+      <td>Strongest balance guarantee on both</td>
+      <td>Most restrictive; watch match rate on small segments</td>
     </tr>
   </table>
 
-  <h3>Expected Impact on v10 Results</h3>
+  <h3>Validation plan for v10</h3>
   <div class="info-box">
-    <b>With IVT-balanced matching:</b>
-    <br>&bull; IVT DiD rates should decrease (removing the upward bias from intentional-viewer selection)
-    <br>&bull; TVT rates should remain similar (already balanced on TVT)
-    <br>&bull; The gap between TVT rate and IVT rate will narrow
-    <br>&bull; Power Viewer IVT rate should fall below 1.0 (removing the implausible positive incrementality)
-    <br>&bull; More confidence that any remaining IVT effect is truly causal, not matching artifact
-  </div>
-
-  <h3>Validation Plan for v10</h3>
-  <div class="info-box">
-    <b>After implementing IVT matching:</b>
-    <br>1. Re-run pre-period IVT bias check &mdash; target VR pass rate &ge; 80%
-    <br>2. Confirm directionality is no longer systematic (treated higher in &lt; 60% of titles)
-    <br>3. Compare v9 vs v10 IVT DiD rates &mdash; v10 should show smaller (less biased) effects
-    <br>4. Check that match rates don't drop below 70% (adding constraints reduces pool)
+    <b>Re-run this exact four-way check after v10 matching:</b>
+    <br>1. Target IVT 28d SMD pass &ge; 95% (from 91%) and control-higher share back near 50% (from 73%)
+    <br>2. Confirm IVT 7d stays &ge; 95% and TVT stays ~100% (no regression on the matched variable)
+    <br>3. Tighten Power Viewer VR toward [0.80, 1.25] on both IVT and TVT
+    <br>4. Confirm match rate does not drop below 70% on New (M1) and Reactivated
+    <br>5. Compare v9 vs v10 IVT DiD point estimates &mdash; expect small moves with narrower CIs (the pre-gap is small and DiD already nets levels)
   </div>
 
 </div>
 
 <script src="v9_pre_ivt_bias_data.js"></script>
 <script>
-// BIAS_DATA format: [title_id, program_name, user_segment, n_pairs, treated_ivt_hrs, control_ivt_hrs, gap_hrs, pct_gap, smd, vr, smd_pass, vr_pass]
+// BIAS_DATA columns:
+// 0 title_id, 1 name, 2 segment, 3 n_pairs,
+// 4  ivt7_t, 5  ivt7_c, 6  ivt7_gap, 7  ivt7_smd, 8  ivt7_vr, 9  ivt7_sp, 10 ivt7_vp,
+// 11 ivt28_t,12 ivt28_c,13 ivt28_gap,14 ivt28_smd,15 ivt28_vr,16 ivt28_sp,17 ivt28_vp,
+// 18 tvt7_t, 19 tvt7_c, 20 tvt7_gap, 21 tvt7_smd,22 tvt7_vr,23 tvt7_sp,24 tvt7_vp,
+// 25 tvt28_t,26 tvt28_c,27 tvt28_gap,28 tvt28_smd,29 tvt28_vr,30 tvt28_sp,31 tvt28_vp
+
+const MW = {
+  ivt7:  {off:4,  label:'IVT 7d',  days:'7-day',  metric:'IVT (intentional view time)'},
+  ivt28: {off:11, label:'IVT 28d', days:'28-day', metric:'IVT (intentional view time)'},
+  tvt7:  {off:18, label:'TVT 7d',  days:'7-day',  metric:'TVT (total view time — the matched variable)'},
+  tvt28: {off:25, label:'TVT 28d', days:'28-day', metric:'TVT (total view time — the matched variable)'}
+};
+
+// Pre-computed segment aggregates (from pre_bias_segment_v9). n_pairs in millions text.
+const SEG_AGG = {
+  ivt7: [
+    ['Active non-power (Retained)','18.4M',6.33,6.34,-0.01,-0.13,-0.0012,1,0.996,1],
+    ['New (M1)','2.0M',5.73,5.74,-0.01,-0.24,-0.0019,1,0.955,1],
+    ['Non-active (Reactivated)','1.6M',1.28,1.05,0.22,21.13,0.0658,1,0.903,1],
+    ['Power Viewer','13.0M',26.15,27.40,-1.25,-4.55,-0.0568,1,1.110,1],
+    ['ALL','34.9M',13.43,13.88,-0.46,-3.30,-0.0260,1,1.020,1]
+  ],
+  ivt28: [
+    ['Active non-power (Retained)','18.4M',20.06,21.22,-1.17,-5.51,-0.0546,1,0.907,1],
+    ['New (M1)','2.0M',10.04,10.81,-0.78,-7.17,-0.0476,1,0.850,1],
+    ['Non-active (Reactivated)','1.6M',2.49,2.74,-0.25,-9.13,-0.0238,1,0.842,1],
+    ['Power Viewer','13.0M',94.15,99.72,-5.57,-5.58,-0.0708,1,1.124,1],
+    ['ALL','34.9M',46.20,48.94,-2.74,-5.59,-0.0432,1,1.019,1]
+  ],
+  tvt7: [
+    ['Active non-power (Retained)','18.4M',8.42,7.94,0.48,6.01,0.0518,1,1.137,1],
+    ['New (M1)','2.0M',8.31,7.71,0.60,7.80,0.0552,1,1.141,1],
+    ['Non-active (Reactivated)','1.6M',1.80,1.32,0.48,36.71,0.0936,1,1.128,1],
+    ['Power Viewer','13.0M',48.00,47.32,0.68,1.45,0.0178,1,1.263,0],
+    ['ALL','34.9M',22.81,22.25,0.56,2.52,0.0180,1,1.152,1]
+  ],
+  tvt28: [
+    ['Active non-power (Retained)','18.4M',26.69,26.67,0.02,0.07,0.0006,1,0.998,1],
+    ['New (M1)','2.0M',14.25,14.22,0.04,0.26,0.0016,1,0.999,1],
+    ['Non-active (Reactivated)','1.6M',3.61,3.53,0.08,2.34,0.0052,1,0.997,1],
+    ['Power Viewer','13.0M',171.95,170.70,1.24,0.73,0.0090,1,1.296,0],
+    ['ALL','34.9M',78.87,78.39,0.48,0.61,0.0042,1,1.163,1]
+  ]
+};
+
+// Pre-computed title-level pass rates by segment (from pre_bias_title_v9).
+// [seg, n_titles, smd_pass_rate, vr_pass_rate, avg_abs_smd, avg_abs_gap, pct_ctrl_higher]
+const SEG_TITLE = {
+  ivt7: [
+    ['Active non-power (Retained)',400,95.3,98.5,0.0361,0.254,36.3],
+    ['New (M1)',400,95.8,90.3,0.0340,0.263,41.5],
+    ['Non-active (Reactivated)',397,73.6,59.2,0.0730,0.249,9.1],
+    ['Power Viewer',400,84.0,62.3,0.0562,1.270,63.0]
+  ],
+  ivt28: [
+    ['Active non-power (Retained)',400,84.8,96.5,0.0549,1.190,97.8],
+    ['New (M1)',400,86.3,67.8,0.0519,0.876,87.8],
+    ['Non-active (Reactivated)',397,93.5,53.9,0.0360,0.395,93.2],
+    ['Power Viewer',400,74.3,55.3,0.0669,5.470,67.3]
+  ],
+  tvt7: [
+    ['Active non-power (Retained)',400,95.0,99.8,0.0538,0.496,4.5],
+    ['New (M1)',400,79.8,83.3,0.0623,0.738,6.8],
+    ['Non-active (Reactivated)',397,61.0,63.2,0.1082,0.577,2.3],
+    ['Power Viewer',400,99.5,44.3,0.0281,1.138,21.8]
+  ],
+  tvt28: [
+    ['Active non-power (Retained)',400,100.0,100.0,0.0013,0.037,36.5],
+    ['New (M1)',400,100.0,100.0,0.0022,0.053,23.3],
+    ['Non-active (Reactivated)',397,99.7,100.0,0.0085,0.120,48.6],
+    ['Power Viewer',400,100.0,39.0,0.0105,1.588,9.3]
+  ]
+};
+
+const segLabels = {
+  'Active non-power (Retained)': 'Retained',
+  'New (M1)': 'New (M1)',
+  'Non-active (Reactivated)': 'Reactivated',
+  'Power Viewer': 'Power Viewer'
+};
+const segColors = {
+  'Active non-power (Retained)': '#1D9E75',
+  'New (M1)': '#378ADD',
+  'Non-active (Reactivated)': '#D85A30',
+  'Power Viewer': '#534AB7'
+};
+
+let segMW = 'ivt7';
+let tblMW = 'ivt7';
 
 // Tab switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -466,80 +464,126 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// Formatters
-const fmt = v => { if(v==null) return '—'; const a=Math.abs(v),s=v<0?'-':''; if(a>=1e6) return s+(a/1e6).toFixed(1)+'M'; if(a>=1e3) return s+(a/1e3).toFixed(1)+'K'; return s+a.toFixed(1); };
 const fmtInt = v => v==null?'—':v.toLocaleString();
+const badge = ok => ok ? '<span class="badge badge-pass">PASS</span>' : '<span class="badge badge-fail">FAIL</span>';
+const gapCol = v => v < 0 ? '#c07000' : '#2E75B6';
 
+// --- Tab 2: Segment aggregate + title pass-rate tables ---
+function renderSegAgg() {
+  const mw = MW[segMW];
+  document.getElementById('segMetricNote').textContent =
+    mw.metric + ' · ' + mw.days + ' pre-event window';
+
+  const rows = SEG_AGG[segMW];
+  let html = '';
+  rows.forEach(r => {
+    const isAll = r[0] === 'ALL';
+    html += '<tr' + (isAll ? ' style="background:#f0f6ff; font-weight:600;"' : '') + '>';
+    html += '<td>' + r[0] + '</td>';
+    html += '<td class="mono">' + r[1] + '</td>';
+    html += '<td class="mono">' + r[2].toFixed(2) + '</td>';
+    html += '<td class="mono">' + r[3].toFixed(2) + '</td>';
+    html += '<td class="mono" style="color:'+gapCol(r[4])+';">' + (r[4]>0?'+':'') + r[4].toFixed(2) + '</td>';
+    html += '<td class="mono" style="color:'+gapCol(r[5])+';">' + (r[5]>0?'+':'') + r[5].toFixed(1) + '%</td>';
+    html += '<td class="mono">' + (r[6]>0?'+':'') + r[6].toFixed(4) + '</td>';
+    html += '<td>' + badge(r[7]===1) + '</td>';
+    html += '<td class="mono">' + r[8].toFixed(3) + '</td>';
+    html += '<td>' + badge(r[9]===1) + '</td>';
+    html += '</tr>';
+  });
+  document.getElementById('segAggBody').innerHTML = html;
+
+  const allRow = rows.find(r => r[0]==='ALL');
+  const dir = allRow[4] < 0 ? 'control-higher' : 'treated-higher';
+  document.getElementById('segAggNote').innerHTML =
+    '<b>Note:</b> Pre-period mean ' + mw.metric.split(' ')[0] + ' per matched viewer (hours), ' + mw.days +
+    ' window. Pooled (ALL) gap is <b>' + (allRow[4]>0?'+':'') + allRow[4].toFixed(2) + ' hrs</b> (' +
+    (allRow[5]>0?'+':'') + allRow[5].toFixed(1) + '%), direction <b>' + dir + '</b>, pooled SMD ' +
+    allRow[6].toFixed(4) + '.';
+
+  // Title pass-rate table
+  const t = SEG_TITLE[segMW];
+  const cls = (v, good, warn) => v>=good ? 'pass' : (v>=warn ? 'warn' : 'fail');
+  let th = '';
+  t.forEach(r => {
+    th += '<tr>';
+    th += '<td>' + r[0] + '</td>';
+    th += '<td>' + r[1] + '</td>';
+    th += '<td class="'+cls(r[2],90,60)+'">' + r[2].toFixed(1) + '%</td>';
+    th += '<td class="'+cls(r[3],90,60)+'">' + r[3].toFixed(1) + '%</td>';
+    th += '<td class="mono">' + r[4].toFixed(4) + '</td>';
+    th += '<td class="mono">' + r[5].toFixed(2) + '</td>';
+    th += '<td class="mono'+(r[6]>60?' ctrl':'')+'">' + r[6].toFixed(1) + '%</td>';
+    th += '</tr>';
+  });
+  document.getElementById('segTitleBody').innerHTML = th;
+}
+
+document.querySelectorAll('#segMetricToggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#segMetricToggle button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    segMW = b.dataset.mw;
+    renderSegAgg();
+  });
+});
+
+// --- Tab 3: Title × segment detail ---
 function renderBiasTable() {
+  const mw = MW[tblMW];
+  const off = mw.off;
   const segFilter = document.getElementById('segFilter').value;
   const sortBy = document.getElementById('sortBy').value;
-  const vrFilter = document.getElementById('vrFilter').value;
+  const failFilter = document.getElementById('failFilter').value;
   const search = document.getElementById('titleSearch').value.toLowerCase().trim();
 
+  document.getElementById('thT').textContent = 'Treated ' + mw.label + ' (hrs)';
+  document.getElementById('thC').textContent = 'Control ' + mw.label + ' (hrs)';
+
   let data = BIAS_DATA.slice();
-
-  // Filter segment
   if (segFilter !== 'all') data = data.filter(r => r[2] === segFilter);
-
-  // Filter VR
-  if (vrFilter === 'fail') data = data.filter(r => r[11] === 0);
-  else if (vrFilter === 'pass') data = data.filter(r => r[11] === 1);
-  else if (vrFilter === 'high') data = data.filter(r => r[9] > 1.25);
-  else if (vrFilter === 'low') data = data.filter(r => r[9] < 0.80);
-
-  // Filter search
+  if (failFilter === 'smd_fail') data = data.filter(r => r[off+5] === 0);
+  else if (failFilter === 'vr_fail') data = data.filter(r => r[off+6] === 0);
   if (search) data = data.filter(r => r[1] && r[1].toLowerCase().includes(search));
 
-  // Sort
+  const gapOf = r => r[off+2];
+  const pctOf = r => r[off+1] ? (r[off+2]/r[off+1])*100 : 0;
   const sortFns = {
-    'gap_desc': (a,b) => Math.abs(b[6]) - Math.abs(a[6]),
-    'gap_asc': (a,b) => Math.abs(a[6]) - Math.abs(b[6]),
-    'pct_desc': (a,b) => Math.abs(b[7]) - Math.abs(a[7]),
-    'pct_asc': (a,b) => Math.abs(a[7]) - Math.abs(b[7]),
-    'vr_desc': (a,b) => b[9] - a[9],
-    'vr_asc': (a,b) => a[9] - b[9],
-    'smd_desc': (a,b) => Math.abs(b[8]) - Math.abs(a[8]),
-    'treated_desc': (a,b) => b[4] - a[4],
+    'gap_desc': (a,b) => Math.abs(gapOf(b)) - Math.abs(gapOf(a)),
+    'gap_asc':  (a,b) => Math.abs(gapOf(a)) - Math.abs(gapOf(b)),
+    'pct_desc': (a,b) => Math.abs(pctOf(b)) - Math.abs(pctOf(a)),
+    'smd_desc': (a,b) => Math.abs(b[off+3]) - Math.abs(a[off+3]),
+    'vr_desc':  (a,b) => b[off+4] - a[off+4],
+    'vr_asc':   (a,b) => a[off+4] - b[off+4],
+    'treated_desc': (a,b) => b[off] - a[off],
     'pairs_desc': (a,b) => b[3] - a[3],
     'name_asc': (a,b) => (a[1]||'').localeCompare(b[1]||'')
   };
   data.sort(sortFns[sortBy] || sortFns['gap_desc']);
 
-  document.getElementById('rowCount').textContent = data.length + ' rows shown (of ' + BIAS_DATA.length + ' total)';
-
-  const segLabels = {
-    'Active non-power (Retained)': 'Retained',
-    'New (M1)': 'New (M1)',
-    'Non-active (Reactivated)': 'Reactivated',
-    'Power Viewer': 'Power Viewer'
-  };
-  const segColors = {
-    'Active non-power (Retained)': '#1D9E75',
-    'New (M1)': '#378ADD',
-    'Non-active (Reactivated)': '#D85A30',
-    'Power Viewer': '#534AB7'
-  };
+  document.getElementById('rowCount').textContent =
+    data.length + ' rows shown (of ' + BIAS_DATA.length + ' total) · ' + mw.label + ' · ' + mw.days + ' window';
 
   const tbody = document.getElementById('biasBody');
   let html = '';
-  const limit = Math.min(data.length, 500); // cap at 500 for perf
+  const limit = Math.min(data.length, 500);
   for (let i = 0; i < limit; i++) {
     const r = data[i];
-    const gapColor = r[6] > 0 ? '#e74c3c' : '#155724';
-    const pctColor = r[7] > 0 ? '#e74c3c' : '#155724';
+    const t = r[off], c = r[off+1], gap = r[off+2], smd = r[off+3], vr = r[off+4];
+    const pct = c ? (gap/c)*100 : 0;
     const segColor = segColors[r[2]] || '#666';
     html += '<tr>';
     html += '<td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r[0]+'">' + (r[1]||r[0]) + '</td>';
     html += '<td><span style="color:'+segColor+';font-weight:600;font-size:11px;">' + (segLabels[r[2]]||r[2]) + '</span></td>';
     html += '<td class="mono" style="text-align:right;">' + fmtInt(r[3]) + '</td>';
-    html += '<td class="mono" style="text-align:right;">' + r[4].toFixed(1) + '</td>';
-    html += '<td class="mono" style="text-align:right;">' + r[5].toFixed(1) + '</td>';
-    html += '<td class="mono" style="text-align:right;color:'+gapColor+';font-weight:600;">' + (r[6]>0?'+':'') + r[6].toFixed(1) + '</td>';
-    html += '<td class="mono" style="text-align:right;color:'+pctColor+';font-weight:600;">' + (r[7]>0?'+':'') + r[7].toFixed(1) + '%</td>';
-    html += '<td class="mono" style="text-align:right;">' + r[8].toFixed(4) + '</td>';
-    html += '<td class="mono" style="text-align:right;">' + r[9].toFixed(3) + '</td>';
-    html += '<td>' + (r[10]?'<span class="badge badge-pass">PASS</span>':'<span class="badge badge-fail">FAIL</span>') + '</td>';
-    html += '<td>' + (r[11]?'<span class="badge badge-pass">PASS</span>':'<span class="badge badge-fail">FAIL</span>') + '</td>';
+    html += '<td class="mono" style="text-align:right;">' + (t==null?'—':t.toFixed(2)) + '</td>';
+    html += '<td class="mono" style="text-align:right;">' + (c==null?'—':c.toFixed(2)) + '</td>';
+    html += '<td class="mono" style="text-align:right;color:'+gapCol(gap)+';font-weight:600;">' + (gap>0?'+':'') + (gap==null?'—':gap.toFixed(2)) + '</td>';
+    html += '<td class="mono" style="text-align:right;color:'+gapCol(gap)+';font-weight:600;">' + (pct>0?'+':'') + pct.toFixed(1) + '%</td>';
+    html += '<td class="mono" style="text-align:right;">' + (smd==null?'—':smd.toFixed(4)) + '</td>';
+    html += '<td class="mono" style="text-align:right;">' + (vr==null?'—':vr.toFixed(3)) + '</td>';
+    html += '<td>' + badge(r[off+5]===1) + '</td>';
+    html += '<td>' + badge(r[off+6]===1) + '</td>';
     html += '</tr>';
   }
   if (data.length > limit) {
@@ -548,11 +592,19 @@ function renderBiasTable() {
   tbody.innerHTML = html;
 }
 
-// Bind events
-['segFilter','sortBy','vrFilter'].forEach(id => document.getElementById(id).addEventListener('change', renderBiasTable));
+document.querySelectorAll('#tblMetricToggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#tblMetricToggle button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    tblMW = b.dataset.mw;
+    renderBiasTable();
+  });
+});
+['segFilter','sortBy','failFilter'].forEach(id => document.getElementById(id).addEventListener('change', renderBiasTable));
 document.getElementById('titleSearch').addEventListener('input', renderBiasTable);
 
-// Initial render
+// Initial renders
+renderSegAgg();
 renderBiasTable();
 </script>
 
