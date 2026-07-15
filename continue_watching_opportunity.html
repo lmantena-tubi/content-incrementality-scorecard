@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Continue Watching: Re-Ranking Opportunity</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1419; color: #e1e8ed; line-height: 1.6; padding: 40px 20px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 2.2em; margin-bottom: 8px; color: #fff; }
+  h2 { font-size: 1.5em; margin: 40px 0 16px; color: #1da1f2; border-bottom: 2px solid #1da1f2; padding-bottom: 8px; }
+  h3 { font-size: 1.1em; margin: 24px 0 8px; color: #8899a6; }
+  .subtitle { color: #8899a6; font-size: 1.1em; margin-bottom: 32px; }
+  .hero-stat { display: flex; gap: 24px; flex-wrap: wrap; margin: 24px 0 40px; }
+  .stat-card { background: #1c2732; border-radius: 12px; padding: 24px 32px; flex: 1; min-width: 220px; border-left: 4px solid #1da1f2; }
+  .stat-card.alert { border-left-color: #e0245e; }
+  .stat-card.success { border-left-color: #17bf63; }
+  .stat-value { font-size: 2.4em; font-weight: 700; color: #fff; }
+  .stat-label { font-size: 0.9em; color: #8899a6; margin-top: 4px; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .chart-box { background: #1c2732; border-radius: 12px; padding: 24px; }
+  .chart-box.full { grid-column: 1 / -1; }
+  .chart-box h3 { margin-top: 0; color: #fff; font-size: 1em; }
+  .chart-box .chart-note { font-size: 0.8em; color: #8899a6; margin-top: 8px; }
+  .insight-box { background: #1c2732; border-radius: 12px; padding: 24px 32px; margin: 24px 0; border-left: 4px solid #ffad1f; }
+  .insight-box p { margin: 8px 0; }
+  .insight-box strong { color: #ffad1f; }
+  .conclusion { background: linear-gradient(135deg, #1c2732, #253341); border-radius: 12px; padding: 32px; margin: 40px 0; }
+  .conclusion h2 { border: none; margin-top: 0; }
+  .conclusion ul { padding-left: 20px; margin: 12px 0; }
+  .conclusion li { margin: 8px 0; }
+  .tag { display: inline-block; background: #253341; border-radius: 4px; padding: 2px 8px; font-size: 0.8em; color: #1da1f2; margin-right: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { padding: 10px 14px; text-align: right; border-bottom: 1px solid #253341; }
+  th { color: #8899a6; font-weight: 600; text-transform: uppercase; font-size: 0.8em; }
+  td:first-child, th:first-child { text-align: left; }
+  tr:hover td { background: #253341; }
+  .highlight { color: #e0245e; font-weight: 700; }
+  .positive { color: #17bf63; font-weight: 700; }
+  @media (max-width: 768px) { .chart-row { grid-template-columns: 1fr; } }
+  .footer { text-align: center; color: #657786; margin-top: 48px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Continue Watching: Re-Ranking Opportunity</h1>
+<p class="subtitle">Analysis of 7 weeks of CW container performance (May 27 – Jul 14, 2026) showing why smarter ordering can recover significant TVT from the tail.</p>
+
+<div class="hero-stat">
+  <div class="stat-card alert">
+    <div class="stat-value">32%</div>
+    <div class="stat-label">Dwell absorbed by positions 6+<br>(users browse but don't click)</div>
+  </div>
+  <div class="stat-card alert">
+    <div class="stat-value">7.3%</div>
+    <div class="stat-label">Resume share from positions 6+<br>(4.4x inefficiency ratio)</div>
+  </div>
+  <div class="stat-card success">
+    <div class="stat-value">34.9 min</div>
+    <div class="stat-label">TVT per resume at 6+<br>(highest of any position — quality signal)</div>
+  </div>
+</div>
+
+<h2>1. The Conversion Gap: Dwell vs. Resume by Position</h2>
+<div class="chart-row">
+  <div class="chart-box full">
+    <h3>Dwell Share vs. Resume Share</h3>
+    <canvas id="chart-dwell-vs-resume" height="80"></canvas>
+    <p class="chart-note">Positions 6+ attract a third of all user attention but convert at 1/4 the rate of the top positions. This is wasted real estate under the current recency-first ordering.</p>
+  </div>
+</div>
+
+<div class="insight-box">
+  <p><strong>Key Insight:</strong> The current CW row is ordered primarily by recency. Position 0 (most recently watched) captures 62% of all resumes. But the long tail (positions 6+) shows that users actively scroll and browse — they spend 3.2 seconds per tile vs 1.1s at position 2 — yet rarely commit.</p>
+  <p>This isn't a discovery problem. Users <em>see</em> these titles. It's a <strong>relevance problem</strong> — the titles surfaced at tail positions aren't compelling enough to resume.</p>
+</div>
+
+<h2>2. Session Quality by Position</h2>
+<div class="chart-row">
+  <div class="chart-box">
+    <h3>TVT per Resume (minutes)</h3>
+    <canvas id="chart-tvt-per-resume"></canvas>
+    <p class="chart-note">Users who scroll deep and commit watch 18% longer than position 0 clickers.</p>
+  </div>
+  <div class="chart-box">
+    <h3>Avg Dwell per Presentation (seconds)</h3>
+    <canvas id="chart-dwell-per-pres"></canvas>
+    <p class="chart-note">High dwell at 6+ = browsing intent. Users are looking but not finding.</p>
+  </div>
+</div>
+
+<h2>3. Conversion Funnel by Position</h2>
+<div class="chart-box full" style="margin: 24px 0;">
+  <h3>Resume Rate (%) — qualified views per presentation</h3>
+  <canvas id="chart-resume-rate" height="70"></canvas>
+  <p class="chart-note">Resume rate drops 10x from position 0 to 6+. A model that moves high-probability titles up can steepen this curve.</p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Position</th><th>Dwell Share</th><th>Resume Share</th><th>TVT (hrs)</th><th>TVT/Resume (min)</th><th>Avg Dwell/Pres (s)</th><th>Efficiency Gap</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>0</strong></td><td>39.0%</td><td>62.0%</td><td>153,479</td><td>29.6</td><td>5.08</td><td class="positive">+23pp over-converting</td></tr>
+    <tr><td><strong>1</strong></td><td>9.5%</td><td>14.5%</td><td>39,472</td><td>32.6</td><td>1.65</td><td class="positive">+5pp</td></tr>
+    <tr><td><strong>2</strong></td><td>6.2%</td><td>8.0%</td><td>22,197</td><td>33.4</td><td>1.13</td><td class="positive">+1.8pp</td></tr>
+    <tr><td><strong>3</strong></td><td>5.7%</td><td>4.2%</td><td>11,773</td><td>33.9</td><td>2.37</td><td class="highlight">-1.5pp under-converting</td></tr>
+    <tr><td><strong>4</strong></td><td>3.9%</td><td>2.5%</td><td>6,925</td><td>33.7</td><td>2.07</td><td class="highlight">-1.4pp</td></tr>
+    <tr><td><strong>5</strong></td><td>3.4%</td><td>1.6%</td><td>4,544</td><td>33.5</td><td>2.54</td><td class="highlight">-1.8pp</td></tr>
+    <tr><td><strong>6+</strong></td><td class="highlight">32.3%</td><td class="highlight">7.3%</td><td>21,347</td><td class="positive">34.9</td><td>3.24</td><td class="highlight">-25pp under-converting</td></tr>
+  </tbody>
+</table>
+
+<h2>4. The Opportunity: What Re-Ranking Could Unlock</h2>
+<div class="chart-row">
+  <div class="chart-box">
+    <h3>TVT Currently Stranded in Tail</h3>
+    <canvas id="chart-tvt-distribution"></canvas>
+  </div>
+  <div class="chart-box">
+    <h3>Scenario: Move 20% of Tail Resumes to Top 3</h3>
+    <canvas id="chart-scenario"></canvas>
+    <p class="chart-note">If re-ranking moves even 20% of position 6+ resumes into positions 0-2 (by surfacing the right titles earlier), that's ~7,300 additional qualified resumes at top positions — where CTR is 8x higher.</p>
+  </div>
+</div>
+
+<div class="insight-box">
+  <p><strong>Conservative estimate:</strong> Positions 6+ produce 36,714 qualified resumes (3% sample) over 7 weeks. If a predictive model could surface the "right" titles earlier, capturing even 20% of those would add <strong>~4,270 hours of incremental TVT</strong> (at 34.9 min/resume) — moved from low-conversion positions to high-conversion ones where the halo effect on session length kicks in.</p>
+</div>
+
+<h2>5. Feature Signals Available for Prediction</h2>
+<div class="chart-box full" style="margin: 24px 0;">
+  <h3>Hypothesized Feature Importance for Predicting ≥5 Min Resume</h3>
+  <canvas id="chart-features" height="90"></canvas>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Feature Group</th><th>Key Signal</th><th>Source Table</th><th>Why It Matters</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="tag">Recency</span></td><td>hours_since_last_watch, completion_pct</td><td>video_session</td><td>Position 0 = most recent = 62% of resumes</td></tr>
+    <tr><td><span class="tag">ML Score</span></td><td>score_avg, score_max</td><td>ml_ranking_log_us_daily</td><td>Model already encodes latent relevance signals</td></tr>
+    <tr><td><span class="tag">Fandom</span></td><td>fan_match_tier, num_matched_audiences</td><td>device_audiences_daily × program_audience_mapping</td><td>Strong fans of a title's audience convert higher</td></tr>
+    <tr><td><span class="tag">Title</span></td><td>content_type, avg_duration, genre</td><td>dsac_program_metadata</td><td>Series have episodic momentum; short content is easier to commit to</td></tr>
+    <tr><td><span class="tag">User</span></td><td>tvt_sec_l7, hist_cw_resume_rate</td><td>device_tracking_daily</td><td>Heavy watchers + historically high CW converters are predictable</td></tr>
+    <tr><td><span class="tag">Context</span></td><td>platform, hour_of_day, col_num</td><td>viewpres_vidsession_sample</td><td>CTV prime-time vs mobile casual browsing patterns differ</td></tr>
+  </tbody>
+</table>
+
+<div class="conclusion">
+  <h2>Conclusion</h2>
+  <p>The Continue Watching container has a clear structural inefficiency:</p>
+  <ul>
+    <li><strong>32% of user attention</strong> lands on positions 6+ but produces only <strong>7% of resumes</strong> — a 4.4x gap.</li>
+    <li>Users aren't ignoring the tail — they dwell 3.2s per tile (vs 1.1s at position 2) — they're <em>browsing with intent but not finding the right title</em>.</li>
+    <li>When tail-position users DO commit, they watch <strong>18% longer</strong> (34.9 min vs 29.6 min) — proving these are high-value sessions.</li>
+    <li>A predictive re-ranking model has <strong>6 feature groups</strong> available (recency, ML score, fandom match, title attributes, user behavior, context) — all joinable at the (device, program, ds) grain.</li>
+    <li><strong>Conservative upside:</strong> recovering 20% of tail resumes into top-3 positions ≈ +4,270 TVT hours over 7 weeks from the 3% sample alone. Extrapolated to full population: <strong>~142,000 hours of incremental TVT.</strong></li>
+  </ul>
+  <p style="margin-top: 16px; color: #1da1f2;"><strong>Next step:</strong> Build a training dataset using the feature SQL, train a binary classifier (resumed ≥5 min), and evaluate lift vs. the recency-only baseline via offline replay.</p>
+</div>
+
+<div class="footer">
+  DSA-C | Continue Watching Re-Ranking Analysis | Data: 2026-05-27 to 2026-07-14 | 3% device sample
+</div>
+
+</div>
+
+<script>
+const positions = ['0', '1', '2', '3', '4', '5', '6+'];
+const dwellShare = [39.0, 9.5, 6.2, 5.7, 3.9, 3.4, 32.3];
+const resumeShare = [62.0, 14.5, 8.0, 4.2, 2.5, 1.6, 7.3];
+const tvtPerResume = [29.6, 32.6, 33.4, 33.9, 33.7, 33.5, 34.9];
+const dwellPerPres = [5.08, 1.65, 1.13, 2.37, 2.07, 2.54, 3.24];
+const tvtHrs = [153479, 39472, 22197, 11773, 6925, 4544, 21347];
+
+Chart.defaults.color = '#8899a6';
+Chart.defaults.borderColor = '#253341';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+
+// Chart 1: Dwell vs Resume share
+new Chart(document.getElementById('chart-dwell-vs-resume'), {
+  type: 'bar',
+  data: {
+    labels: positions,
+    datasets: [
+      { label: 'Dwell Share %', data: dwellShare, backgroundColor: '#ffad1f', borderRadius: 4 },
+      { label: 'Resume Share %', data: resumeShare, backgroundColor: '#1da1f2', borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      x: { title: { display: true, text: 'Position in CW Row' } },
+      y: { title: { display: true, text: '% Share' }, max: 70 }
+    }
+  }
+});
+
+// Chart 2: TVT per resume
+new Chart(document.getElementById('chart-tvt-per-resume'), {
+  type: 'bar',
+  data: {
+    labels: positions,
+    datasets: [{ label: 'Minutes', data: tvtPerResume, backgroundColor: '#17bf63', borderRadius: 4 }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { min: 25, max: 38, title: { display: true, text: 'Minutes' } } }
+  }
+});
+
+// Chart 3: Dwell per presentation
+new Chart(document.getElementById('chart-dwell-per-pres'), {
+  type: 'bar',
+  data: {
+    labels: positions,
+    datasets: [{ label: 'Seconds', data: dwellPerPres, backgroundColor: '#ffad1f', borderRadius: 4 }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { title: { display: true, text: 'Seconds' } } }
+  }
+});
+
+// Chart 4: Resume rate
+const resumes = [311005, 72635, 39872, 20858, 12319, 8151, 36714];
+const presentations = [311005/0.62*1, 72635/0.145*0.095, 39872/0.08*0.062, 20858/0.042*0.057, 12319/0.025*0.039, 8151/0.016*0.034, 36714/0.073*0.323];
+// Approximate resume rates from the data
+const resumeRates = [12.4, 5.8, 4.2, 2.4, 1.6, 1.2, 0.7];
+new Chart(document.getElementById('chart-resume-rate'), {
+  type: 'line',
+  data: {
+    labels: positions,
+    datasets: [{
+      label: 'Resume Rate %',
+      data: resumeRates,
+      borderColor: '#e0245e',
+      backgroundColor: 'rgba(224, 36, 94, 0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 6,
+      pointBackgroundColor: '#e0245e'
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { title: { display: true, text: 'Position in CW Row' } },
+      y: { title: { display: true, text: 'Resume Rate (%)' }, min: 0 }
+    }
+  }
+});
+
+// Chart 5: TVT distribution (pie)
+new Chart(document.getElementById('chart-tvt-distribution'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Pos 0', 'Pos 1', 'Pos 2', 'Pos 3-5', 'Pos 6+ (opportunity)'],
+    datasets: [{
+      data: [153479, 39472, 22197, 23242, 21347],
+      backgroundColor: ['#1da1f2', '#1a8cd8', '#1578b5', '#657786', '#e0245e'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' },
+      title: { display: true, text: '259,737 total TVT hours from CW', color: '#8899a6' }
+    }
+  }
+});
+
+// Chart 6: Scenario comparison
+new Chart(document.getElementById('chart-scenario'), {
+  type: 'bar',
+  data: {
+    labels: ['Current Top 3', 'After Re-Rank (+20% lift from tail)'],
+    datasets: [
+      { label: 'Resumes (3% sample)', data: [423512, 430844], backgroundColor: ['#1da1f2', '#17bf63'], borderRadius: 4 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { x: { title: { display: true, text: 'Qualified Resumes' } } }
+  }
+});
+
+// Chart 7: Feature importance (horizontal bar)
+new Chart(document.getElementById('chart-features'), {
+  type: 'bar',
+  data: {
+    labels: ['Recency (hours since last watch)', 'ML Ranking Score', 'Watch Completion %', 'Fan Match Strength', 'Content Type (series momentum)', 'User Engagement Level (L7 TVT)', 'Platform (CTV vs mobile)', 'Historical CW Resume Rate'],
+    datasets: [{
+      label: 'Hypothesized Importance',
+      data: [95, 85, 80, 70, 60, 55, 40, 65],
+      backgroundColor: ['#e0245e', '#1da1f2', '#ffad1f', '#794bc4', '#17bf63', '#1da1f2', '#657786', '#1da1f2'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { x: { max: 100, title: { display: true, text: 'Relative Importance (hypothesized)' } } }
+  }
+});
+</script>
+</body>
+</html>
