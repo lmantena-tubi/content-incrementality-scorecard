@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Content Incrementality Explorer Dashboard (v10)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e6ea; }
+  .tab-btn { padding: 10px 22px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .controls { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; padding: 12px 16px; background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; }
+  .controls label { font-size: 13px; font-weight: 600; color: #1B3A5C; }
+  .controls select { font-family: Calibri; font-size: 13px; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; }
+  .metric-toggle { display: flex; gap: 0; border: 2px solid #2E75B6; border-radius: 5px; overflow: hidden; }
+  .metric-toggle button { padding: 6px 16px; font-size: 13px; font-weight: 600; background: #fff; color: #2E75B6; border: none; cursor: pointer; }
+  .metric-toggle button.active { background: #2E75B6; color: #fff; }
+  .chart-wrap { position: relative; width: 100%; margin-bottom: 2rem; }
+  .chart-title { font-size: 16px; font-weight: 600; color: #2E75B6; margin-bottom: 8px; }
+  .chart-subtitle { font-size: 12px; color: #666; margin-bottom: 12px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  .stat-row { display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .stat-card { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 10px 16px; min-width: 140px; }
+  .stat-card .label { font-size: 11px; color: #666; text-transform: uppercase; }
+  .stat-card .value { font-size: 20px; font-weight: 600; color: #1B3A5C; }
+  .stat-card .sub { font-size: 11px; color: #888; }
+  .denom-tag { display: inline-block; margin-left: 4px; padding: 1px 5px; border-radius: 3px; background: #2E75B6; color: #fff; font-size: 9px; font-weight: 600; text-transform: uppercase; vertical-align: middle; }
+  /* Post-Event stats: fit all 7 cards in a single row */
+  #postStats { flex-wrap: nowrap; gap: 0.6rem; }
+  #postStats .stat-card { min-width: 0; flex: 1 1 0; padding: 8px 10px; }
+  #postStats .stat-card .label { font-size: 10px; }
+  #postStats .stat-card .value { font-size: 17px; }
+  .legend-inline { display: flex; gap: 20px; margin-bottom: 12px; font-size: 13px; }
+  .legend-inline span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+  table.data-table th { background: #f0f2f5; padding: 6px 8px; text-align: left; font-weight: 600; color: #1B3A5C; border-bottom: 2px solid #e2e6ea; }
+  table.data-table td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+  table.data-table tr:hover { background: #f8f9fa; }
+  .treatment-row td { background: #fff3e6 !important; }
+  .search-wrap { position: relative; display: inline-block; }
+  .search-wrap input { font-family: Calibri; font-size: 13px; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; width: 240px; }
+  .search-wrap input:focus { outline: none; border-color: #2E75B6; }
+  .search-results { position: absolute; top: 100%; left: 0; width: 320px; max-height: 260px; overflow-y: auto; background: #fff; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; display: none; }
+  .search-results .sr-item { padding: 6px 10px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .search-results .sr-item:hover { background: #f0f4ff; }
+  .search-results .sr-item .sr-name { flex: 1; }
+  .search-results .sr-item .sr-id { color: #999; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality Explorer</h1>
+<p class="subtitle">v10 &middot; July 1–14 2026 &middot; US only &middot; Organic discovery &middot; 7d post window &middot; all 400 movies</p>
+
+<div class="controls">
+  <label>Title:</label>
+  <select id="titleSelect"></select>
+  <div class="search-wrap">
+    <input type="text" id="titleSearch" placeholder="Search titles..." autocomplete="off">
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <label style="margin-left: 20px;">Segment:</label>
+  <select id="segmentSelect"></select>
+  <label style="margin-left: 20px;">Metric:</label>
+  <div class="metric-toggle">
+    <button id="btnTVT" class="active" onclick="setMetric('tvt')">TVT</button>
+    <button id="btnIVT" onclick="setMetric('ivt')">IVT</button>
+  </div>
+  <span id="titleInfo" style="margin-left: auto; font-size: 12px; color: #666;"></span>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-journey">Mean Journey</button>
+  <button class="tab-btn" data-tab="tab-post">Post-Event Viewing</button>
+  <button class="tab-btn" data-tab="tab-dist">Distributions</button>
+</div>
+
+<!-- TAB 1: Mean Journey -->
+<div class="tab-panel active" id="tab-journey">
+  <div class="summary-box">
+    <b>Mean trajectory</b> of matched treatment vs control viewers. Day 0 = viewer's event date.
+    Pre-period overlap demonstrates matching quality; post-period divergence shows incrementality.
+    Band = &plusmn;1 SE.
+  </div>
+  <div class="stat-row" id="journeyStats"></div>
+  <div class="chart-wrap" style="height:450px;">
+    <canvas id="journeyCanvas"></canvas>
+  </div>
+</div>
+
+<!-- TAB 2: Post-Event Viewing -->
+<div class="tab-panel" id="tab-post">
+  <div class="summary-box">
+    <b>Left:</b> What control viewers watch instead (substitution) — top titles by avg viewing per viewer.
+    <b>Right:</b> What treatment viewers watch after the event (amplification). Treatment title highlighted in orange.
+    <br><b>Note:</b> Both deltas use the same denominator — <b>control off-title viewing per viewer</b>.
+    <b>Delta (on + off title)</b> = (treatment on-title + off-title − control off-title) / control off-title; it is the
+    net incrementality including the treatment title's own (focal) viewing.
+    <b>Off-title Delta</b> = (treatment off-title − control off-title) / control off-title; it is the substitution-only
+    effect, excluding the treatment title.
+  </div>
+  <div class="stat-row" id="postStats"></div>
+  <div class="two-col">
+    <div>
+      <p class="chart-title">Controls (substitution)</p>
+      <p class="chart-subtitle">Per-viewer avg &middot; treatment title excluded</p>
+      <div class="chart-wrap" style="height:500px;">
+        <canvas id="subCanvas"></canvas>
+      </div>
+    </div>
+    <div>
+      <p class="chart-title">Treatment (amplification)</p>
+      <p class="chart-subtitle">Per-viewer avg &middot; treatment title in orange</p>
+      <div class="chart-wrap" style="height:500px;">
+        <canvas id="ampCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="two-col" style="margin-top: 1.5rem;">
+    <div>
+      <p class="chart-title">Control genre mix</p>
+      <div class="chart-wrap" style="height:350px;">
+        <canvas id="genreCtrlCanvas"></canvas>
+      </div>
+    </div>
+    <div>
+      <p class="chart-title">Treatment genre mix</p>
+      <div class="chart-wrap" style="height:350px;">
+        <canvas id="genreTreatCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Distributions -->
+<div class="tab-panel" id="tab-dist">
+  <div class="summary-box">
+    <b>Pair-level distributions</b> from pre-computed deltas (7d post window, July 1-14 cohort).
+    Values are winsorized at p1/p99.
+  </div>
+  <div class="stat-row" id="distStats"></div>
+  <div class="chart-wrap" style="height:350px;">
+    <p class="chart-title">Delta (treatment off-title - control off-title) — winsorized</p>
+    <canvas id="deltaCanvas"></canvas>
+  </div>
+  <div class="chart-wrap" style="height:350px;">
+    <p class="chart-title">Delta x weight_T (additionality-proportional) — winsorized</p>
+    <canvas id="addPropCanvas"></canvas>
+  </div>
+  <div class="two-col">
+    <div class="chart-wrap" style="height:350px;">
+      <p class="chart-title">On-title viewing (treated post-period) — winsorized</p>
+      <canvas id="onTitleCanvas"></canvas>
+    </div>
+    <div class="chart-wrap" style="height:350px;">
+      <p class="chart-title">weight_T vs Delta (off-title)</p>
+      <canvas id="scatterCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="explorer_dashboard_data_v10.js"></script>
+<script>
+// --- State ---
+// Read initial state from the URL hash so a link like
+// #title=100044909&seg=all&metric=ivt&tab=post opens straight to that view.
+function parseHash() {
+  const h = {};
+  (location.hash || '').replace(/^#/, '').split('&').forEach(kv => {
+    const [k, v] = kv.split('=');
+    if (k) h[k] = decodeURIComponent(v || '');
+  });
+  return h;
+}
+const HASH0 = parseHash();
+
+let currentTitle = (HASH0.title && TITLES[HASH0.title]) ? HASH0.title : Object.keys(TITLES)[0];
+let currentMetric = (HASH0.metric === 'ivt') ? 'ivt' : 'tvt';
+let currentSegment = HASH0.seg || 'all';   // validated against available segments in populateSegments()
+let charts = {};
+
+// Serialize current state back into the URL hash (replaceState = no scroll jump, no history spam).
+function writeHash() {
+  const tabBtn = document.querySelector('.tab-btn.active');
+  const tab = tabBtn ? tabBtn.dataset.tab.replace(/^tab-/, '') : 'journey';
+  const q = `title=${encodeURIComponent(currentTitle)}&seg=${encodeURIComponent(currentSegment)}` +
+            `&metric=${currentMetric}&tab=${tab}`;
+  history.replaceState(null, '', '#' + q);
+}
+
+const SEGMENT_LABELS = {
+  'all': 'All Segments',
+  'Power Viewer': 'Power Viewer',
+  'Active non-power (Retained)': 'Retained',
+  'New (M1)': 'New (M1)',
+  'Non-active (Reactivated)': 'Reactivated'
+};
+
+function init() {
+  // Sync the metric toggle buttons to the (possibly hash-restored) initial metric.
+  document.getElementById('btnTVT').classList.toggle('active', currentMetric === 'tvt');
+  document.getElementById('btnIVT').classList.toggle('active', currentMetric === 'ivt');
+
+  const sel = document.getElementById('titleSelect');
+  sel.innerHTML = '';
+  // Single-source: sort alphabetically by name
+  const sortedEntries = Object.entries(TITLES).sort((a, b) => a[1].name.localeCompare(b[1].name));
+  sortedEntries.forEach(([id, t]) => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = `${t.name} (${id})`;
+    sel.appendChild(opt);
+  });
+  sel.value = currentTitle;
+  sel.addEventListener('change', () => { currentTitle = sel.value; populateSegments(); rebuildAll(); writeHash(); });
+
+  // Search
+  const searchInput = document.getElementById('titleSearch');
+  const searchResults = document.getElementById('searchResults');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    if (!q) { searchResults.style.display = 'none'; return; }
+    searchResults.innerHTML = '';
+    const matches = sortedEntries.filter(([id, t]) =>
+      t.name.toLowerCase().includes(q) || id.includes(q)
+    ).slice(0, 15);
+    if (matches.length === 0) {
+      searchResults.innerHTML = '<div class="sr-item" style="color:#999;">No matches</div>';
+    } else {
+      matches.forEach(([id, t]) => {
+        const div = document.createElement('div');
+        div.className = 'sr-item';
+        div.innerHTML = `<span class="sr-name">${t.name}</span><span class="sr-id">${id}</span>`;
+        div.addEventListener('click', () => {
+          currentTitle = id;
+          sel.value = id;
+          searchInput.value = '';
+          searchResults.style.display = 'none';
+          populateSegments();
+          rebuildAll();
+          writeHash();
+        });
+        searchResults.appendChild(div);
+      });
+    }
+    searchResults.style.display = 'block';
+  });
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { searchInput.value = ''; searchResults.style.display = 'none'; }
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrap')) searchResults.style.display = 'none';
+  });
+
+  const segSel = document.getElementById('segmentSelect');
+  segSel.addEventListener('change', () => { currentSegment = segSel.value; rebuildAll(); writeHash(); });
+  populateSegments();
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => { activateTab(btn.dataset.tab); writeHash(); });
+  });
+
+  // Restore tab from the hash (defaults to Mean Journey).
+  if (HASH0.tab) {
+    const tabId = 'tab-' + HASH0.tab;
+    if (document.getElementById(tabId)) activateTab(tabId);
+  }
+
+  rebuildAll();
+  writeHash();
+}
+
+function activateTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tabId));
+  document.querySelectorAll('.tab-panel').forEach(p =>
+    p.classList.toggle('active', p.id === tabId));
+}
+
+function setMetric(m) {
+  currentMetric = m;
+  document.getElementById('btnTVT').classList.toggle('active', m === 'tvt');
+  document.getElementById('btnIVT').classList.toggle('active', m === 'ivt');
+  rebuildAll();
+  writeHash();
+}
+
+function populateSegments() {
+  const segSel = document.getElementById('segmentSelect');
+  segSel.innerHTML = '';
+  const journeyData = JOURNEY[currentTitle] || {};
+  const segments = Object.keys(journeyData);
+  const order = ['all', 'Power Viewer', 'Active non-power (Retained)', 'New (M1)', 'Non-active (Reactivated)'];
+  const sorted = order.filter(s => segments.includes(s));
+  sorted.forEach(seg => {
+    const opt = document.createElement('option');
+    opt.value = seg;
+    opt.textContent = SEGMENT_LABELS[seg] || seg;
+    segSel.appendChild(opt);
+  });
+  if (!sorted.includes(currentSegment)) currentSegment = 'all';
+  segSel.value = currentSegment;
+}
+
+function rebuildAll() {
+  const t = TITLES[currentTitle];
+  document.getElementById('titleInfo').innerHTML =
+    `${t.n_pairs.toLocaleString()} pairs · ${t.genre} · ${t.deal_type}`;
+  buildJourney();
+  buildPostEvent();
+  buildDistributions();
+}
+
+// --- Helpers ---
+function destroyChart(key) {
+  if (charts[key]) { charts[key].destroy(); charts[key] = null; }
+}
+
+function fmtHrs(sec) { return (sec / 3600).toFixed(2); }
+
+// --- Journey ---
+function buildJourney() {
+  destroyChart('journey');
+  const titleData = JOURNEY[currentTitle];
+  if (!titleData) return;
+  const data = titleData[currentSegment];
+  if (!data) return;
+
+  const isTvt = currentMetric === 'tvt';
+  const meanIdx = isTvt ? 1 : 3;
+  const seIdx = isTvt ? 2 : 4;
+
+  const treat = data.treatment;
+  const ctrl = data.control;
+
+  // Stats — pre 7d (days -7 to -1), post 7d (days 0 to 6)
+  const preTreat = treat.filter(d => d[0] >= -7 && d[0] <= -1);
+  const preCtrl = ctrl.filter(d => d[0] >= -7 && d[0] <= -1);
+  const postTreat = treat.filter(d => d[0] >= 0 && d[0] <= 6);
+  const postCtrl = ctrl.filter(d => d[0] >= 0 && d[0] <= 6);
+  const avgPreTreat = preTreat.reduce((s, d) => s + d[meanIdx], 0) / preTreat.length;
+  const avgPreCtrl = preCtrl.reduce((s, d) => s + d[meanIdx], 0) / preCtrl.length;
+  const avgPostTreat = postTreat.reduce((s, d) => s + d[meanIdx], 0) / postTreat.length;
+  const avgPostCtrl = postCtrl.reduce((s, d) => s + d[meanIdx], 0) / postCtrl.length;
+  const did = (avgPostTreat - avgPreTreat) - (avgPostCtrl - avgPreCtrl);
+  const didPct = (did / avgPreCtrl * 100).toFixed(1);
+  const liftPct = ((avgPostTreat - avgPostCtrl) / avgPostCtrl * 100).toFixed(1);
+
+  document.getElementById('journeyStats').innerHTML = `
+    <div class="stat-card"><div class="label">Metric</div><div class="value">${isTvt ? 'TVT' : 'IVT'}</div></div>
+    <div class="stat-card"><div class="label">Pre 7d avg (treatment)</div><div class="value">${fmtHrs(avgPreTreat)} hrs</div></div>
+    <div class="stat-card"><div class="label">Pre 7d avg (control)</div><div class="value">${fmtHrs(avgPreCtrl)} hrs</div></div>
+    <div class="stat-card"><div class="label">Post 7d avg (treatment)</div><div class="value">${fmtHrs(avgPostTreat)} hrs</div></div>
+    <div class="stat-card"><div class="label">Post 7d avg (control)</div><div class="value">${fmtHrs(avgPostCtrl)} hrs</div></div>
+    <div class="stat-card"><div class="label">Diff-in-Diff</div><div class="value">${fmtHrs(did)} hrs</div><div class="sub">${didPct}% of pre-control</div></div>
+    <div class="stat-card"><div class="label">Post lift</div><div class="value">${liftPct}%</div></div>
+  `;
+
+  const toHrs = v => v / 3600;
+
+  // Compute fixed y-axis range using BOTH TVT and IVT so scale doesn't change on toggle
+  let yMax = 0;
+  for (const mi of [1, 3]) {
+    const si = mi + 1;
+    for (const arm of [treat, ctrl]) {
+      for (const d of arm) {
+        yMax = Math.max(yMax, toHrs(d[mi] + d[si]));
+      }
+    }
+  }
+  yMax = Math.ceil(yMax * 20) / 20; // round up to nearest 0.05
+
+  const datasets = [
+    // Treatment SE upper
+    { data: treat.map(d => ({x: d[0], y: toHrs(d[meanIdx] + d[seIdx])})),
+      borderColor: 'transparent', pointRadius: 0, fill: false, showLine: true,
+      borderWidth: 0, label: '' },
+    // Treatment SE lower (fill to prev)
+    { data: treat.map(d => ({x: d[0], y: toHrs(d[meanIdx] - d[seIdx])})),
+      borderColor: 'transparent', pointRadius: 0, fill: '-1',
+      backgroundColor: 'rgba(99,110,250,0.15)', showLine: true, borderWidth: 0, label: '' },
+    // Treatment mean
+    { data: treat.map(d => ({x: d[0], y: toHrs(d[meanIdx])})),
+      borderColor: '#636EFA', borderWidth: 2.5, pointRadius: 0, fill: false,
+      label: 'Treatment', showLine: true },
+    // Control SE upper
+    { data: ctrl.map(d => ({x: d[0], y: toHrs(d[meanIdx] + d[seIdx])})),
+      borderColor: 'transparent', pointRadius: 0, fill: false, showLine: true,
+      borderWidth: 0, label: '' },
+    // Control SE lower (fill to prev)
+    { data: ctrl.map(d => ({x: d[0], y: toHrs(d[meanIdx] - d[seIdx])})),
+      borderColor: 'transparent', pointRadius: 0, fill: '-1',
+      backgroundColor: 'rgba(239,85,59,0.15)', showLine: true, borderWidth: 0, label: '' },
+    // Control mean
+    { data: ctrl.map(d => ({x: d[0], y: toHrs(d[meanIdx])})),
+      borderColor: '#EF553B', borderWidth: 2.5, pointRadius: 0, fill: false,
+      label: 'Control', showLine: true },
+  ];
+
+  charts.journey = new Chart(document.getElementById('journeyCanvas'), {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Relative Day' },
+             grid: { color: '#f0f0f0' } },
+        y: { title: { display: true, text: `Daily ${isTvt ? 'TVT' : 'IVT'} (hrs)` },
+             min: 0, max: yMax, grid: { color: '#f0f0f0' } }
+      },
+      plugins: {
+        legend: { labels: { filter: item => item.text !== '' } },
+        annotation: {
+          annotations: {
+            eventLine: { type: 'line', xMin: 0, xMax: 0,
+              borderColor: 'rgba(0,0,0,0.4)', borderWidth: 1.5, borderDash: [5, 5],
+              label: { content: 'Event', display: true, position: 'start',
+                       font: { size: 11 }, color: '#666' } }
+          }
+        }
+      }
+    }
+  });
+}
+
+// --- Post-Event Viewing ---
+function buildPostEvent() {
+  destroyChart('sub');
+  destroyChart('amp');
+  destroyChart('genreCtrl');
+  destroyChart('genreTreat');
+
+  const data = POST_EVENT[currentTitle];
+  if (!data) return;
+
+  const isTvt = currentMetric === 'tvt';
+  const valIdx = isTvt ? 3 : 4;
+  const nCtrl = data.n_unique_controls;
+  const nTreat = data.n_unique_treated;
+
+  // Denominator for both deltas: control off-title viewing per viewer (hrs).
+  const ctrlTotal = data.control.reduce((s, r) => s + r[valIdx], 0) / nCtrl / 3600;
+  // Treatment split into off-title (r[6]===0) and on-title/focal (r[6]===1) per viewer (hrs).
+  const treatOffTitle = data.treatment.filter(r => r[6] === 0).reduce((s, r) => s + r[valIdx], 0) / nTreat / 3600;
+  const treatOnTitle = data.treatment.filter(r => r[6] === 1).reduce((s, r) => s + r[valIdx], 0) / nTreat / 3600;
+  const treatTotal = treatOffTitle + treatOnTitle;
+  // Off-title delta = substitution only; On+Off delta = net incrementality (adds on-title/focal viewing).
+  const deltaOffPct = ((treatOffTitle - ctrlTotal) / ctrlTotal * 100).toFixed(1);
+  const deltaTotalPct = ((treatTotal - ctrlTotal) / ctrlTotal * 100).toFixed(1);
+
+  document.getElementById('postStats').innerHTML = `
+    <div class="stat-card"><div class="label">Control off-title/viewer <span class="denom-tag">denominator</span></div><div class="value">${ctrlTotal.toFixed(2)} hrs</div></div>
+    <div class="stat-card"><div class="label">Treatment (on+off)/viewer</div><div class="value">${treatTotal.toFixed(2)} hrs</div></div>
+    <div class="stat-card"><div class="label">Treatment off-title/viewer</div><div class="value">${treatOffTitle.toFixed(2)} hrs</div></div>
+    <div class="stat-card"><div class="label">Delta (on + off title)</div><div class="value">${deltaTotalPct}%</div></div>
+    <div class="stat-card"><div class="label">Off-title Delta</div><div class="value">${deltaOffPct}%</div></div>
+    <div class="stat-card"><div class="label">Unique controls</div><div class="value">${nCtrl.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="label">Unique treated</div><div class="value">${nTreat.toLocaleString()}</div></div>
+  `;
+
+  // Substitution bar
+  const subTop = data.control.slice(0, 15);
+  const subLabels = subTop.map(r => r[1] || `ID:${r[0]}`);
+  const subVals = subTop.map(r => r[valIdx] / nCtrl / 3600);
+  const subPcts = subTop.map(r => (r[5] / nCtrl * 100).toFixed(1));
+
+  // Amplification bar (compute vals up front so both charts share one x-scale)
+  const ampTop = data.treatment.slice(0, 15);
+  const ampLabels = ampTop.map(r => r[1] || `ID:${r[0]}`);
+  const ampVals = ampTop.map(r => r[valIdx] / nTreat / 3600);
+  const ampColors = ampTop.map(r => r[6] === 1 ? '#FF7F0E' : '#636EFA');
+
+  // Shared x-axis max across both bar charts so hours are directly comparable.
+  const barXMax = Math.max(0, ...subVals, ...ampVals) * 1.02 || undefined;
+
+  charts.sub = new Chart(document.getElementById('subCanvas'), {
+    type: 'bar',
+    data: {
+      labels: subLabels,
+      datasets: [{ data: subVals, backgroundColor: '#636EFA', borderRadius: 3 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(3)} hrs (${subPcts[ctx.dataIndex]}% viewers)` } }
+      },
+      scales: {
+        x: { min: 0, max: barXMax, title: { display: true, text: `Avg ${isTvt ? 'TVT' : 'IVT'} per viewer (hrs)` }, grid: { color: '#f0f0f0' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  charts.amp = new Chart(document.getElementById('ampCanvas'), {
+    type: 'bar',
+    data: {
+      labels: ampLabels,
+      datasets: [{ data: ampVals, backgroundColor: ampColors, borderRadius: 3 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => {
+          const r = ampTop[ctx.dataIndex];
+          const pct = (r[5] / nTreat * 100).toFixed(1);
+          return `${ctx.raw.toFixed(3)} hrs (${pct}% viewers)`;
+        }}}
+      },
+      scales: {
+        x: { min: 0, max: barXMax, title: { display: true, text: `Avg ${isTvt ? 'TVT' : 'IVT'} per viewer (hrs)` }, grid: { color: '#f0f0f0' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+
+  // Genre pie charts
+  function genreAgg(rows) {
+    const agg = {};
+    rows.forEach(r => {
+      const g = r[2] || 'Unknown';
+      agg[g] = (agg[g] || 0) + r[valIdx];
+    });
+    return agg;
+  }
+
+  const ctrlGenre = genreAgg(data.control);
+  const treatGenre = genreAgg(data.treatment);
+  const pieColors = ['#636EFA','#EF553B','#00CC96','#AB63FA','#FF7F0E','#19D3F3','#FF6692','#B6E880','#FECB52','#FFA15A'];
+
+  // Percentage share of total genre viewing for tooltips.
+  const pctTooltip = (ctx) => {
+    const arr = ctx.dataset.data;
+    const total = arr.reduce((s, v) => s + v, 0);
+    const pct = total ? (ctx.raw / total * 100) : 0;
+    return `${ctx.label}: ${pct.toFixed(1)}%`;
+  };
+
+  charts.genreCtrl = new Chart(document.getElementById('genreCtrlCanvas'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(ctrlGenre),
+      datasets: [{ data: Object.values(ctrlGenre), backgroundColor: pieColors }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11 } } },
+        tooltip: { callbacks: { label: pctTooltip } }
+      } }
+  });
+
+  charts.genreTreat = new Chart(document.getElementById('genreTreatCanvas'), {
+    type: 'pie',
+    data: {
+      labels: Object.keys(treatGenre),
+      datasets: [{ data: Object.values(treatGenre), backgroundColor: pieColors }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11 } } },
+        tooltip: { callbacks: { label: pctTooltip } }
+      } }
+  });
+}
+
+// --- Distributions ---
+function buildDistributions() {
+  destroyChart('delta');
+  destroyChart('addProp');
+  destroyChart('onTitle');
+  destroyChart('scatter');
+
+  const dist = DISTRIBUTIONS[currentTitle];
+  if (!dist) return;
+
+  const isTvt = currentMetric === 'tvt';
+  const d = isTvt ? dist.tvt : dist.ivt;
+  const scatterData = isTvt ? dist.scatter_tvt : dist.scatter_ivt;
+
+  // Stats
+  document.getElementById('distStats').innerHTML = `
+    <div class="stat-card"><div class="label">Mean delta (hrs)</div><div class="value">${(d.stats.mean_delta/3600).toFixed(4)}</div></div>
+    <div class="stat-card"><div class="label">Std delta (hrs)</div><div class="value">${(d.stats.std_delta/3600).toFixed(3)}</div></div>
+    <div class="stat-card"><div class="label">Mean add_prop (hrs)</div><div class="value">${(d.stats.mean_add_prop/3600).toFixed(4)}</div></div>
+    <div class="stat-card"><div class="label">Mean on-title (hrs)</div><div class="value">${(d.stats.mean_on_title/3600).toFixed(3)}</div></div>
+  `;
+
+  function buildHistogram(canvasId, chartKey, binsSec, counts, meanSec, xlabel) {
+    const labels = binsSec.map(b => (b/3600).toFixed(2));
+    const meanHrs = meanSec / 3600;
+
+    charts[chartKey] = new Chart(document.getElementById(canvasId), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{ data: counts, backgroundColor: 'rgba(99,110,250,0.6)', borderColor: '#636EFA', borderWidth: 0.5 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          annotation: {
+            annotations: {
+              zeroLine: { type: 'line', xMin: binsSec.indexOf(0) >= 0 ? binsSec.indexOf(0) : labels.findIndex(l => parseFloat(l) >= 0),
+                xMax: binsSec.indexOf(0) >= 0 ? binsSec.indexOf(0) : labels.findIndex(l => parseFloat(l) >= 0),
+                borderColor: 'rgba(0,0,0,0.4)', borderWidth: 1.5, borderDash: [4,4] },
+              meanLine: { type: 'line',
+                xMin: labels.findIndex(l => parseFloat(l) >= meanHrs),
+                xMax: labels.findIndex(l => parseFloat(l) >= meanHrs),
+                borderColor: '#00CC96', borderWidth: 2,
+                label: { content: `mean=${meanHrs.toFixed(4)}`, display: true, position: 'start',
+                         font: { size: 10 }, color: '#00CC96' } }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: xlabel }, ticks: { maxTicksLimit: 15, font: { size: 10 } }, grid: { display: false } },
+          y: { title: { display: true, text: 'Count' }, grid: { color: '#f0f0f0' } }
+        }
+      }
+    });
+  }
+
+  const metricLabel = isTvt ? 'TVT' : 'IVT';
+  buildHistogram('deltaCanvas', 'delta', d.delta.bins, d.delta.counts, d.stats.mean_delta,
+    `Delta off-title ${metricLabel} (hrs, winsorized)`);
+  buildHistogram('addPropCanvas', 'addProp', d.add_prop.bins, d.add_prop.counts, d.stats.mean_add_prop,
+    `Delta x weight_T ${metricLabel} (hrs, winsorized)`);
+  buildHistogram('onTitleCanvas', 'onTitle', d.on_title.bins, d.on_title.counts, d.stats.mean_on_title,
+    `On-title ${metricLabel} (hrs, winsorized)`);
+
+  // Scatter
+  charts.scatter = new Chart(document.getElementById('scatterCanvas'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: scatterData.map(p => ({x: p[0], y: p[1]})),
+        backgroundColor: 'rgba(99,110,250,0.25)',
+        borderColor: 'rgba(99,110,250,0.4)',
+        pointRadius: 2.5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        annotation: {
+          annotations: {
+            zeroLine: { type: 'line', xMin: 0, xMax: 0,
+              borderColor: 'rgba(0,0,0,0.3)', borderWidth: 1, borderDash: [4,4] }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: `Delta off-title ${metricLabel} (hrs, winsorized)` }, grid: { color: '#f0f0f0' } },
+        y: { title: { display: true, text: 'weight_T' }, min: 0, max: 1, grid: { color: '#f0f0f0' } }
+      }
+    }
+  });
+}
+
+// --- Start ---
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
