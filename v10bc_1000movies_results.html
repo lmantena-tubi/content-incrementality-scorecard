@@ -67,7 +67,7 @@
     <label>Sort by:</label>
     <select id="tvtSort">
       <option value="incrRank">Incremental TVT Rank</option>
-      <option value="julTvt">July Movie TVT Rank</option>
+      <option value="julTvt">July 7d Event TVT Rank</option>
       <option value="incrTvt">Incremental TVT</option>
       <option value="ratio">Ratio (Incr / Title TVT)</option>
       <option value="avgDelta">Avg Simple &Delta;/viewer (TVT)</option>
@@ -111,7 +111,7 @@
     <label>Sort by:</label>
     <select id="ivtSort">
       <option value="incrRank">Incremental IVT Rank</option>
-      <option value="julTvt">July Movie TVT Rank</option>
+      <option value="julTvt">July 7d Event TVT Rank</option>
       <option value="incrTvt">Incremental IVT</option>
       <option value="ratio">Ratio (Incr IVT / Title TVT)</option>
       <option value="avgDelta">Avg Simple &Delta;/viewer (IVT)</option>
@@ -344,12 +344,12 @@ function buildRankTable(metric, ids) {
   html += '<thead><tr style="background:#f0f4f8; text-align:left;">';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">#</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Incr '+mlab+' Rank</th>';
-  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">July TVT Rank</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">July 7d Event TVT Rank</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Program ID</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Program Name</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Genre</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Duration<br><span style="font-weight:400;font-size:10px;">hrs</span></th>';
-  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">July Movie TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">July 7d Event TVT</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Incr '+mlab+'<br><span style="font-weight:400;font-size:10px;">&Sigma;(rate&times;seg TVT)</span></th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Ratio</th>';
   html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Avg &Delta;/viewer<br><span style="font-weight:400;font-size:10px;">(hrs, '+mlab+', pair-wtd)</span></th>';
@@ -455,8 +455,8 @@ function rankRowsForExport(metric) {
 
   const segLabels = {3:'Power Viewer',0:'Retained',2:'Reactivated',1:'New (M1)'};
   const header = [
-    'Incr '+mlab+' Rank','July TVT Rank','Program ID','Program Name','Genre','Duration (hrs)',
-    'July Movie TVT (hrs)','Incr '+mlab+' (hrs)','Ratio (%)','Avg Δ/viewer ('+mlab+', hrs)',
+    'Incr '+mlab+' Rank','July 7d Event TVT Rank','Program ID','Program Name','Genre','Duration (hrs)',
+    'July 7d Event TVT (hrs)','Incr '+mlab+' (hrs)','Ratio (%)','Avg Δ/viewer ('+mlab+', hrs)',
     'Avail Aug 20','Next Expiry','Deal Type','AP %','IVT %','S+D TVT (hrs)','S+D Share (%)'
   ];
   segOrder.forEach(si => {
@@ -713,7 +713,7 @@ function searchTitle() {
     const av = availOf(tid);
     html += '<div style="margin-bottom:2rem; border:1px solid #e2e6ea; border-radius:8px; padding:16px;">';
     html += '<h2 style="font-size:18px; color:#1B3A5C; margin-bottom:4px;">'+name+'</h2>';
-    html += '<p style="font-size:13px; color:#666; margin-bottom:8px;">Program ID: <b>'+tid+'</b> · Genre: <b>'+genreOf(tid)+'</b> · Duration: <b>'+fmtDur(tid)+'</b> · July Movie TVT: <b>'+fmt(ttvt)+' hrs</b> · Available Aug 20: '+(av.not_matched?'<span class="badge-avail" style="background:#e2e6ea;color:#555;">n/a</span>':'<span class="badge-avail '+(av.avail_aug20?'badge-yes':'badge-no')+'">'+(av.avail_aug20?'Yes':'No')+'</span>')+(av.next_end?' (next expiry '+av.next_end+')':'')+'</p>';
+    html += '<p style="font-size:13px; color:#666; margin-bottom:8px;">Program ID: <b>'+tid+'</b> · Genre: <b>'+genreOf(tid)+'</b> · Duration: <b>'+fmtDur(tid)+'</b> · July 7d Event TVT: <b>'+fmt(ttvt)+' hrs</b> · Available Aug 20: '+(av.not_matched?'<span class="badge-avail" style="background:#e2e6ea;color:#555;">n/a</span>':'<span class="badge-avail '+(av.avail_aug20?'badge-yes':'badge-no')+'">'+(av.avail_aug20?'Yes':'No')+'</span>')+(av.next_end?' (next expiry '+av.next_end+')':'')+'</p>';
     const en = enrichOf(tid);
     html += '<p style="font-size:13px; color:#666; margin-bottom:8px;">Deal type: <b>'+(en.deal||'—')+'</b> · AP % (organic on-title): <b>'+pct(en.ap)+'</b> · IVT % (organic on-title): <b>'+pct(en.ivt)+'</b> · Search+Deeplink TVT: <b>'+fmt(en.sd_tvt)+' hrs</b> ('+(en.sd_share==null?'—':(en.sd_share*100).toFixed(1)+'%')+' of title TVT)</p>';
     html += '<table style="width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;">';
