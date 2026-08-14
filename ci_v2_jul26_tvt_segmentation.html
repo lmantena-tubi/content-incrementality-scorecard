@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality — dsac_ci_v2_jul26 TVT Segmentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.25rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e6ea; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1.1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 1rem; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #e8ebee; white-space: nowrap; }
+  th { background: #1B3A5C; color: #fff; font-weight: 600; cursor: pointer; position: sticky; top: 0; user-select: none; }
+  th:hover { background: #244b74; }
+  th.txt, td.txt { text-align: left; }
+  tbody tr:hover { background: #f2f7fc; }
+  tr.grand { font-weight: 700; background: #eef3f8; }
+  tr.grand td { border-top: 2px solid #2E75B6; }
+  .ratio-cell { font-weight: 600; border-radius: 3px; padding: 2px 6px; }
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .kpi { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 18px; min-width: 150px; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: #1B3A5C; }
+  .kpi .lbl { font-size: 12px; color: #666; margin-top: 2px; }
+  .note { font-size: 12px; color: #888; margin-top: .5rem; }
+  .genre-hdr td { background: #dce6f1; font-weight: 700; color: #1B3A5C; text-align: left; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality — <code>dsac_ci_v2_jul26</code> TVT Segmentation</h1>
+<p class="subtitle">36 held-back titles · holdback (<code>ci_v2_hold</code>) vs Control · exposure window 2026-07-10 → 2026-07-29 · post-exposure TVT · generated 2026-08-14</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val">723,116</div><div class="lbl">Hold TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">1,534,589</div><div class="lbl">Control TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">2,257,705</div><div class="lbl">Total TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">47%</div><div class="lbl">Overall Hold ÷ Control</div></div>
+</div>
+
+<div class="summary-box">
+  <b>Reading the ratio:</b> <b>Ratio = Hold TVT ÷ Control TVT</b>. Lower % = the holdback suppressed more of that slice's viewing = <b>stronger incrementality</b> (Tubi's surfacing drives more of the demand). ~100% = the holdback barely moved viewing (demand is self-driven).
+  Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;40% strong</span>
+  <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">40–70% moderate</span>
+  <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;70% weak</span>.
+  Viewer counts are distinct devices (each arm ≈ 14.68M exposed devices, so counts are viewers among the exposed, not upsampled).
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-title">By Title</button>
+  <button class="tab-btn" data-tab="tab-genre">By Genre</button>
+  <button class="tab-btn" data-tab="tab-segment">By Viewer Segment</button>
+  <button class="tab-btn" data-tab="tab-gs">Genre × Segment</button>
+</div>
+
+<div class="tab-panel active" id="tab-title">
+  <div class="note">All 36 titles. Click any column header to sort. "Genre" is <code>primary_genre_cms</code>.</div>
+  <div id="titleTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-genre">
+  <div class="note">TVT by <code>primary_genre_cms</code> × variant.</div>
+  <div id="genreTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-segment">
+  <div class="summary-box"><b>Viewer segment</b> = growth-accounting 28-day segment (<code>ga28d_segment</code>) assigned per device at first exposure from <code>device_okr_daily</code>: <b>new</b> (first seen ≤28d ago), <b>retained</b> (older device, visited in last 28d), <b>reactivated</b> (older device, dormant &gt;28d then returned), <b>unknown</b> (no OKR row at exposure).</div>
+  <div id="segTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-gs">
+  <div class="note">TVT by genre × viewer segment × variant. Grouped by genre; ordered by TVT within genre. Cells with &lt;1 TVT hour omitted.</div>
+  <div id="gsTable"></div>
+</div>
+
+<script>
+const DATA = {"qA": {"columns": ["program_name", "genre", "hold_viewers", "control_viewers", "total_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["Death Saved My Life", "drama", "46100", "151578", "197678", "52725", "170600", "223326", "31.0", "9.9"], ["The Caretaker", "thriller", "89586", "147925", "237511", "83454", "136803", "220257", "61.0", "9.8"], ["Not My Family: The Monique Smith Story", "drama", "62027", "103974", "166001", "54750", "89580", "144330", "61.0", "6.4"], ["Rockabye", "thriller", "44822", "65110", "109932", "51179", "72996", "124175", "70.0", "5.5"], ["Give Me Back My Daughter", "drama", "37419", "71494", "108913", "35681", "68425", "104106", "52.0", "4.6"], ["Trucker", "thriller", "52312", "65881", "118193", "45130", "55972", "101102", "81.0", "4.5"], ["Wrong Place", "action", "38127", "65894", "104021", "35042", "62146", "97188", "56.0", "4.3"], ["The Girl Who Escaped: The Kara Robinson Story", "thriller", "45869", "78358", "124227", "34452", "55556", "90008", "62.0", "4.0"], ["Girl in the Basement", "thriller", "36938", "80491", "117429", "25624", "56481", "82105", "45.0", "3.6"], ["Who's Your Caddy?", "comedy", "17960", "51825", "69785", "19424", "57722", "77145", "34.0", "3.4"], ["13 Minutes", "drama", "21296", "62913", "84209", "18135", "55637", "73772", "33.0", "3.3"], ["Seventeen Again", "kids & family", "28731", "39938", "68669", "29027", "40821", "69848", "71.0", "3.1"], ["Corrina, Corrina", "drama", "17701", "37892", "55593", "21512", "48133", "69644", "45.0", "3.1"], ["Prom Night", "horror", "26938", "48668", "75606", "23687", "44248", "67935", "54.0", "3.0"], ["Outta Pocket", "drama", "7351", "60105", "67456", "5882", "57951", "63832", "10.0", "2.8"], ["A Walk to Remember", "drama", "16914", "46521", "63435", "14700", "42571", "57270", "35.0", "2.5"], ["Mad Money", "comedy", "21870", "21884", "43754", "27008", "27189", "54196", "99.0", "2.4"], ["I'm in Love With a Church Girl", "drama", "13226", "26112", "39338", "16837", "36699", "53536", "46.0", "2.4"], ["47 Meters Down", "drama", "16821", "45554", "62375", "13979", "38726", "52705", "36.0", "2.3"], ["Places in the Heart", "drama", "10827", "23112", "33939", "12810", "28055", "40865", "46.0", "1.8"], ["There's No Way Out", "thriller", "6445", "34661", "41106", "5327", "33011", "38337", "16.0", "1.7"], ["Hurricane Season", "drama", "8569", "24240", "32809", "9328", "28924", "38252", "32.0", "1.7"], ["Down for Whatever", "action", "6346", "33633", "39979", "5320", "31744", "37064", "17.0", "1.6"], ["The Girl Locked Upstairs: The Tanya Kach Story", "thriller", "13169", "30138", "43307", "10870", "24390", "35261", "45.0", "1.6"], ["Vicious Affair", "thriller", "10594", "24450", "35044", "10608", "23078", "33686", "46.0", "1.5"], ["Desire: A Temptations Story", "drama", "13533", "21694", "35227", "12641", "20317", "32958", "62.0", "1.5"], ["Her Husbands Enemy", "drama", "7196", "21227", "28423", "7555", "23917", "31471", "32.0", "1.4"], ["Washed Away", "thriller", "6915", "27670", "34585", "5244", "23402", "28646", "22.0", "1.3"], ["Mother's Day", "comedy", "7955", "12632", "20587", "9595", "15604", "25200", "61.0", "1.1"], ["The Intruders", "thriller", "7102", "24954", "32056", "4780", "19659", "24439", "24.0", "1.1"], ["Turn", "drama", "6551", "14483", "21034", "7140", "16432", "23572", "43.0", "1.0"], ["Dope King", "action", "8419", "12711", "21130", "8439", "12726", "21165", "66.0", "0.9"], ["Run", "sci-fi", "7818", "20916", "28734", "5233", "15074", "20307", "35.0", "0.9"], ["All Dogs Go to Heaven", "kids & family", "339", "367", "706", "0", "0", "0", null, "0.0"], ["A Home of Our Own", "kids & family", "32", "24", "56", "0", "0", "0", "40.0", "0.0"], ["Unhinged", "thriller", "175", "190", "365", "0", "0", "0", null, "0.0"]]}, "qB": {"columns": ["genre", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["drama", "231527", "559265", "283672", "725968", "1009640", "39.0", "44.7"], ["thriller", "255136", "462155", "276669", "501348", "778016", "55.0", "34.5"], ["comedy", "45415", "83137", "56027", "100515", "156541", "56.0", "6.9"], ["action", "52127", "108744", "48801", "106616", "155417", "46.0", "6.9"], ["kids & family", "29093", "40321", "29027", "40821", "69848", "71.0", "3.1"], ["horror", "26938", "48668", "23687", "44248", "67935", "54.0", "3.0"], ["sci-fi", "7818", "20916", "5233", "15074", "20307", "35.0", "0.9"]]}, "qC": {"columns": ["ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["retained", "410021", "771719", "552858", "1159335", "1712193", "48.0", "75.8"], ["reactivated", "69433", "149966", "80130", "171174", "251305", "47.0", "11.1"], ["new", "56338", "121312", "59245", "137964", "197209", "43.0", "8.7"], ["unknown", "27654", "54275", "30883", "66116", "96998", "47.0", "4.3"]]}, "qD": {"columns": ["genre", "ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct"], "rows": [["action", "retained", "40611", "83060", "38732", "83641", "122373", "46.0"], ["action", "new", "4770", "10553", "3987", "9246", "13232", "43.0"], ["action", "reactivated", "4242", "9642", "3883", "8628", "12511", "45.0"], ["action", "unknown", "2504", "5489", "2200", "5101", "7301", "43.0"], ["comedy", "retained", "34827", "61780", "44205", "77185", "121390", "57.0"], ["comedy", "new", "4098", "8992", "4587", "9805", "14392", "47.0"], ["comedy", "reactivated", "4417", "8447", "5018", "9250", "14268", "54.0"], ["comedy", "unknown", "2073", "3918", "2216", "4276", "6492", "52.0"], ["drama", "retained", "168815", "400631", "216013", "551741", "767753", "39.0"], ["drama", "reactivated", "29722", "73362", "33402", "80525", "113926", "41.0"], ["drama", "new", "21856", "58036", "22271", "62359", "84630", "36.0"], ["drama", "unknown", "11134", "27236", "11986", "31344", "43331", "38.0"], ["horror", "retained", "20536", "35653", "18738", "33895", "52633", "55.0"], ["horror", "reactivated", "2736", "5834", "2202", "4664", "6866", "47.0"], ["horror", "new", "2459", "4994", "1821", "3923", "5744", "46.0"], ["horror", "unknown", "1207", "2187", "927", "1766", "2692", "52.0"], ["kids & family", "retained", "21783", "29966", "22440", "31452", "53892", "71.0"], ["kids & family", "reactivated", "3162", "4473", "3037", "4230", "7267", "72.0"], ["kids & family", "new", "2622", "3856", "2082", "3163", "5245", "66.0"], ["kids & family", "unknown", "1526", "2026", "1467", "1976", "3444", "74.0"], ["sci-fi", "retained", "5975", "15998", "4070", "11873", "15944", "34.0"], ["sci-fi", "reactivated", "747", "1937", "511", "1328", "1839", "38.0"], ["sci-fi", "new", "732", "2034", "428", "1255", "1683", "34.0"], ["sci-fi", "unknown", "364", "947", "223", "618", "841", "36.0"], ["thriller", "retained", "184808", "322011", "208660", "369549", "578209", "56.0"], ["thriller", "reactivated", "31422", "64425", "32077", "62550", "94627", "51.0"], ["thriller", "new", "26785", "53932", "24069", "48213", "72282", "50.0"], ["thriller", "unknown", "12121", "21787", "11863", "21035", "32898", "56.0"]]}};
+
+function ratioClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 40) return 'background:#f8d7da;';
+  if (n <= 70) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return v;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+
+// Generic sortable table (with optional grand-total row appended, unsorted)
+function renderTable(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const textCols = opts.textCols || [0];
+  const ratioCols = opts.ratioCols || [];
+  const pctCols = opts.pctCols || [];
+  let sortIdx = opts.defaultSort != null ? opts.defaultSort : null;
+  let sortDir = opts.defaultDir || 'desc';
+
+  function build() {
+    let data = rows.slice();
+    if (sortIdx !== null) {
+      data.sort((a,b) => {
+        let x=a[sortIdx], y=b[sortIdx];
+        const nx=parseFloat(x), ny=parseFloat(y);
+        if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+        if (x<y) return sortDir==='asc'?-1:1;
+        if (x>y) return sortDir==='asc'?1:-1;
+        return 0;
+      });
+    }
+    let h = '<table><thead><tr>';
+    cols.forEach((c,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+      h += `<th class="${cls}" onclick="window.__sort_${containerId}(${i})">${c}${arrow}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      r.forEach((v,i) => {
+        const cls = textCols.includes(i)?'txt':'';
+        let disp = fmt(v);
+        if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+        if (ratioCols.includes(i)) {
+          const rc = ratioClass(v);
+          disp = `<span class="ratio-cell" style="${rc}">${v===null||v===''?'—':fmt(v)+'%'}</span>`;
+        }
+        h += `<td class="${cls}">${disp}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    document.getElementById(containerId).innerHTML = h;
+  }
+  window['__sort_'+containerId] = function(i) {
+    if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+    build();
+  };
+  build();
+}
+
+// Grouped genre×segment table (genre header rows, no sort)
+function renderGrouped(containerId, cols, rows, ratioCols) {
+  let h = '<table><thead><tr>';
+  cols.forEach((c,i) => h += `<th class="${i===0?'txt':''}">${c}</th>`);
+  h += '</tr></thead><tbody>';
+  let cur = null;
+  rows.forEach(r => {
+    if (r[0] !== cur) {
+      cur = r[0];
+      h += `<tr class="genre-hdr"><td colspan="${cols.length}">${cur}</td></tr>`;
+    }
+    h += '<tr>';
+    r.forEach((v,i) => {
+      if (i===0) { h += `<td class="txt" style="padding-left:22px;">${v}</td>`; return; }
+      if (ratioCols.includes(i)) {
+        h += `<td><span class="ratio-cell" style="${ratioClass(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`;
+      } else h += `<td>${fmt(v)}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = h;
+}
+
+// --- Title table ---
+renderTable('titleTable', DATA.qA.columns, DATA.qA.rows, {
+  textCols:[0,1], ratioCols:[8], pctCols:[9], defaultSort:7, defaultDir:'desc'
+});
+// --- Genre table ---
+renderTable('genreTable', DATA.qB.columns, DATA.qB.rows, {
+  textCols:[0], ratioCols:[6], pctCols:[7], defaultSort:5, defaultDir:'desc'
+});
+// --- Segment table ---
+renderTable('segTable', DATA.qC.columns, DATA.qC.rows, {
+  textCols:[0], ratioCols:[6], pctCols:[7], defaultSort:5, defaultDir:'desc'
+});
+// --- Genre x Segment grouped ---
+renderGrouped('gsTable', DATA.qD.columns, DATA.qD.rows, [7]);
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
