@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Content Incrementality (August 2026, Organic Discovery, US) v10d 5d-p7d Results</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="xlsx.full.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e6ea; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 22px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+  .controls label { font-size: 13px; font-weight: 600; color: #1B3A5C; }
+  .controls select, .controls input { font-family: Calibri; font-size: 13px; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px; }
+  .legend { display: flex; gap: 20px; margin-bottom: 1rem; font-size: 13px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .chart-title { font-size: 16px; font-weight: 600; color: #2E75B6; margin-bottom: 8px; }
+  .scatter-wrap { position: relative; width: 100%; height: 640px; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  .badge-avail { display:inline-block; padding:2px 6px; border-radius:3px; font-size:11px; font-weight:600; }
+  .badge-yes { background:#d4edda; color:#155724; }
+  .badge-no { background:#f8d7da; color:#721c24; }
+  .rate-badge { display:inline-block; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:600; color:#fff; }
+  .rate-high { background:#4caf50; }
+  .rate-medium { background:#f5a623; }
+  .rate-low { background:#e74c3c; }
+  .confidence-legend { display:flex; gap:16px; align-items:center; margin-bottom:1rem; font-size:12px; flex-wrap:wrap; }
+  .confidence-legend span { display:flex; align-items:center; gap:5px; }
+  .conf-dot { display:inline-block; width:12px; height:12px; border-radius:3px; }
+  .conf-dot-high { background:#4caf50; }
+  .conf-dot-medium { background:#f5a623; }
+  .conf-dot-low { background:#e74c3c; }
+  .pos { color:#1D9E75; font-weight:600; }
+  .neg { color:#e74c3c; font-weight:600; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality (August 2026, Organic Discovery, US) v10d 5d-p7d Results</h1>
+<p class="subtitle">2000 titles (top 2000 US movies) &middot; 4 viewer segments &middot; min 30 matched pairs &middot; 7d post-window &middot; Aug 1&ndash;5 2026 (events) &middot; 7d post &middot; US only &middot; Variant C (segment-conditional CEM + ML caliper, IVT tie-break) &middot; availability through <b>Aug 30, 2026</b></p>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-tvt">TVT Incrementality</button>
+  <button class="tab-btn" data-tab="tab-ivt">IVT Incrementality</button>
+  <button class="tab-btn" data-tab="tab-cmp">TVT vs IVT Delta Comparison</button>
+  <button class="tab-btn" data-tab="tab-dur">Delta vs Duration</button>
+  <button class="tab-btn" data-tab="tab-search">Single Title Summary</button>
+</div>
+
+<!-- TAB 1: TVT -->
+<div class="tab-panel active" id="tab-tvt">
+  <div class="summary-box">
+    <b>TVT incrementality.</b> <b>Rate</b> = 7d winsorized additive-proportional rate (off-title TVT lift over on-title TVT); rate colour = diagnostic confidence grade.
+    <b>Incr TVT</b> = &Sigma;(rate &times; segment TVT) across segments (hours). <b>Simple &Delta;/viewer</b> = net total (on+off) TVT, treated &minus; matched control, hours per viewer (winsorized, from <code>phase3_title_segment_simple_delta_v10d_5d_p7d_tvt</code>).
+    <b>Avail Aug 30</b> = title live in US catalog through Aug 30 2026 (<code>content.content_availability</code>).
+  </div>
+  <div class="controls">
+    <label>Sort by:</label>
+    <select id="tvtSort">
+      <option value="incrRank">Incremental TVT Rank</option>
+      <option value="julTvt">August Movie TVT Rank</option>
+      <option value="incrTvt">Incremental TVT</option>
+      <option value="ratio">Ratio (Incr / Title TVT)</option>
+      <option value="avgDelta">Avg Simple &Delta;/viewer (TVT)</option>
+      <option value="segDelta_3">Power Viewer &Delta;/viewer</option>
+      <option value="segDelta_0">Retained &Delta;/viewer</option>
+      <option value="segDelta_2">Reactivated &Delta;/viewer</option>
+      <option value="segDelta_1">New (M1) &Delta;/viewer</option>
+      <option value="segTvt_3">Power Viewer Seg TVT</option>
+      <option value="segRate_3">Power Viewer Rate</option>
+      <option value="segTvt_0">Retained Seg TVT</option>
+      <option value="segRate_0">Retained Rate</option>
+      <option value="segTvt_2">Reactivated Seg TVT</option>
+      <option value="segRate_2">Reactivated Rate</option>
+      <option value="segTvt_1">New (M1) Seg TVT</option>
+      <option value="segRate_1">New (M1) Rate</option>
+    </select>
+    <label style="margin-left:16px;">Order:</label>
+    <select id="tvtOrder"><option value="desc" selected>Desc</option><option value="asc">Asc</option></select>
+    <label style="margin-left:16px;">Min pairs:</label>
+    <select id="tvtPairs"><option value="30">30</option><option value="100" selected>100</option><option value="500">500</option><option value="1000">1000</option></select>
+    <label style="margin-left:16px;">Availability:</label>
+    <select id="tvtAvail"><option value="all">All</option><option value="yes">Avail Aug 30 only</option><option value="no">Expiring before Aug 30</option></select>
+    <button id="dlXlsx" style="margin-left:16px; font-family:Calibri; font-size:13px; padding:6px 14px; background:#1D9E75; color:#fff; border:none; border-radius:4px; cursor:pointer;">&#11015; Download XLSX (TVT + IVT)</button>
+  </div>
+  <div class="confidence-legend">
+    <b>Rate colour = Diagnostic confidence (11-check):</b>
+    <span><span class="conf-dot conf-dot-high"></span> HIGH</span>
+    <span><span class="conf-dot conf-dot-medium"></span> MEDIUM</span>
+    <span><span class="conf-dot conf-dot-low"></span> LOW</span>
+  </div>
+  <div id="tvtTable" style="margin-top:1rem; overflow-x:auto;"></div>
+</div>
+
+<!-- TAB 2: IVT -->
+<div class="tab-panel" id="tab-ivt">
+  <div class="summary-box">
+    <b>IVT incrementality.</b> <b>Rate</b> = 7d winsorized additive-proportional IVT rate (off-title <u>intentional</u> view-time lift; numerator = off-title IVT, denominator = on-title TVT — same denom as the TVT build).
+    <b>Incr IVT</b> = &Sigma;(rate &times; segment TVT). <b>Simple &Delta;/viewer</b> = net total IVT, treated &minus; matched control, hours per viewer (from <code>phase3_title_segment_simple_delta_v10d_5d_p7d_ivt</code>). Rate colour = same diagnostic grade as TVT (per title&times;segment).
+  </div>
+  <div class="controls">
+    <label>Sort by:</label>
+    <select id="ivtSort">
+      <option value="incrRank">Incremental IVT Rank</option>
+      <option value="julTvt">August Movie TVT Rank</option>
+      <option value="incrTvt">Incremental IVT</option>
+      <option value="ratio">Ratio (Incr IVT / Title TVT)</option>
+      <option value="avgDelta">Avg Simple &Delta;/viewer (IVT)</option>
+      <option value="segDelta_3">Power Viewer &Delta;/viewer</option>
+      <option value="segDelta_0">Retained &Delta;/viewer</option>
+      <option value="segDelta_2">Reactivated &Delta;/viewer</option>
+      <option value="segDelta_1">New (M1) &Delta;/viewer</option>
+      <option value="segTvt_3">Power Viewer Seg TVT</option>
+      <option value="segRate_3">Power Viewer Rate</option>
+      <option value="segTvt_0">Retained Seg TVT</option>
+      <option value="segRate_0">Retained Rate</option>
+      <option value="segTvt_2">Reactivated Seg TVT</option>
+      <option value="segRate_2">Reactivated Rate</option>
+      <option value="segTvt_1">New (M1) Seg TVT</option>
+      <option value="segRate_1">New (M1) Rate</option>
+    </select>
+    <label style="margin-left:16px;">Order:</label>
+    <select id="ivtOrder"><option value="desc" selected>Desc</option><option value="asc">Asc</option></select>
+    <label style="margin-left:16px;">Min pairs:</label>
+    <select id="ivtPairs"><option value="30">30</option><option value="100" selected>100</option><option value="500">500</option><option value="1000">1000</option></select>
+    <label style="margin-left:16px;">Availability:</label>
+    <select id="ivtAvail"><option value="all">All</option><option value="yes">Avail Aug 30 only</option><option value="no">Expiring before Aug 30</option></select>
+    <button id="dlXlsx2" style="margin-left:16px; font-family:Calibri; font-size:13px; padding:6px 14px; background:#1D9E75; color:#fff; border:none; border-radius:4px; cursor:pointer;">&#11015; Download XLSX (TVT + IVT)</button>
+  </div>
+  <div class="confidence-legend">
+    <b>Rate colour = Diagnostic confidence (11-check):</b>
+    <span><span class="conf-dot conf-dot-high"></span> HIGH</span>
+    <span><span class="conf-dot conf-dot-medium"></span> MEDIUM</span>
+    <span><span class="conf-dot conf-dot-low"></span> LOW</span>
+  </div>
+  <div id="ivtTable" style="margin-top:1rem; overflow-x:auto;"></div>
+</div>
+
+<!-- TAB 3: TVT vs IVT Delta Comparison -->
+<div class="tab-panel" id="tab-cmp">
+  <div class="summary-box">
+    <b>Reading:</b> Each point is one title (for the selected segment). X = simple net total <b>TVT</b> &Delta;/viewer (hrs, treated &minus; control); Y = simple net total <b>IVT</b> &Delta;/viewer (hrs).
+    Diagonal (y = x) = IVT delta equals TVT delta (all incremental time was intentional). Points below the diagonal = part of the incremental TVT was autoplay/non-intentional. Dashed axes at 0.
+  </div>
+  <div class="controls">
+    <label>Segment:</label>
+    <select id="cmpSeg">
+      <option value="all">All segments (pooled)</option>
+      <option value="3">Power Viewer</option>
+      <option value="0">Active non-power (Retained)</option>
+      <option value="2">Non-active (Reactivated)</option>
+      <option value="1">New (M1)</option>
+    </select>
+    <label style="margin-left:16px;">Min pairs:</label>
+    <select id="cmpPairs"><option value="30">30</option><option value="100" selected>100</option><option value="500">500</option><option value="1000">1000</option></select>
+    <label style="margin-left:16px;">Show CIs:</label>
+    <select id="cmpCI"><option value="no" selected>No</option><option value="yes">Yes</option></select>
+  </div>
+  <div class="legend" id="cmpLegend"></div>
+  <div class="chart-title" id="cmpTitle">TVT vs IVT Simple Delta per Viewer</div>
+  <div class="scatter-wrap"><canvas id="cmpChart"></canvas></div>
+</div>
+
+<!-- TAB 4: Delta vs Duration -->
+<div class="tab-panel" id="tab-dur">
+  <div class="summary-box">
+    <b>Reading:</b> Each point is one title. X = title duration (hours, from <code>dsac_program_info.avg_duration_sec</code>);
+    Y = simple net total <b>&Delta;/viewer</b> (hrs, treated &minus; matched control, winsorized) for the selected metric &amp; segment.
+    Positive = treated viewers watched more total time than their matched controls. Dashed line at &Delta; = 0; red line = OLS trend (slope &amp; Pearson <i>r</i> in the legend).
+  </div>
+  <div class="controls">
+    <label>Metric:</label>
+    <select id="durMetric"><option value="tvt" selected>TVT &Delta;/viewer</option><option value="ivt">IVT &Delta;/viewer</option></select>
+    <label style="margin-left:16px;">Segment:</label>
+    <select id="durSeg">
+      <option value="3">Power Viewer</option>
+      <option value="0" selected>Active non-power (Retained)</option>
+      <option value="2">Non-active (Reactivated)</option>
+      <option value="1">New (M1)</option>
+    </select>
+    <label style="margin-left:16px;">Min pairs:</label>
+    <select id="durPairs"><option value="30">30</option><option value="100" selected>100</option><option value="500">500</option><option value="1000">1000</option></select>
+    <label style="margin-left:16px;">Show CIs:</label>
+    <select id="durCI"><option value="no" selected>No</option><option value="yes">Yes</option></select>
+  </div>
+  <div class="legend" id="durLegend"></div>
+  <div class="chart-title" id="durTitle">Delta per Viewer vs Title Duration</div>
+  <div class="scatter-wrap"><canvas id="durChart"></canvas></div>
+</div>
+
+<!-- TAB 5: Single Title Summary -->
+<div class="tab-panel" id="tab-search">
+  <div class="summary-box">
+    <b>Search:</b> Enter a title name (partial match) or program ID to see per-segment TVT &amp; IVT rates, simple deltas, CIs, and availability.
+  </div>
+  <div class="controls">
+    <input type="text" id="searchInput" placeholder="Search by title name or program ID..." style="width:320px;">
+    <button id="searchBtn" style="font-family:Calibri; font-size:13px; padding:5px 14px; background:#2E75B6; color:#fff; border:none; border-radius:4px; cursor:pointer;">Search</button>
+  </div>
+  <div id="searchResults" style="margin-top:1rem;"></div>
+</div>
+
+<script>
+// DATA FORMAT (ALL):
+// [0] title_id, [1] title_name, [2] seg_idx, [3] n_pairs, [4] seg_tvt, [5] title_tvt,
+// [6] tvt_rate, [7] tvt_incr_hrs, [8] tvt_ci_lo_rate, [9] tvt_ci_hi_rate,
+// [10] tvt_delta, [11] tvt_delta_lo, [12] tvt_delta_hi,
+// [13] ivt_rate, [14] ivt_incr_hrs, [15] ivt_ci_lo_rate, [16] ivt_ci_hi_rate,
+// [17] ivt_delta, [18] ivt_delta_lo, [19] ivt_delta_hi
+// AVAIL: title_id -> {avail_aug30, active_now, next_end, not_matched}
+// DUR: title_id -> avg duration in MINUTES (dsac_program_info.avg_duration_sec / 60)
+// VIEWERS: title_id -> {"0":n,"1":n,"2":n,"3":n,"all":n} — full-US-population viewer count per
+//   seg_idx (0=Retained,1=New,2=Reactivated,3=Power); viewer = >=5min organic first session, Aug 1-5 US
+//   (phase3_title_segment_viewers_v10d_5d_p7d). Multiplier for the per-viewer delta.
+</script>
+<script src="v10d_5d_p7d_results_data.js"></script>
+<script src="dsa-lab/content-incrementality/scorecard/v10d_5d_p7d/scorecard-data.js"></script>
+<script>
+const SEG = [
+  {key:'Active non-power (Retained)', color:'#1D9E75', label:'Retained'},
+  {key:'New (M1)', color:'#378ADD', label:'New (M1)'},
+  {key:'Non-active (Reactivated)', color:'#D85A30', label:'Reactivated'},
+  {key:'Power Viewer', color:'#534AB7', label:'Power Viewer'}
+];
+const segOrder = [3,0,2,1]; // Power, Retained, Reactivated, New
+
+// Diagnostic grade lookup: "titleId|segIdx" -> grade
+const GRADE_MAP = {};
+if (window.SCORECARD_DATA && window.SCORECARD_DATA.segment_results) {
+  const segKeyToIdx = {'Active non-power (Retained)':0, 'New (M1)':1, 'Non-active (Reactivated)':2, 'Power Viewer':3};
+  window.SCORECARD_DATA.segment_results.forEach(s => {
+    const si = segKeyToIdx[s.user_segment];
+    if (si !== undefined) GRADE_MAP[s.title_id + '|' + si] = s.grade;
+  });
+}
+
+const fmt = v => {if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';if(a>=1e6)return s+(a/1e6).toFixed(2)+'M';if(a>=1e3)return s+(a/1e3).toFixed(1)+'K';return s+a.toFixed(0);};
+const fmtDelta = v => (v==null||isNaN(v))?'—':(v>=0?'+':'')+v.toFixed(3);
+const availOf = tid => (AVAIL[tid] || {avail_aug30:0, active_now:0, next_end:null, not_matched:1});
+const enrichOf = tid => ((typeof ENRICH !== 'undefined' && ENRICH[tid]) || {ap:null, ivt:null, sd_tvt:null, sd_share:null, deal:null});
+const pct = v => (v==null||isNaN(v))?'—':v.toFixed(1)+'%';
+const durMin = tid => (typeof DUR !== 'undefined' && DUR[tid] != null) ? DUR[tid] : null; // minutes
+const durHr  = tid => { const m = durMin(tid); return m==null ? null : m/60; };            // hours
+const fmtDur = tid => { const h = durHr(tid); return h==null ? '—' : h.toFixed(2)+' hr'; };
+// Full-US-population viewer count for (title, seg_idx); si may be 0-3 or 'all'. null if unavailable.
+const viewersOf = (tid, si) => (typeof VIEWERS !== 'undefined' && VIEWERS[tid] && VIEWERS[tid][si] != null) ? VIEWERS[tid][si] : null;
+const fmtInt = v => (v==null||isNaN(v)) ? '—' : Math.round(v).toLocaleString('en-US'); // full number, comma thousands
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// August title-TVT ranks (field 5)
+const titleTvt = {};
+ALL.forEach(r => { if (!titleTvt[r[0]] || r[5] > titleTvt[r[0]]) titleTvt[r[0]] = r[5]; });
+
+// ==================== SHARED RANK TABLE BUILDER (TVT / IVT) ====================
+// metric = 'tvt' or 'ivt'. Column indices per metric:
+const M = {
+  tvt: {rate:6, incr:7, clo:8, chi:9, delta:10, dlo:11, dhi:12, label:'TVT'},
+  ivt: {rate:13, incr:14, clo:15, chi:16, delta:17, dlo:18, dhi:19, label:'IVT'}
+};
+
+function buildRankTable(metric, ids) {
+  const c = M[metric];
+  const sortBy = document.getElementById(ids.sort).value;
+  const minPairs = +document.getElementById(ids.pairs).value;
+  const order = document.getElementById(ids.order).value;
+  const availFilter = document.getElementById(ids.avail).value;
+  const dir = order === 'asc' ? 1 : -1;
+
+  const titles = {};
+  ALL.forEach(r => {
+    if (r[3] < minPairs || r[4] <= 0) return;
+    const tid = r[0];
+    if (!titles[tid]) titles[tid] = { tid, name: r[1], titleTvt: r[5], segs: {} };
+    titles[tid].segs[r[2]] = { segTvt: r[4], nPairs: r[3], rate: r[c.rate], incr: r[c.incr], delta: r[c.delta], dlo: r[c.dlo], dhi: r[c.dhi] };
+  });
+
+  let list = Object.values(titles).map(t => {
+    let incrTvt = 0, dsum = 0, wsum = 0;
+    Object.values(t.segs).forEach(s => {
+      if (s.rate != null) incrTvt += s.rate * s.segTvt;
+      if (s.delta != null) { dsum += s.delta * s.nPairs; wsum += s.nPairs; }
+    });
+    t.incrTvt = incrTvt;
+    t.ratio = t.titleTvt > 0 ? incrTvt / t.titleTvt : 0;
+    t.avgDelta = wsum > 0 ? dsum / wsum : null; // pair-weighted avg simple delta
+    const av = availOf(t.tid);
+    t.avail = av.avail_aug30; t.nextEnd = av.next_end; t.notMatched = av.not_matched;
+    return t;
+  });
+
+  if (availFilter === 'yes') list = list.filter(t => t.avail === 1);
+  else if (availFilter === 'no') list = list.filter(t => t.avail === 0);
+
+  // ranks over the pair-filtered set (before availability filter for stable ranks)
+  const rankBase = Object.values(titles).map(t => {
+    let incr = 0; Object.values(t.segs).forEach(s => { if (s.rate!=null) incr += s.rate*s.segTvt; });
+    return {tid:t.tid, incr, tvt:t.titleTvt};
+  });
+  const byIncr = [...rankBase].sort((a,b)=>b.incr-a.incr); const incrRank={}; byIncr.forEach((t,i)=>incrRank[t.tid]=i+1);
+  const byTvt = [...rankBase].sort((a,b)=>b.tvt-a.tvt); const tvtRank={}; byTvt.forEach((t,i)=>tvtRank[t.tid]=i+1);
+  list.forEach(t => { t.incrRank = incrRank[t.tid]; t.tvtRank = tvtRank[t.tid]; });
+
+  const segVal = (t, si, field) => {
+    const s = t.segs[si]; if (!s) return -Infinity;
+    if (field==='tvt') return s.segTvt||0;
+    if (field==='rate') return s.rate!=null?s.rate:-Infinity;
+    if (field==='delta') return s.delta!=null?s.delta:-Infinity;
+    return 0;
+  };
+  if (sortBy==='julTvt') list.sort((a,b)=>dir*(a.titleTvt-b.titleTvt));
+  else if (sortBy==='incrTvt') list.sort((a,b)=>dir*(a.incrTvt-b.incrTvt));
+  else if (sortBy==='incrRank') list.sort((a,b)=>dir*(b.incrRank-a.incrRank));
+  else if (sortBy==='ratio') list.sort((a,b)=>dir*(a.ratio-b.ratio));
+  else if (sortBy==='avgDelta') list.sort((a,b)=>dir*((a.avgDelta==null?-Infinity:a.avgDelta)-(b.avgDelta==null?-Infinity:b.avgDelta)));
+  else if (sortBy.startsWith('segTvt_')) { const si=+sortBy.split('_')[1]; list.sort((a,b)=>dir*(segVal(a,si,'tvt')-segVal(b,si,'tvt'))); }
+  else if (sortBy.startsWith('segRate_')) { const si=+sortBy.split('_')[1]; list.sort((a,b)=>dir*(segVal(a,si,'rate')-segVal(b,si,'rate'))); }
+  else if (sortBy.startsWith('segDelta_')) { const si=+sortBy.split('_')[1]; list.sort((a,b)=>dir*(segVal(a,si,'delta')-segVal(b,si,'delta'))); }
+  else list.sort((a,b)=>dir*(a.incrRank-b.incrRank));
+
+  const segLabels = {0:'Retained',1:'New (M1)',2:'Reactivated',3:'Power Viewer'};
+  const segColors = {0:'#1D9E75',1:'#378ADD',2:'#D85A30',3:'#534AB7'};
+  const mlab = c.label;
+
+  let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+  html += '<thead><tr style="background:#f0f4f8; text-align:left;">';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">#</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Incr '+mlab+' Rank</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">August TVT Rank</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Program ID</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Program Name</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Duration<br><span style="font-weight:400;font-size:10px;">hrs</span></th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">August Movie TVT</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Incr '+mlab+'<br><span style="font-weight:400;font-size:10px;">&Sigma;(rate&times;seg TVT)</span></th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Ratio</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Avg &Delta;/viewer<br><span style="font-weight:400;font-size:10px;">(hrs, '+mlab+', pair-wtd)</span></th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;">Avail<br>Aug 30</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Next Expiry</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">Deal Type</th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;">AP %<br><span style="font-weight:400;font-size:10px;">organic on-title</span></th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">IVT %<br><span style="font-weight:400;font-size:10px;">organic on-title</span></th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">S+D TVT<br><span style="font-weight:400;font-size:10px;">hrs</span></th>';
+  html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc;">S+D Share</th>';
+  segOrder.forEach(si => {
+    html += '<th style="padding:6px 8px; border-bottom:2px solid #ccc; border-left:2px solid #ddd;" colspan="4"><span style="color:'+segColors[si]+'">'+segLabels[si]+'</span><br><span style="font-weight:400; font-size:11px;">Seg TVT | Rate | &Delta;/viewer | Viewers</span></th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  list.forEach((t, idx) => {
+    const bg = idx % 2 === 0 ? '#fff' : '#fafbfc';
+    html += '<tr style="background:'+bg+'; border-bottom:1px solid #eee;">';
+    html += '<td style="padding:5px 8px; color:#999;">'+(idx+1)+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600; color:#2E75B6;">'+t.incrRank+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600; color:#D85A30;">'+t.tvtRank+'</td>';
+    html += '<td style="padding:5px 8px; color:#888; font-size:11px;">'+t.tid+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600;">'+t.name+'</td>';
+    html += '<td style="padding:5px 8px; color:#555;">'+fmtDur(t.tid)+'</td>';
+    html += '<td style="padding:5px 8px;">'+fmt(t.titleTvt)+'</td>';
+    html += '<td style="padding:5px 8px; font-weight:600;">'+fmt(t.incrTvt)+'</td>';
+    html += '<td style="padding:5px 8px;">'+(t.ratio*100).toFixed(1)+'%</td>';
+    const dc = t.avgDelta==null?'':(t.avgDelta>=0?'pos':'neg');
+    html += '<td style="padding:5px 8px;" class="'+dc+'">'+fmtDelta(t.avgDelta)+'</td>';
+    const avBadge = t.notMatched ? '<span class="badge-avail" style="background:#e2e6ea;color:#555;">n/a</span>' : '<span class="badge-avail '+(t.avail?'badge-yes':'badge-no')+'">'+(t.avail?'Yes':'No')+'</span>';
+    html += '<td style="padding:5px 8px; border-left:2px solid #eee;">'+avBadge+'</td>';
+    html += '<td style="padding:5px 8px; font-size:11px; color:#666;">'+(t.nextEnd || '—')+'</td>';
+    const en = enrichOf(t.tid);
+    html += '<td style="padding:5px 8px; font-size:11px;">'+(en.deal || '—')+'</td>';
+    html += '<td style="padding:5px 8px; border-left:2px solid #eee;">'+pct(en.ap)+'</td>';
+    html += '<td style="padding:5px 8px;">'+pct(en.ivt)+'</td>';
+    html += '<td style="padding:5px 8px;">'+fmt(en.sd_tvt)+'</td>';
+    html += '<td style="padding:5px 8px;">'+(en.sd_share==null?'—':(en.sd_share*100).toFixed(1)+'%')+'</td>';
+    segOrder.forEach(si => {
+      const s = t.segs[si];
+      if (s && s.rate != null) {
+        html += '<td style="padding:5px 8px; border-left:2px solid #eee;">'+fmt(s.segTvt)+'</td>';
+        const grade = GRADE_MAP[t.tid + '|' + si] || 'MEDIUM';
+        const rc = grade === 'HIGH' ? 'rate-high' : grade === 'LOW' ? 'rate-low' : 'rate-medium';
+        html += '<td style="padding:5px 8px;"><span class="rate-badge '+rc+'">'+s.rate.toFixed(4)+'</span></td>';
+        const ddc = s.delta==null?'':(s.delta>=0?'pos':'neg');
+        html += '<td style="padding:5px 8px;" class="'+ddc+'">'+fmtDelta(s.delta)+'</td>';
+        html += '<td style="padding:5px 8px; color:#555;">'+fmtInt(viewersOf(t.tid, si))+'</td>';
+      } else {
+        html += '<td style="padding:5px 8px; border-left:2px solid #eee; color:#ccc;">—</td>';
+        html += '<td style="padding:5px 8px; color:#ccc;">—</td>';
+        html += '<td style="padding:5px 8px; color:#ccc;">—</td>';
+        html += '<td style="padding:5px 8px; color:#ccc;">—</td>';
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<p style="margin-top:8px; font-size:12px; color:#666;">Showing '+list.length+' titles with &ge;'+minPairs+' pairs per segment · Avg &Delta;/viewer is the pair-weighted mean of the per-segment winsorized simple '+mlab+' delta</p>';
+  document.getElementById(ids.table).innerHTML = html;
+}
+
+const tvtIds = {sort:'tvtSort', order:'tvtOrder', pairs:'tvtPairs', avail:'tvtAvail', table:'tvtTable'};
+const ivtIds = {sort:'ivtSort', order:'ivtOrder', pairs:'ivtPairs', avail:'ivtAvail', table:'ivtTable'};
+['tvtSort','tvtOrder','tvtPairs','tvtAvail'].forEach(id => document.getElementById(id).addEventListener('change', () => buildRankTable('tvt', tvtIds)));
+['ivtSort','ivtOrder','ivtPairs','ivtAvail'].forEach(id => document.getElementById(id).addEventListener('change', () => buildRankTable('ivt', ivtIds)));
+buildRankTable('tvt', tvtIds);
+buildRankTable('ivt', ivtIds);
+
+// ==================== XLSX EXPORT (TVT + IVT tabs, full numbers) ====================
+// Builds one row per title for the given metric, emitting RAW numbers (no K/M abbreviation) so the
+// spreadsheet is sortable/aggregatable. Column set mirrors the on-screen rank tables (minus the
+// display-only '#'), with a per-segment block Seg TVT | Rate | Delta/viewer | Viewers.
+const r4 = v => (v==null||isNaN(v)) ? null : Math.round(v*1e4)/1e4; // round to 4 dp, keep numeric
+
+function rankRowsForExport(metric) {
+  const c = M[metric];
+  const mlab = c.label;
+  // Aggregate ALL into per-title objects (no min-pairs / availability filter — export everything).
+  const titles = {};
+  ALL.forEach(r => {
+    if (r[4] <= 0) return;
+    const tid = r[0];
+    if (!titles[tid]) titles[tid] = { tid, name: r[1], titleTvt: r[5], segs: {} };
+    titles[tid].segs[r[2]] = { segTvt: r[4], nPairs: r[3], rate: r[c.rate], incr: r[c.incr], delta: r[c.delta] };
+  });
+  let list = Object.values(titles).map(t => {
+    let incrTvt = 0, dsum = 0, wsum = 0;
+    Object.values(t.segs).forEach(s => {
+      if (s.rate != null) incrTvt += s.rate * s.segTvt;
+      if (s.delta != null) { dsum += s.delta * s.nPairs; wsum += s.nPairs; }
+    });
+    t.incrTvt = incrTvt;
+    t.ratio = t.titleTvt > 0 ? incrTvt / t.titleTvt : 0;
+    t.avgDelta = wsum > 0 ? dsum / wsum : null;
+    return t;
+  });
+  // Ranks over the same set.
+  const byIncr = [...list].sort((a,b)=>b.incrTvt-a.incrTvt); const incrRank={}; byIncr.forEach((t,i)=>incrRank[t.tid]=i+1);
+  const byTvt  = [...list].sort((a,b)=>b.titleTvt-a.titleTvt); const tvtRank={}; byTvt.forEach((t,i)=>tvtRank[t.tid]=i+1);
+  list.sort((a,b)=>incrRank[a.tid]-incrRank[b.tid]);
+
+  const segLabels = {3:'Power Viewer',0:'Retained',2:'Reactivated',1:'New (M1)'};
+  const header = [
+    'Incr '+mlab+' Rank','August TVT Rank','Program ID','Program Name','Duration (hrs)',
+    'August Movie TVT (hrs)','Incr '+mlab+' (hrs)','Ratio (%)','Avg Δ/viewer ('+mlab+', hrs)',
+    'Avail Aug 30','Next Expiry','Deal Type','AP %','IVT %','S+D TVT (hrs)','S+D Share (%)'
+  ];
+  segOrder.forEach(si => {
+    header.push(segLabels[si]+' Seg TVT (hrs)', segLabels[si]+' Rate', segLabels[si]+' Δ/viewer (hrs)', segLabels[si]+' Viewers');
+  });
+
+  const rows = [header];
+  list.forEach(t => {
+    const av = availOf(t.tid), en = enrichOf(t.tid);
+    const availStr = av.not_matched ? 'n/a' : (av.avail_aug30 ? 'Yes' : 'No');
+    const row = [
+      incrRank[t.tid], tvtRank[t.tid], t.tid, t.name, r4(durHr(t.tid)),
+      r4(t.titleTvt), r4(t.incrTvt), r4(t.ratio*100), r4(t.avgDelta),
+      availStr, (av.next_end || ''), (en.deal || ''),
+      r4(en.ap), r4(en.ivt), r4(en.sd_tvt), (en.sd_share==null?null:r4(en.sd_share*100))
+    ];
+    segOrder.forEach(si => {
+      const s = t.segs[si];
+      if (s && s.rate != null) {
+        row.push(r4(s.segTvt), r4(s.rate), r4(s.delta), viewersOf(t.tid, si));
+      } else {
+        row.push(null, null, null, viewersOf(t.tid, si));
+      }
+    });
+    rows.push(row);
+  });
+  return rows;
+}
+
+function downloadXlsx() {
+  if (typeof XLSX === 'undefined') { alert('XLSX library failed to load (offline?). Cannot export.'); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rankRowsForExport('tvt')), 'TVT');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rankRowsForExport('ivt')), 'IVT');
+  XLSX.writeFile(wb, 'v10d_5d_p7d_results.xlsx');
+}
+['dlXlsx','dlXlsx2'].forEach(id => { const b = document.getElementById(id); if (b) b.addEventListener('click', downloadXlsx); });
+
+// ==================== TAB 3: TVT vs IVT DELTA COMPARISON ====================
+const cmpLeg = document.getElementById('cmpLegend');
+let cmpChart = null;
+
+function buildCmp() {
+  const segSel = document.getElementById('cmpSeg').value;
+  const minPairs = +document.getElementById('cmpPairs').value;
+  const showCI = document.getElementById('cmpCI').value === 'yes';
+
+  cmpLeg.innerHTML = '';
+  let rows = ALL.filter(r => r[3] >= minPairs && r[10] != null && r[17] != null);
+  let datasets = [];
+  if (segSel === 'all') {
+    datasets = SEG.map((seg, si) => ({
+      label: seg.label,
+      data: rows.filter(r => r[2]===si).map(r => ({x:r[10], y:r[17], title:r[1], n:r[3],
+        tlo:r[11], thi:r[12], ilo:r[18], ihi:r[19]})),
+      backgroundColor: seg.color + 'AA', borderColor: seg.color, borderWidth:1, pointRadius:4, pointHoverRadius:7
+    }));
+    SEG.forEach(s => { cmpLeg.innerHTML += '<span><span class="dot" style="background:'+s.color+'"></span>'+s.label+'</span>'; });
+  } else {
+    const si = +segSel;
+    datasets = [{
+      label: SEG[si].label,
+      data: rows.filter(r => r[2]===si).map(r => ({x:r[10], y:r[17], title:r[1], n:r[3],
+        tlo:r[11], thi:r[12], ilo:r[18], ihi:r[19]})),
+      backgroundColor: SEG[si].color + 'AA', borderColor: SEG[si].color, borderWidth:1, pointRadius:5, pointHoverRadius:8
+    }];
+    cmpLeg.innerHTML = '<span><span class="dot" style="background:'+SEG[si].color+'"></span>'+SEG[si].label+'</span>';
+  }
+
+  const npts = datasets.reduce((a,d)=>a+d.data.length,0);
+  document.getElementById('cmpTitle').textContent = 'TVT vs IVT Simple Delta per Viewer — ' + (segSel==='all'?'All segments':SEG[+segSel].label) + ' ('+npts+' titles)';
+
+  if (cmpChart) cmpChart.destroy();
+
+  const diagZeroPlugin = {
+    id: 'diagZero_cmp',
+    afterDraw(chart) {
+      const ctx = chart.ctx, xS = chart.scales.x, yS = chart.scales.y, area = chart.chartArea;
+      // zero lines
+      ctx.save(); ctx.strokeStyle='#ccc'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      const x0 = xS.getPixelForValue(0), y0 = yS.getPixelForValue(0);
+      if (x0>=area.left && x0<=area.right){ctx.beginPath();ctx.moveTo(x0,area.top);ctx.lineTo(x0,area.bottom);ctx.stroke();}
+      if (y0>=area.top && y0<=area.bottom){ctx.beginPath();ctx.moveTo(area.left,y0);ctx.lineTo(area.right,y0);ctx.stroke();}
+      // y=x diagonal
+      const lo = Math.max(xS.min, yS.min), hi = Math.min(xS.max, yS.max);
+      ctx.strokeStyle='#999'; ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      ctx.moveTo(xS.getPixelForValue(lo), yS.getPixelForValue(lo));
+      ctx.lineTo(xS.getPixelForValue(hi), yS.getPixelForValue(hi));
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle='#999'; ctx.font='11px Calibri'; ctx.textAlign='right';
+      ctx.fillText('IVT Δ = TVT Δ', xS.getPixelForValue(hi)-4, yS.getPixelForValue(hi)-6);
+      ctx.restore();
+    }
+  };
+
+  const ciPlugin = {
+    id: 'ci_cmp',
+    afterDatasetsDraw(chart) {
+      if (!showCI) return;
+      const ctx = chart.ctx, xS = chart.scales.x, yS = chart.scales.y, area=chart.chartArea;
+      chart.data.datasets.forEach((ds, di) => {
+        const meta = chart.getDatasetMeta(di);
+        meta.data.forEach((pt, i) => {
+          const d = ds.data[i]; if (!d) return;
+          ctx.save(); ctx.strokeStyle = ds.borderColor; ctx.lineWidth=1; ctx.globalAlpha=0.25;
+          if (d.tlo!=null && d.thi!=null){const xl=xS.getPixelForValue(d.tlo),xh=xS.getPixelForValue(d.thi);ctx.beginPath();ctx.moveTo(xl,pt.y);ctx.lineTo(xh,pt.y);ctx.stroke();}
+          if (d.ilo!=null && d.ihi!=null){const yl=yS.getPixelForValue(d.ilo),yh=yS.getPixelForValue(d.ihi);ctx.beginPath();ctx.moveTo(pt.x,yl);ctx.lineTo(pt.x,yh);ctx.stroke();}
+          ctx.restore();
+        });
+      });
+    }
+  };
+
+  cmpChart = new Chart(document.getElementById('cmpChart'), {
+    type:'scatter', data:{datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{title:{display:true, text:'Simple net TVT Δ per viewer (hrs, treated − control)', font:{size:12}}},
+        y:{title:{display:true, text:'Simple net IVT Δ per viewer (hrs, treated − control)', font:{size:12}}}
+      },
+      plugins:{
+        legend:{display:true, position:'top'},
+        tooltip:{callbacks:{label: ctx => {
+          const p=ctx.raw;
+          return [`${p.title} (${ctx.dataset.label})`, `TVT Δ: ${p.x>=0?'+':''}${p.x.toFixed(3)} hrs`, `IVT Δ: ${p.y>=0?'+':''}${p.y.toFixed(3)} hrs`, `IVT/TVT: ${p.x!==0?(p.y/p.x*100).toFixed(0)+'%':'—'}, pairs: ${p.n.toLocaleString()}`];
+        }}}
+      }
+    },
+    plugins:[diagZeroPlugin, ciPlugin]
+  });
+}
+['cmpSeg','cmpPairs','cmpCI'].forEach(id => document.getElementById(id).addEventListener('change', buildCmp));
+buildCmp();
+
+// ==================== TAB 4: DELTA vs DURATION ====================
+const durLeg = document.getElementById('durLegend');
+let durChart = null;
+
+function buildDur() {
+  const metric = document.getElementById('durMetric').value;      // 'tvt' | 'ivt'
+  const si = +document.getElementById('durSeg').value;
+  const minPairs = +document.getElementById('durPairs').value;
+  const showCI = document.getElementById('durCI').value === 'yes';
+  const c = M[metric];                                            // delta/dlo/dhi column indices
+  const seg = SEG[si];
+
+  // one point per title for the chosen segment; needs a duration and a delta
+  const pts = ALL.filter(r => r[2]===si && r[3]>=minPairs && r[c.delta]!=null && durHr(r[0])!=null)
+    .map(r => ({x:durHr(r[0]), y:r[c.delta], title:r[1], n:r[3], dlo:r[c.dlo], dhi:r[c.dhi]}));
+
+  durLeg.innerHTML = '<span><span class="dot" style="background:'+seg.color+'"></span>'+seg.label+' — '+c.label+' Δ/viewer</span>';
+  document.getElementById('durTitle').textContent =
+    c.label + ' Δ per viewer vs Title Duration — ' + seg.label + ' (' + pts.length + ' titles)';
+
+  // OLS fit + Pearson r
+  let slope=null, intercept=null, r=null;
+  const n = pts.length;
+  if (n >= 2) {
+    const sx=pts.reduce((a,p)=>a+p.x,0), sy=pts.reduce((a,p)=>a+p.y,0);
+    const mx=sx/n, my=sy/n;
+    let sxx=0, syy=0, sxy=0;
+    pts.forEach(p=>{const dx=p.x-mx, dy=p.y-my; sxx+=dx*dx; syy+=dy*dy; sxy+=dx*dy;});
+    if (sxx>0) { slope=sxy/sxx; intercept=my-slope*mx; }
+    if (sxx>0 && syy>0) r=sxy/Math.sqrt(sxx*syy);
+  }
+  if (slope!=null) durLeg.innerHTML += '<span style="color:#D85A30;">OLS: y = '+slope.toFixed(3)+'·x '+(intercept>=0?'+ ':'− ')+Math.abs(intercept).toFixed(2)
+    + (r!=null?'  (r = '+r.toFixed(2)+')':'') + '</span>';
+
+  const datasets = [{
+    label: seg.label,
+    data: pts,
+    backgroundColor: seg.color + 'AA', borderColor: seg.color, borderWidth:1, pointRadius:4, pointHoverRadius:7
+  }];
+
+  if (durChart) durChart.destroy();
+
+  const zeroFitPlugin = {
+    id:'zeroFit_dur',
+    afterDraw(chart) {
+      const ctx=chart.ctx, xS=chart.scales.x, yS=chart.scales.y, area=chart.chartArea;
+      // zero line
+      ctx.save(); ctx.strokeStyle='#ccc'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      const y0=yS.getPixelForValue(0);
+      if (y0>=area.top && y0<=area.bottom){ctx.beginPath();ctx.moveTo(area.left,y0);ctx.lineTo(area.right,y0);ctx.stroke();}
+      // OLS trend line
+      if (slope!=null) {
+        ctx.setLineDash([]); ctx.strokeStyle='#D85A30'; ctx.lineWidth=2;
+        const xa=xS.min, xb=xS.max;
+        ctx.beginPath();
+        ctx.moveTo(xS.getPixelForValue(xa), yS.getPixelForValue(intercept+slope*xa));
+        ctx.lineTo(xS.getPixelForValue(xb), yS.getPixelForValue(intercept+slope*xb));
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  };
+
+  const ciPlugin = {
+    id:'ci_dur',
+    afterDatasetsDraw(chart) {
+      if (!showCI) return;
+      const ctx=chart.ctx, yS=chart.scales.y;
+      chart.data.datasets.forEach((ds,di)=>{
+        const meta=chart.getDatasetMeta(di);
+        meta.data.forEach((pt,i)=>{
+          const d=ds.data[i]; if(!d||d.dlo==null||d.dhi==null) return;
+          ctx.save(); ctx.strokeStyle=ds.borderColor; ctx.lineWidth=1; ctx.globalAlpha=0.25;
+          const yl=yS.getPixelForValue(d.dlo), yh=yS.getPixelForValue(d.dhi);
+          ctx.beginPath(); ctx.moveTo(pt.x,yl); ctx.lineTo(pt.x,yh); ctx.stroke();
+          ctx.restore();
+        });
+      });
+    }
+  };
+
+  durChart = new Chart(document.getElementById('durChart'), {
+    type:'scatter', data:{datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        x:{title:{display:true, text:'Title duration (hours)', font:{size:12}}},
+        y:{title:{display:true, text:'Simple net '+c.label+' Δ per viewer (hrs, treated − control)', font:{size:12}}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label: ctx => {
+          const p=ctx.raw;
+          return [`${p.title}`, `Duration: ${p.x.toFixed(2)} hr`, `${c.label} Δ: ${p.y>=0?'+':''}${p.y.toFixed(3)} hrs`, `pairs: ${p.n.toLocaleString()}`];
+        }}}
+      }
+    },
+    plugins:[zeroFitPlugin, ciPlugin]
+  });
+}
+['durMetric','durSeg','durPairs','durCI'].forEach(id => document.getElementById(id).addEventListener('change', buildDur));
+buildDur();
+
+// ==================== TAB 5: SINGLE TITLE SUMMARY ====================
+function searchTitle() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const div = document.getElementById('searchResults');
+  if (!q) { div.innerHTML = '<p style="color:#999;">Enter a title name to search.</p>'; return; }
+  const matches = ALL.filter(r => r[1].toLowerCase().includes(q) || r[0].toString().includes(q));
+  const titleIds = [...new Set(matches.map(r => r[0]))];
+  if (!titleIds.length) { div.innerHTML = '<p style="color:#c00;">No titles matching "'+q+'".</p>'; return; }
+  if (titleIds.length > 10) { div.innerHTML = '<p style="color:#c00;">'+titleIds.length+' titles match — refine your search.</p>'; return; }
+
+  let html = '';
+  titleIds.forEach(tid => {
+    const rows = ALL.filter(r => r[0] === tid).sort((a,b)=>segOrder.indexOf(a[2])-segOrder.indexOf(b[2]));
+    const name = rows[0][1], ttvt = rows[0][5];
+    const av = availOf(tid);
+    html += '<div style="margin-bottom:2rem; border:1px solid #e2e6ea; border-radius:8px; padding:16px;">';
+    html += '<h2 style="font-size:18px; color:#1B3A5C; margin-bottom:4px;">'+name+'</h2>';
+    html += '<p style="font-size:13px; color:#666; margin-bottom:8px;">Program ID: <b>'+tid+'</b> · Duration: <b>'+fmtDur(tid)+'</b> · August Movie TVT: <b>'+fmt(ttvt)+' hrs</b> · Available Aug 30: '+(av.not_matched?'<span class="badge-avail" style="background:#e2e6ea;color:#555;">n/a</span>':'<span class="badge-avail '+(av.avail_aug30?'badge-yes':'badge-no')+'">'+(av.avail_aug30?'Yes':'No')+'</span>')+(av.next_end?' (next expiry '+av.next_end+')':'')+'</p>';
+    const en = enrichOf(tid);
+    html += '<p style="font-size:13px; color:#666; margin-bottom:8px;">Deal type: <b>'+(en.deal||'—')+'</b> · AP % (organic on-title): <b>'+pct(en.ap)+'</b> · IVT % (organic on-title): <b>'+pct(en.ivt)+'</b> · Search+Deeplink TVT: <b>'+fmt(en.sd_tvt)+' hrs</b> ('+(en.sd_share==null?'—':(en.sd_share*100).toFixed(1)+'%')+' of title TVT)</p>';
+    html += '<table style="width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;">';
+    html += '<thead><tr style="background:#f0f4f8; text-align:left;">';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Segment</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">N Pairs</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Seg TVT</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">Grade</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">TVT Rate [95% CI]</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">TVT Δ/viewer [95% CI]</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">IVT Rate [95% CI]</th>';
+    html += '<th style="padding:6px 10px; border-bottom:2px solid #ccc;">IVT Δ/viewer [95% CI]</th>';
+    html += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      const seg = SEG[r[2]];
+      const grade = GRADE_MAP[tid + '|' + r[2]] || '—';
+      const gc = grade==='HIGH'?'rate-high':grade==='LOW'?'rate-low':'rate-medium';
+      const ci = (lo,hi) => (lo!=null&&hi!=null)?' <span style="color:#888;">['+lo.toFixed(3)+', '+hi.toFixed(3)+']</span>':'';
+      const dcls = v => v==null?'':(v>=0?'pos':'neg');
+      html += '<tr style="border-bottom:1px solid #eee;">';
+      html += '<td style="padding:6px 10px;"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+seg.color+';margin-right:6px;vertical-align:middle;"></span>'+seg.label+'</td>';
+      html += '<td style="padding:6px 10px;">'+r[3].toLocaleString()+'</td>';
+      html += '<td style="padding:6px 10px;">'+fmt(r[4])+'</td>';
+      html += '<td style="padding:6px 10px;">'+(grade!=='—'?'<span class="rate-badge '+gc+'">'+grade+'</span>':'—')+'</td>';
+      html += '<td style="padding:6px 10px; font-weight:600;">'+(r[6]!=null?r[6].toFixed(4):'—')+ci(r[8],r[9])+'</td>';
+      html += '<td style="padding:6px 10px;" class="'+dcls(r[10])+'">'+fmtDelta(r[10])+ci(r[11],r[12])+'</td>';
+      html += '<td style="padding:6px 10px; font-weight:600;">'+(r[13]!=null?r[13].toFixed(4):'—')+ci(r[15],r[16])+'</td>';
+      html += '<td style="padding:6px 10px;" class="'+dcls(r[17])+'">'+fmtDelta(r[17])+ci(r[18],r[19])+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  div.innerHTML = html;
+}
+document.getElementById('searchBtn').addEventListener('click', searchTitle);
+document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key==='Enter') searchTitle(); });
+</script>
+</body>
+</html>
