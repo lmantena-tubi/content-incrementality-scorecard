@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality — dsac_ci_v2_jul26 Overall TVT by Genre</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.25rem; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1.1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 1rem; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #e8ebee; white-space: nowrap; }
+  th { background: #1B3A5C; color: #fff; font-weight: 600; cursor: pointer; position: sticky; top: 0; user-select: none; }
+  th:hover { background: #244b74; }
+  th.txt, td.txt { text-align: left; }
+  tbody tr:hover { background: #f2f7fc; }
+  .ratio-cell { font-weight: 600; border-radius: 3px; padding: 2px 6px; }
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .kpi { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 18px; min-width: 150px; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: #1B3A5C; }
+  .kpi .lbl { font-size: 12px; color: #666; margin-top: 2px; }
+  .note { font-size: 12px; color: #888; margin-top: .5rem; margin-bottom: .5rem; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality — <code>dsac_ci_v2_jul26</code> · Overall TVT by Genre</h1>
+<p class="subtitle">ALL post-exposure viewing (every title, not just the 36 held-back) · holdback (<code>ci_v2_hold</code>) vs Control · exposure window 2026-07-10 → 2026-07-29 · generated 2026-08-14</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val">294,784,173</div><div class="lbl">Hold TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">294,989,218</div><div class="lbl">Control TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">-205,044</div><div class="lbl">Net Δ (Hold − Control)</div></div>
+  <div class="kpi"><div class="val">99.9%</div><div class="lbl">Overall Hold ÷ Control</div></div>
+</div>
+
+<div class="summary-box">
+  <b>What this measures:</b> total view-time per genre across <b>everything</b> exposed devices watched post-exposure — not just the 36 held-back titles.
+  The <b>ratio = Hold TVT ÷ Control TVT</b>. At the whole-catalog level this is expected to sit near <b>100%</b>: holding back 36 titles is a tiny fraction of total viewing, and suppressed demand largely substitutes to other titles in the same genre.
+  A ratio meaningfully <b>below 100%</b> means the holdback caused a <b>net loss</b> of viewing in that genre (true incrementality — demand wasn't fully recovered). <b>Above 100%</b> suggests spillover / substitution <i>into</i> that genre.
+  <br><br>
+  Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;99% net loss</span>
+  <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">99–101% flat</span>
+  <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;101% net gain</span>.
+  Contrast with the <a href="ci_v2_jul26_tvt_segmentation.html">within-36-titles segmentation report</a>, where hold was only ~47% of control for the held-back titles themselves.
+  <br><br>
+  Viewer counts are distinct devices per arm (each arm ≈ 14.68M exposed).
+</div>
+
+<div class="note">Click any column header to sort. Genre = <code>primary_genre_cms</code> from <code>dsac_program_info</code>.</div>
+<div id="genreTable"></div>
+
+<script>
+const DATA = {"columns": ["genre", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["comedy", "7457031", "7448035", "6.33341208E7", "6.31810607E7", "1.265151815E8", "100.2", "21.5"], ["drama", "6284104", "6307149", "4.63311447E7", "4.68024845E7", "9.31336292E7", "99.0", "15.8"], ["kids & family", "3583153", "3577369", "2.82986319E7", "2.81985886E7", "5.64972204E7", "100.4", "9.6"], ["action", "4727297", "4730516", "2.70755342E7", "2.70583593E7", "5.41338935E7", "100.1", "9.2"], ["reality", "2503300", "2497214", "2.12649202E7", "2.12564298E7", "4.252135E7", "100.0", "7.2"], ["thriller", "4868743", "4898468", "2.0446814E7", "2.0506586E7", "4.09534E7", "99.7", "6.9"], ["documentary", "3152287", "3151007", "2.02611105E7", "2.03040409E7", "4.05651514E7", "99.8", "6.9"], ["horror", "3165240", "3162424", "1.41525853E7", "1.40654627E7", "2.82180479E7", "100.6", "4.8"], ["crime", "2491860", "2488355", "1.17241635E7", "1.17123061E7", "2.34364695E7", "100.1", "4.0"], ["entertainment", "2453848", "2453788", "8154991.4", "8245057.2", "1.64000486E7", "98.9", "2.8"], ["sci-fi", "1995295", "1996269", "6827868.8", "6828499.6", "1.36563684E7", "100.0", "2.3"], ["western", "893962", "892831", "4259985.6", "4254270.8", "8514256.4", "100.1", "1.4"], ["animation", "1005734", "1004890", "4003681.4", "3980915.8", "7984597.2", "100.6", "1.4"], ["romance", "1245044", "1237250", "3202388.8", "3167695.4", "6370084.2", "101.1", "1.1"], ["fantasy", "988047", "988415", "2722078.0", "2734070.2", "5456148.1", "99.6", "0.9"], ["adventure", "1244187", "1244130", "2722580.4", "2699337.3", "5421917.7", "100.9", "0.9"], ["news", "533783", "534877", "2173785.4", "2175861.8", "4349647.1", "99.9", "0.7"], ["mystery", "686957", "683810", "1854189.5", "1850264.7", "3704454.1", "100.2", "0.6"], ["sport", "1508777", "1508062", "1808281.5", "1804227.3", "3612508.8", "100.2", "0.6"], ["lifestyle", "337157", "337710", "1045130.9", "1068556.7", "2113687.6", "97.8", "0.4"], ["anime", "276349", "277745", "879078.3", "885445.2", "1764523.5", "99.3", "0.3"], ["war", "408034", "408126", "695553.6", "700622.9", "1396176.4", "99.3", "0.2"], ["music", "162943", "164014", "297026.3", "298381.1", "595407.4", "99.5", "0.1"], ["musicals", "239008", "238701", "285190.2", "284578.2", "569768.4", "100.2", "0.1"], ["talk show", "58553", "51993", "262193.9", "232277.9", "494471.8", "112.9", "0.1"], ["game show", "106104", "105126", "223328.2", "220271.5", "443599.8", "101.4", "0.1"], ["holiday", "60911", "60654", "126305.9", "124579.5", "250885.5", "101.4", "0.0"], ["adult", "191810", "192028", "81398.6", "79728.8", "161127.4", "102.1", "0.0"], ["ambient", "22027", "21934", "72841.0", "73042.4", "145883.4", "99.7", "0.0"], ["science & nature", "32493", "32675", "62415.9", "62304.0", "124719.8", "100.2", "0.0"], ["foreign/international", "81364", "81426", "57385.3", "56482.7", "113868.0", "101.6", "0.0"], ["(unknown)", "733886", "734743", "40727.4", "41032.9", "81760.3", "99.3", "0.0"], ["lgbt", "79170", "78840", "28175.0", "27728.1", "55903.1", "101.6", "0.0"], ["biography", "9816", "9999", "6706.7", "6857.7", "13564.4", "97.8", "0.0"], ["independent", "7232", "7214", "1773.4", "1742.7", "3516.1", "101.8", "0.0"], ["mockumentary", "207", "208", "86.8", "66.6", "153.5", "130.3", "0.0"], ["christmas", "1", "0", "0.0", "0.0", "0.0", null, "0.0"]]};
+// Columns: genre, hold_viewers, control_viewers, hold_tvt_hrs, control_tvt_hrs, grand_total_hrs, ratio_pct, share_pct
+const textCols = [0], ratioCol = 6, pctCols = [7];
+let sortIdx = 5, sortDir = 'desc';
+
+function ratioClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 99) return 'background:#f8d7da;';
+  if (n <= 101) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return v;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function build() {
+  let data = DATA.rows.slice();
+  data.sort((a,b) => {
+    let x=a[sortIdx], y=b[sortIdx];
+    const nx=parseFloat(x), ny=parseFloat(y);
+    if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+    if (x<y) return sortDir==='asc'?-1:1;
+    if (x>y) return sortDir==='asc'?1:-1;
+    return 0;
+  });
+  let h = '<table><thead><tr>';
+  DATA.columns.forEach((c,i) => {
+    const cls = textCols.includes(i)?'txt':'';
+    const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+    h += `<th class="${cls}" onclick="sortBy(${i})">${c}${arrow}</th>`;
+  });
+  h += '</tr></thead><tbody>';
+  data.forEach(r => {
+    h += '<tr>';
+    r.forEach((v,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      let disp = fmt(v);
+      if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+      if (i===ratioCol) {
+        disp = `<span class="ratio-cell" style="${ratioClass(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span>`;
+      }
+      h += `<td class="${cls}">${disp}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('genreTable').innerHTML = h;
+}
+function sortBy(i) {
+  if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+  else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+  build();
+}
+build();
+</script>
+</body>
+</html>
