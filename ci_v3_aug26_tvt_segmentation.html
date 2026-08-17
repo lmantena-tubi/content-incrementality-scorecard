@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality — dsac_ci_v3_aug26 TVT Segmentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.25rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e6ea; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1.1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 1rem; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #e8ebee; white-space: nowrap; }
+  th { background: #1B3A5C; color: #fff; font-weight: 600; cursor: pointer; position: sticky; top: 0; user-select: none; }
+  th:hover { background: #244b74; }
+  th.txt, td.txt { text-align: left; }
+  tbody tr:hover { background: #f2f7fc; }
+  tr.grand { font-weight: 700; background: #eef3f8; }
+  tr.grand td { border-top: 2px solid #2E75B6; }
+  .ratio-cell { font-weight: 600; border-radius: 3px; padding: 2px 6px; }
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .kpi { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 18px; min-width: 150px; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: #1B3A5C; }
+  .kpi .lbl { font-size: 12px; color: #666; margin-top: 2px; }
+  .note { font-size: 12px; color: #888; margin-top: .5rem; }
+  .genre-hdr td { background: #dce6f1; font-weight: 700; color: #1B3A5C; text-align: left; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality — <code>dsac_ci_v3_aug26</code> TVT Segmentation</h1>
+<p class="subtitle">153 held-back titles · holdback (<code>ci_v3_hold</code>) vs Control · exposure window 2026-08-09 → 2026-08-16 · post-exposure TVT · generated 2026-08-17</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val">265,067</div><div class="lbl">Hold TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">1,069,208</div><div class="lbl">Control TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">1,334,275</div><div class="lbl">Total TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">25%</div><div class="lbl">Overall Hold ÷ Control</div></div>
+</div>
+
+<div class="summary-box">
+  <b>Reading the ratio:</b> <b>Ratio = Hold TVT ÷ Control TVT</b>. Lower % = the holdback suppressed more of that slice's viewing = <b>stronger incrementality</b> (Tubi's surfacing drives more of the demand). ~100% = the holdback barely moved viewing (demand is self-driven).
+  Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;40% strong</span>
+  <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">40–70% moderate</span>
+  <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;70% weak</span>.
+  Viewer counts are distinct devices (each arm ≈ 9.18M exposed devices, so counts are viewers among the exposed, not upsampled).
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="tab-title">By Title</button>
+  <button class="tab-btn" data-tab="tab-genre">By Genre</button>
+  <button class="tab-btn" data-tab="tab-segment">By Viewer Segment</button>
+  <button class="tab-btn" data-tab="tab-gs">Genre × Segment</button>
+</div>
+
+<div class="tab-panel active" id="tab-title">
+  <div class="note">All 153 titles. Click any column header to sort. "Genre" is <code>primary_genre_cms</code>.</div>
+  <div id="titleTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-genre">
+  <div class="note">TVT by <code>primary_genre_cms</code> × variant.</div>
+  <div id="genreTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-segment">
+  <div class="summary-box"><b>Viewer segment</b> is assigned per device at first exposure from <code>device_okr_daily</code>, using the <b>exact definition from the <code>v10d_control_pool</code> notebook</b> (apples-to-apples with the V10d control-pool analysis). Checked in precedence order:
+  <b>power_viewer</b> (≥8 visit-days in the last 28d <b>and</b> ≥4 TVT hrs per visit-day on average — the top / heavy-usage tier, checked first),
+  <b>new</b> (device_first_view within 28d),
+  <b>retained</b> (older device, last visit within 28d and not today),
+  <b>reactivated</b> (older device, dormant &gt;28d then returned),
+  <b>unknown</b> (no OKR row at exposure — a data-coverage residual, <i>not</i> a behavioral tier).</div>
+  <div id="segTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-gs">
+  <div class="note">TVT by genre × viewer segment × variant. Grouped by genre; ordered by TVT within genre. Cells with &lt;1 TVT hour omitted.</div>
+  <div id="gsTable"></div>
+</div>
+
+<script>
+const DATA = {"qA": {"columns": ["program_name", "genre", "hold_viewers", "control_viewers", "total_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["The Addams Family", "kids & family", "13756", "66816", "80572", "12183", "61763", "73946", "20.0", "5.5"], ["Summer's Last Resort", "comedy", "24212", "44734", "68946", "13753", "27967", "41720", "49.0", "3.1"], ["Unrequited", "thriller", "6169", "39187", "45356", "4545", "30669", "35215", "15.0", "2.6"], ["Night Shift", "thriller", "4236", "38660", "42896", "2995", "29748", "32744", "10.0", "2.5"], ["Olympus Has Fallen (Edited Version)", "action", "4159", "20629", "24788", "4304", "25715", "30019", "17.0", "2.2"], ["A Turtle's Tale: Sammy's Adventures", "kids & family", "4440", "22650", "27090", "3909", "20025", "23934", "20.0", "1.8"], ["Cats", "kids & family", "3410", "21098", "24508", "2614", "20064", "22678", "13.0", "1.7"], ["Girl, Interrupted", "drama", "7973", "18284", "26257", "7048", "13585", "20633", "52.0", "1.5"], ["I Didn\u2019t Do It", "thriller", "4193", "24810", "29003", "2984", "17487", "20471", "17.0", "1.5"], ["Twin", "thriller", "3195", "23657", "26852", "2207", "17578", "19785", "13.0", "1.5"], ["Meet the Blacks", "comedy", "4127", "17197", "21324", "2973", "15248", "18221", "19.0", "1.4"], ["Samson", "action", "3412", "17955", "21367", "2161", "15933", "18094", "14.0", "1.4"], ["Sphere", "sci-fi", "2664", "12365", "15029", "2768", "13599", "16366", "20.0", "1.2"], ["A Turtle's Tale 2: Sammy's Escape From Paradise", "kids & family", "2170", "12464", "14634", "2189", "13112", "15301", "17.0", "1.1"], ["Precious", "drama", "5206", "15089", "20295", "3941", "11292", "15233", "35.0", "1.1"], ["Chaos", "action", "2215", "12544", "14759", "1948", "13254", "15202", "15.0", "1.1"], ["Jason's Lyric", "romance", "3203", "10827", "14030", "3082", "11956", "15038", "26.0", "1.1"], ["Pok\u00e9mon: The First Movie", "action", "7684", "20634", "28318", "4307", "10649", "14956", "40.0", "1.1"], ["Killer Elite", "action", "1771", "12014", "13785", "1597", "13294", "14890", "12.0", "1.1"], ["Walk Hard: The Dewey Cox Story", "comedy", "4031", "14546", "18577", "3281", "11035", "14317", "30.0", "1.1"], ["Jerry Maguire", "comedy", "4327", "10361", "14688", "4422", "9839", "14261", "45.0", "1.1"], ["16 Blocks", "action", "2096", "10825", "12921", "2115", "11913", "14029", "18.0", "1.1"], ["Platoon", "war", "3203", "10723", "13926", "3186", "10229", "13415", "31.0", "1.0"], ["Baby Geniuses", "comedy", "2559", "13685", "16244", "1599", "11414", "13014", "14.0", "1.0"], ["Blue Hill Avenue", "crime", "1689", "8581", "10270", "1742", "10673", "12415", "16.0", "0.9"], ["El Infierno", "crime", "2802", "11020", "13822", "2561", "9637", "12198", "27.0", "0.9"], ["The Birdcage", "comedy", "3168", "7920", "11088", "3738", "8405", "12143", "44.0", "0.9"], ["Gifted Hands", "drama", "3397", "10345", "13742", "3115", "8668", "11783", "36.0", "0.9"], ["House of Pleasures", "drama", "6473", "50703", "57176", "1241", "10509", "11750", "12.0", "0.9"], ["My Sister's Keeper", "drama", "3168", "11209", "14377", "2691", "8674", "11365", "31.0", "0.9"], ["Ali Siddiq The Domino Effect Part 4: Pins & Needles", "comedy", "2872", "8779", "11651", "2629", "8458", "11087", "31.0", "0.8"], ["Hannibal", "thriller", "2503", "7992", "10495", "2271", "8512", "10783", "27.0", "0.8"], ["Terrifier", "horror", "7715", "15141", "22856", "3909", "6794", "10703", "58.0", "0.8"], ["Moses: Born of Water and Fire", "drama", "2617", "13904", "16521", "1335", "9187", "10522", "15.0", "0.8"], ["Battle of the Bulge", "war", "1573", "6333", "7906", "2127", "8350", "10476", "25.0", "0.8"], ["Pok\u00e9mon the Movie 2000", "action", "4214", "13301", "17515", "2500", "7957", "10458", "31.0", "0.8"], ["Drip Drop", "thriller", "3528", "21393", "24921", "1181", "9152", "10333", "13.0", "0.8"], ["Dinner in America", "comedy", "4178", "9196", "13374", "4013", "6303", "10316", "64.0", "0.8"], ["Burnt", "drama", "2895", "14707", "17602", "1756", "8329", "10085", "21.0", "0.8"], ["Sweet November", "drama", "1715", "8889", "10604", "1398", "8536", "9934", "16.0", "0.7"], ["Dreamcatcher", "sci-fi", "2906", "7821", "10727", "2408", "7313", "9721", "33.0", "0.7"], ["State Property", "crime", "2156", "9341", "11497", "1564", "8048", "9611", "19.0", "0.7"], ["Jungle", "action", "3087", "8546", "11633", "2708", "6802", "9510", "40.0", "0.7"], ["American Ultra", "comedy", "3775", "9198", "12973", "2611", "6820", "9431", "38.0", "0.7"], ["Free State of Jones", "action", "1749", "7344", "9093", "1681", "7641", "9322", "22.0", "0.7"], ["Pregnant by the Pastor: The Aftermath", "drama", "2991", "8362", "11353", "1820", "7356", "9176", "25.0", "0.7"], ["Showgirls", "drama", "5048", "13488", "18536", "2463", "6571", "9034", "37.0", "0.7"], ["Point Break", "action", "2085", "7385", "9470", "1865", "7162", "9026", "26.0", "0.7"], ["School Dance", "comedy", "3432", "8152", "11584", "2613", "6318", "8931", "41.0", "0.7"], ["Janky Promoters", "comedy", "1622", "9048", "10670", "1273", "7549", "8822", "17.0", "0.7"], ["Cocaine Godmother", "drama", "1112", "7320", "8432", "1033", "7721", "8754", "13.0", "0.7"], ["Vera and the Pleasure of Others", "comedy", "11233", "37376", "48609", "1320", "7293", "8612", "18.0", "0.6"], ["Sidelined 2: Intercepted", "drama", "3685", "8705", "12390", "2394", "6159", "8553", "39.0", "0.6"], ["Monkey Trouble", "comedy", "1335", "6869", "8204", "1012", "7321", "8333", "14.0", "0.6"], ["The Imitation Game", "drama", "2479", "7037", "9516", "2501", "5760", "8260", "43.0", "0.6"], ["Nothing but Trouble", "comedy", "2188", "8246", "10434", "1664", "6577", "8241", "25.0", "0.6"], ["The Missing", "drama", "1900", "4569", "6469", "2430", "5795", "8225", "42.0", "0.6"], ["Colors", "crime", "1828", "6749", "8577", "1477", "6597", "8074", "22.0", "0.6"], ["Carrie (2013)", "horror", "3346", "9863", "13209", "1857", "6120", "7977", "30.0", "0.6"], ["Deep Cover", "action", "1420", "6325", "7745", "1188", "6785", "7973", "18.0", "0.6"], ["Cooley High", "drama", "1612", "6050", "7662", "1488", "6456", "7944", "23.0", "0.6"], ["Hive", "horror", "4228", "9508", "13736", "2457", "5353", "7810", "46.0", "0.6"], ["FernGully: The Last Rainforest", "fantasy", "1882", "8399", "10281", "1136", "6540", "7676", "17.0", "0.6"], ["Preacher's Kid", "drama", "1348", "5874", "7222", "1160", "6515", "7675", "18.0", "0.6"], ["The Wild and Wonderful Whites of West Virginia", "documentary", "2880", "10328", "13208", "1919", "5736", "7655", "33.0", "0.6"], ["Whitney", "drama", "1831", "6073", "7904", "1312", "6342", "7654", "21.0", "0.6"], ["Strange Objects From Time and Space", "documentary", "813", "6370", "7183", "737", "6879", "7616", "11.0", "0.6"], ["The Dukes of Hazzard: The Beginning", "comedy", "3397", "8273", "11670", "1640", "5805", "7445", "28.0", "0.6"], ["Drop Dead Gorgeous", "comedy", "2711", "8597", "11308", "1967", "5383", "7350", "37.0", "0.6"], ["Replicas", "action", "1965", "5898", "7863", "1817", "5497", "7314", "33.0", "0.5"], ["Give Me Back My Baby", "thriller", "2280", "8121", "10401", "1503", "5800", "7303", "26.0", "0.5"], ["Megan is Missing", "drama", "5001", "8747", "13748", "3010", "4285", "7295", "70.0", "0.5"], ["Men at Work", "comedy", "1427", "6215", "7642", "1132", "5869", "7001", "19.0", "0.5"], ["Felon", "thriller", "1604", "6516", "8120", "1334", "5665", "7000", "24.0", "0.5"], ["Agent Zero (Dubbed)", "action", "2595", "10316", "12911", "1428", "5386", "6814", "27.0", "0.5"], ["The Blue Lagoon", "drama", "4391", "12068", "16459", "1791", "5015", "6806", "36.0", "0.5"], ["North By Northwest", "action", "1787", "5113", "6900", "1915", "4891", "6806", "39.0", "0.5"], ["The Ninth Gate", "thriller", "1568", "5232", "6800", "1645", "5140", "6786", "32.0", "0.5"], ["Vivarium", "sci-fi", "3072", "8071", "11143", "1986", "4724", "6710", "42.0", "0.5"], ["Judy Moody and the Not Bummer Summer", "comedy", "1474", "6697", "8171", "997", "5596", "6593", "18.0", "0.5"], ["Sex Addict", "thriller", "1654", "9600", "11254", "398", "6071", "6470", "7.0", "0.5"], ["Panama", "action", "1455", "6781", "8236", "1048", "5394", "6442", "19.0", "0.5"], ["Tenacious D in the Pick of Destiny", "comedy", "2142", "6341", "8483", "1593", "4705", "6298", "34.0", "0.5"], ["Boneyard", "action", "1042", "6338", "7380", "852", "5416", "6267", "16.0", "0.5"], ["The Boondock Saints", "action", "1797", "5636", "7433", "1436", "4827", "6263", "30.0", "0.5"], ["Adulterers", "thriller", "2826", "11824", "14650", "1284", "4947", "6231", "26.0", "0.5"], ["Rumble in the Bronx", "action", "1996", "6909", "8905", "1275", "4863", "6137", "26.0", "0.5"], ["Damage", "action", "1027", "4916", "5943", "928", "5116", "6044", "18.0", "0.5"], ["Maximum Overdrive", "horror", "1905", "4641", "6546", "1640", "4401", "6041", "37.0", "0.5"], ["Gotti", "drama", "1477", "5127", "6604", "1207", "4830", "6037", "25.0", "0.5"], ["Rage", "action", "1213", "5912", "7125", "870", "5154", "6024", "17.0", "0.5"], ["Bad Grandmas", "comedy", "894", "5555", "6449", "602", "5369", "5971", "11.0", "0.4"], ["Black Lies", "drama", "1999", "7952", "9951", "980", "4983", "5963", "20.0", "0.4"], ["The Great Gilly Hopkins", "comedy", "1646", "4655", "6301", "1653", "4266", "5919", "39.0", "0.4"], ["Ali Siddiq -The Domino Effect 3: First Day of School", "comedy", "1779", "5739", "7518", "1237", "4609", "5846", "27.0", "0.4"], ["Frequency", "sci-fi", "1411", "4294", "5705", "1487", "4272", "5759", "35.0", "0.4"], ["The Fabulous Four", "comedy", "1234", "5420", "6654", "1004", "4726", "5730", "21.0", "0.4"], ["Plug Love", "drama", "1096", "4293", "5389", "924", "4437", "5361", "21.0", "0.4"], ["187", "drama", "1736", "4733", "6469", "1151", "4168", "5319", "28.0", "0.4"], ["Betray", "thriller", "4286", "14424", "18710", "671", "4594", "5265", "15.0", "0.4"], ["Mac & Devin Go to High School", "comedy", "2374", "6005", "8379", "1365", "3856", "5220", "35.0", "0.4"], ["Home Sweet Hell", "comedy", "2038", "4813", "6851", "1600", "3587", "5187", "45.0", "0.4"], ["The Art of War", "action", "981", "4118", "5099", "882", "4299", "5181", "21.0", "0.4"], ["The Bricklayer", "thriller", "1360", "4693", "6053", "1139", "3988", "5127", "29.0", "0.4"], ["Clerks II", "comedy", "1753", "4549", "6302", "1626", "3397", "5024", "48.0", "0.4"], ["Escape 2120", "sci-fi", "1191", "7064", "8255", "426", "4548", "4974", "9.0", "0.4"], ["Never Saw It Coming", "thriller", "1829", "8469", "10298", "704", "4244", "4948", "17.0", "0.4"], ["Source Code", "action", "1332", "4738", "6070", "1053", "3894", "4947", "27.0", "0.4"], ["National Lampoon's Loaded Weapon 1", "comedy", "1448", "5359", "6807", "914", "4025", "4938", "23.0", "0.4"], ["Fred: The Movie", "kids & family", "2120", "6517", "8637", "1175", "3751", "4925", "31.0", "0.4"], ["Double Impact", "action", "1007", "3682", "4689", "994", "3893", "4887", "26.0", "0.4"], ["Deuces", "crime", "1131", "4211", "5342", "882", "4001", "4883", "22.0", "0.4"], ["Cannonball Run II", "action", "1023", "4179", "5202", "828", "4035", "4863", "21.0", "0.4"], ["Killing Them Softly", "thriller", "1772", "5009", "6781", "1285", "3420", "4706", "38.0", "0.4"], ["Snowpiercer", "sci-fi", "1496", "4115", "5611", "1303", "3285", "4588", "40.0", "0.3"], ["Tonta tonta, pero no tanto", "comedy", "856", "5376", "6232", "613", "3919", "4532", "16.0", "0.3"], ["The Substitute", "action", "846", "2987", "3833", "829", "3592", "4421", "23.0", "0.3"], ["Red Shoes and the Seven Dwarfs", "animation", "1028", "4099", "5127", "810", "3596", "4405", "23.0", "0.3"], ["Infinity Pool", "horror", "1927", "5500", "7427", "1283", "3090", "4373", "42.0", "0.3"], ["Zola", "comedy", "3048", "6967", "10015", "1355", "2860", "4215", "47.0", "0.3"], ["Private Benjamin", "comedy", "1036", "3518", "4554", "909", "3199", "4109", "28.0", "0.3"], ["Kyra\u2019s Code", "thriller", "973", "3863", "4836", "714", "3177", "3891", "22.0", "0.3"], ["Sunset Park", "drama", "1043", "3875", "4918", "666", "3195", "3861", "21.0", "0.3"], ["You Can't Win", "western", "1229", "5558", "6787", "630", "3133", "3763", "20.0", "0.3"], ["Red Sonja", "action", "1892", "4866", "6758", "878", "2794", "3672", "31.0", "0.3"], ["The Infiltrator", "thriller", "553", "3056", "3609", "486", "3183", "3669", "15.0", "0.3"], ["Black Men Don't Cheat 3: Outplayed", "drama", "1062", "4064", "5126", "655", "2952", "3607", "22.0", "0.3"], ["Shaq & Cedric the Entertainer Present: All Star Comedy Jam", "comedy", "704", "3425", "4129", "507", "3090", "3597", "16.0", "0.3"], ["John and the Hole", "drama", "1089", "3843", "4932", "872", "2633", "3505", "33.0", "0.3"], ["Matchstick Men", "comedy", "740", "3276", "4016", "582", "2785", "3367", "21.0", "0.3"], ["Southland Tales", "action", "1083", "3890", "4973", "725", "2628", "3353", "28.0", "0.3"], ["All Money Ain\u2019t Good Money", "drama", "783", "3784", "4567", "420", "2862", "3282", "15.0", "0.2"], ["A Day Late and a Dollar Short", "drama", "1108", "2820", "3928", "812", "2309", "3121", "35.0", "0.2"], ["Hostile", "sci-fi", "1696", "4439", "6135", "711", "2078", "2790", "34.0", "0.2"], ["Lucky Number Slevin", "action", "654", "2540", "3194", "524", "2191", "2715", "24.0", "0.2"], ["The Man Who Killed Hitler and Then the Bigfoot", "drama", "761", "3751", "4512", "417", "2283", "2700", "18.0", "0.2"], ["Intruders", "horror", "1281", "2935", "4216", "875", "1819", "2693", "48.0", "0.2"], ["Grow House", "comedy", "432", "2476", "2908", "321", "2317", "2638", "14.0", "0.2"], ["35 & Ticking", "comedy", "617", "2095", "2712", "505", "2110", "2614", "24.0", "0.2"], ["True Crime Files: The Missing Child Cover-Up", "documentary", "797", "4521", "5318", "318", "2288", "2605", "14.0", "0.2"], ["South Haven", "drama", "675", "2962", "3637", "391", "2089", "2480", "19.0", "0.2"], ["Bliss", "drama", "756", "3621", "4377", "409", "2056", "2464", "20.0", "0.2"], ["Four Good Days", "drama", "1024", "2336", "3360", "754", "1634", "2388", "46.0", "0.2"], ["The Tunnel", "horror", "1009", "3780", "4789", "444", "1559", "2002", "28.0", "0.2"], ["God's Grace: The Sheila Johnson Story", "drama", "560", "1546", "2106", "529", "1435", "1964", "37.0", "0.1"], ["Silent Hours", "thriller", "715", "4065", "4780", "258", "1695", "1954", "15.0", "0.1"], ["One Last Thing", "drama", "271", "1859", "2130", "218", "1641", "1858", "13.0", "0.1"], ["Reverence", "thriller", "529", "2163", "2692", "322", "1528", "1850", "21.0", "0.1"], ["Dead Calm", "mystery", "961", "2142", "3103", "531", "1040", "1571", "51.0", "0.1"], ["Stay Awake", "drama", "846", "2527", "3373", "239", "1192", "1432", "20.0", "0.1"], ["Ick", "sci-fi", "815", "2082", "2897", "320", "807", "1126", "40.0", "0.1"], ["The Honey Dripper Lady", "thriller", "311", "811", "1122", "142", "550", "692", "26.0", "0.1"], ["Pet", "thriller", "241", "858", "1099", "105", "434", "539", "24.0", "0.0"]]}, "qB": {"columns": ["genre", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["comedy", "100884", "280325", "69023", "222020", "291043", "31.0", "21.8"], ["drama", "78387", "268862", "54572", "191453", "246025", "29.0", "18.4"], ["action", "53933", "192844", "44654", "200974", "245629", "22.0", "18.4"], ["thriller", "43846", "214294", "28176", "167583", "195759", "17.0", "14.7"], ["kids & family", "24511", "108929", "22068", "118716", "140784", "19.0", "10.6"], ["sci-fi", "14854", "47709", "11409", "40626", "52035", "28.0", "3.9"], ["crime", "9417", "37054", "8226", "38955", "47181", "21.0", "3.5"], ["horror", "21126", "50027", "12463", "29136", "41599", "43.0", "3.1"], ["war", "4739", "16831", "5312", "18578", "23891", "29.0", "1.8"], ["documentary", "4483", "21089", "2974", "14902", "17876", "20.0", "1.3"], ["romance", "3203", "10827", "3082", "11956", "15038", "26.0", "1.1"], ["fantasy", "1882", "8399", "1136", "6540", "7676", "17.0", "0.6"], ["animation", "1028", "4099", "810", "3596", "4405", "23.0", "0.3"], ["western", "1229", "5558", "630", "3133", "3763", "20.0", "0.3"], ["mystery", "961", "2142", "531", "1040", "1571", "51.0", "0.1"]]}, "qC": {"columns": ["ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["retained", "179989", "576320", "129612", "492949", "622561", "26.0", "46.7"], ["power_viewer", "50522", "187320", "60461", "318980", "379441", "19.0", "28.4"], ["reactivated", "46708", "129998", "32161", "103949", "136111", "31.0", "10.2"], ["new", "45486", "126265", "31311", "102438", "133749", "31.0", "10.0"], ["unknown", "18013", "61894", "11522", "50892", "62413", "23.0", "4.7"]]}, "qD": {"columns": ["genre", "ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct"], "rows": [["action", "retained", "28654", "99490", "21868", "88319", "110186", "25.0"], ["action", "power_viewer", "8973", "42721", "11202", "68658", "79860", "16.0"], ["action", "new", "6725", "20902", "4824", "18257", "23082", "26.0"], ["action", "reactivated", "6793", "19071", "4782", "16444", "21226", "29.0"], ["action", "unknown", "2788", "10660", "1979", "9296", "11275", "21.0"], ["animation", "retained", "575", "2199", "465", "1814", "2279", "26.0"], ["animation", "power_viewer", "106", "660", "116", "839", "955", "14.0"], ["animation", "reactivated", "151", "438", "110", "380", "490", "29.0"], ["animation", "new", "153", "601", "90", "393", "482", "23.0"], ["animation", "unknown", "43", "201", "29", "170", "199", "17.0"], ["comedy", "retained", "53335", "147735", "33604", "104600", "138204", "32.0"], ["comedy", "power_viewer", "15007", "46889", "14586", "58614", "73200", "25.0"], ["comedy", "reactivated", "14097", "35657", "9466", "25444", "34910", "37.0"], ["comedy", "new", "13623", "34915", "8534", "22662", "31195", "38.0"], ["comedy", "unknown", "4822", "15129", "2833", "10700", "13533", "26.0"], ["crime", "retained", "4869", "18428", "3978", "17339", "21318", "23.0"], ["crime", "power_viewer", "1627", "7721", "2011", "11944", "13955", "17.0"], ["crime", "new", "1275", "4564", "1071", "4035", "5105", "27.0"], ["crime", "reactivated", "1110", "4098", "803", "3491", "4294", "23.0"], ["crime", "unknown", "536", "2243", "363", "2147", "2509", "17.0"], ["documentary", "retained", "2375", "12056", "1480", "7613", "9094", "19.0"], ["documentary", "power_viewer", "628", "3709", "554", "3968", "4522", "14.0"], ["documentary", "reactivated", "716", "2230", "459", "1500", "1959", "31.0"], ["documentary", "new", "523", "1764", "353", "993", "1346", "36.0"], ["documentary", "unknown", "241", "1330", "127", "828", "955", "15.0"], ["drama", "retained", "39729", "141280", "25974", "89804", "115778", "29.0"], ["drama", "power_viewer", "9545", "40658", "10054", "50928", "60982", "20.0"], ["drama", "reactivated", "12597", "35976", "8210", "21184", "29394", "39.0"], ["drama", "new", "11992", "35442", "7727", "20289", "28016", "38.0"], ["drama", "unknown", "4524", "15506", "2607", "9247", "11855", "28.0"], ["fantasy", "retained", "1029", "4065", "572", "2935", "3506", "19.0"], ["fantasy", "power_viewer", "296", "2093", "261", "2067", "2329", "13.0"], ["fantasy", "reactivated", "263", "880", "152", "619", "771", "25.0"], ["fantasy", "new", "193", "903", "104", "566", "670", "18.0"], ["fantasy", "unknown", "101", "458", "48", "352", "400", "14.0"], ["horror", "retained", "11024", "26271", "6140", "14086", "20226", "44.0"], ["horror", "power_viewer", "2617", "7487", "2467", "7230", "9697", "34.0"], ["horror", "new", "3255", "6939", "1619", "3255", "4874", "50.0"], ["horror", "reactivated", "3079", "6357", "1669", "3089", "4757", "54.0"], ["horror", "unknown", "1151", "2973", "569", "1476", "2045", "39.0"], ["kids & family", "retained", "13189", "55583", "11022", "55261", "66283", "20.0"], ["kids & family", "power_viewer", "3783", "19230", "5560", "30935", "36495", "18.0"], ["kids & family", "reactivated", "2908", "13829", "2274", "14025", "16298", "16.0"], ["kids & family", "new", "3488", "15063", "2474", "13630", "16104", "18.0"], ["kids & family", "unknown", "1143", "5224", "738", "4866", "5604", "15.0"], ["mystery", "retained", "575", "1381", "286", "631", "917", "45.0"], ["mystery", "power_viewer", "100", "237", "81", "173", "254", "47.0"], ["mystery", "reactivated", "107", "224", "80", "115", "194", "69.0"], ["mystery", "new", "117", "171", "55", "68", "124", "81.0"], ["mystery", "unknown", "62", "129", "29", "53", "82", "56.0"], ["romance", "retained", "1680", "5338", "1505", "5068", "6572", "30.0"], ["romance", "power_viewer", "695", "3200", "911", "4812", "5724", "19.0"], ["romance", "new", "347", "893", "273", "776", "1048", "35.0"], ["romance", "reactivated", "309", "796", "264", "719", "983", "37.0"], ["romance", "unknown", "172", "600", "129", "581", "711", "22.0"], ["sci-fi", "retained", "8078", "25701", "5805", "19769", "25575", "29.0"], ["sci-fi", "power_viewer", "2045", "7563", "2350", "9795", "12145", "24.0"], ["sci-fi", "reactivated", "1961", "5957", "1298", "4624", "5922", "28.0"], ["sci-fi", "new", "1858", "5728", "1387", "4510", "5897", "31.0"], ["sci-fi", "unknown", "912", "2760", "570", "1928", "2497", "30.0"], ["thriller", "retained", "24099", "113504", "13951", "74866", "88818", "19.0"], ["thriller", "power_viewer", "8928", "51744", "8797", "62452", "71249", "14.0"], ["thriller", "new", "4636", "19313", "2197", "11439", "13636", "19.0"], ["thriller", "reactivated", "3835", "17256", "1990", "10625", "12616", "19.0"], ["thriller", "unknown", "2348", "12477", "1240", "8201", "9441", "15.0"], ["war", "retained", "2618", "9491", "2592", "9283", "11875", "28.0"], ["war", "power_viewer", "686", "3148", "1348", "5583", "6931", "24.0"], ["war", "reactivated", "592", "1553", "581", "1426", "2007", "41.0"], ["war", "new", "570", "1685", "559", "1425", "1984", "39.0"], ["war", "unknown", "273", "954", "233", "861", "1094", "27.0"], ["western", "retained", "790", "3299", "369", "1560", "1930", "24.0"], ["western", "power_viewer", "213", "1169", "163", "982", "1144", "17.0"], ["western", "reactivated", "67", "437", "25", "266", "291", "9.0"], ["western", "unknown", "64", "361", "28", "184", "212", "15.0"], ["western", "new", "95", "292", "45", "141", "186", "32.0"]]}};
+
+function ratioClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 40) return 'background:#f8d7da;';
+  if (n <= 70) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return v;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+
+// Generic sortable table
+function renderTable(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const textCols = opts.textCols || [0];
+  const ratioCols = opts.ratioCols || [];
+  const pctCols = opts.pctCols || [];
+  let sortIdx = opts.defaultSort != null ? opts.defaultSort : null;
+  let sortDir = opts.defaultDir || 'desc';
+
+  function build() {
+    let data = rows.slice();
+    if (sortIdx !== null) {
+      data.sort((a,b) => {
+        let x=a[sortIdx], y=b[sortIdx];
+        const nx=parseFloat(x), ny=parseFloat(y);
+        if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+        if (x<y) return sortDir==='asc'?-1:1;
+        if (x>y) return sortDir==='asc'?1:-1;
+        return 0;
+      });
+    }
+    let h = '<table><thead><tr>';
+    cols.forEach((c,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+      h += `<th class="${cls}" onclick="window.__sort_${containerId}(${i})">${c}${arrow}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      r.forEach((v,i) => {
+        const cls = textCols.includes(i)?'txt':'';
+        let disp = fmt(v);
+        if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+        if (ratioCols.includes(i)) {
+          const rc = ratioClass(v);
+          disp = `<span class="ratio-cell" style="${rc}">${v===null||v===''?'—':fmt(v)+'%'}</span>`;
+        }
+        h += `<td class="${cls}">${disp}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    document.getElementById(containerId).innerHTML = h;
+  }
+  window['__sort_'+containerId] = function(i) {
+    if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+    build();
+  };
+  build();
+}
+
+// Grouped genre×segment table
+function renderGrouped(containerId, cols, rows, ratioCols) {
+  let h = '<table><thead><tr>';
+  cols.forEach((c,i) => h += `<th class="${i===0?'txt':''}">${c}</th>`);
+  h += '</tr></thead><tbody>';
+  let cur = null;
+  rows.forEach(r => {
+    if (r[0] !== cur) {
+      cur = r[0];
+      h += `<tr class="genre-hdr"><td colspan="${cols.length}">${cur}</td></tr>`;
+    }
+    h += '<tr>';
+    r.forEach((v,i) => {
+      if (i===0) { h += `<td class="txt" style="padding-left:22px;">${v}</td>`; return; }
+      if (ratioCols.includes(i)) {
+        h += `<td><span class="ratio-cell" style="${ratioClass(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`;
+      } else h += `<td>${fmt(v)}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = h;
+}
+
+renderTable('titleTable', DATA.qA.columns, DATA.qA.rows, {
+  textCols:[0,1], ratioCols:[8], pctCols:[9], defaultSort:7, defaultDir:'desc'
+});
+renderTable('genreTable', DATA.qB.columns, DATA.qB.rows, {
+  textCols:[0], ratioCols:[6], pctCols:[7], defaultSort:5, defaultDir:'desc'
+});
+renderTable('segTable', DATA.qC.columns, DATA.qC.rows, {
+  textCols:[0], ratioCols:[6], pctCols:[7], defaultSort:5, defaultDir:'desc'
+});
+renderGrouped('gsTable', DATA.qD.columns, DATA.qD.rows, [7]);
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
