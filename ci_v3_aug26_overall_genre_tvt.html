@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality — dsac_ci_v3_aug26 Overall TVT by Genre</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.25rem; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1.1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 1rem; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #e8ebee; white-space: nowrap; }
+  th { background: #1B3A5C; color: #fff; font-weight: 600; cursor: pointer; position: sticky; top: 0; user-select: none; }
+  th:hover { background: #244b74; }
+  th.txt, td.txt { text-align: left; }
+  tbody tr:hover { background: #f2f7fc; }
+  .ratio-cell { font-weight: 600; border-radius: 3px; padding: 2px 6px; }
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .kpi { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 18px; min-width: 150px; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: #1B3A5C; }
+  .kpi .lbl { font-size: 12px; color: #666; margin-top: 2px; }
+  .note { font-size: 12px; color: #888; margin-top: .5rem; margin-bottom: .5rem; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality — <code>dsac_ci_v3_aug26</code> · Overall TVT by Genre</h1>
+<p class="subtitle">ALL post-exposure viewing (every title, not just the 36 held-back) · holdback (<code>ci_v3_hold</code>) vs Control · exposure window 2026-08-09 → 2026-08-16 · generated 2026-08-17</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="val">80,886,094</div><div class="lbl">Hold TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">80,857,475</div><div class="lbl">Control TVT (hrs)</div></div>
+  <div class="kpi"><div class="val">+28,619</div><div class="lbl">Net Δ (Hold − Control)</div></div>
+  <div class="kpi"><div class="val">100.0%</div><div class="lbl">Overall Hold ÷ Control</div></div>
+  <div class="kpi"><div class="val">4 / 36</div><div class="lbl">Genres sig. after FDR</div></div>
+</div>
+
+<div class="summary-box">
+  <b>What this measures:</b> total view-time per genre across <b>everything</b> exposed devices watched post-exposure — not just the 36 held-back titles.
+  The <b>ratio = Hold TVT ÷ Control TVT</b>. At the whole-catalog level this is expected to sit near <b>100%</b>: holding back 36 titles is a tiny fraction of total viewing, and suppressed demand largely substitutes to other titles in the same genre.
+  A ratio meaningfully <b>below 100%</b> means the holdback caused a <b>net loss</b> of viewing in that genre (true incrementality — demand wasn't fully recovered). <b>Above 100%</b> suggests spillover / substitution <i>into</i> that genre.
+  <br><br>
+  Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;99% net loss</span>
+  <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">99–101% flat</span>
+  <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;101% net gain</span>.
+  <br><br>
+  Viewer counts are distinct devices per arm (each arm ≈ 9.18M exposed).
+  <br><br>
+  <b>Significance:</b> the <b>Welch t</b> / <b>p-value</b> columns test whether mean per-exposed-device genre TVT differs between arms (mean taken over the <i>full</i> ~9.18M-device arm, so non-viewers count as zeros — this is the ITT-style test). <b>p (BH-FDR)</b> applies a Benjamini-Hochberg correction across all 36 genres. <b>"Significant? = yes (FDR)"</b> survives correction; <b>"borderline"</b> is raw p&lt;0.05 only (likely false-positive after correcting for 36 tests).
+</div>
+
+<div class="note">Click any column header to sort. Genre = <code>primary_genre_cms</code> from <code>dsac_program_info</code>.</div>
+<div id="genreTable"></div>
+
+<script>
+const DATA = {"columns": ["genre", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct", "Welch t", "p-value", "p (BH-FDR)", "Significant?"], "rows": [["comedy", "3977543", "3980582", "1.87931653E7", "1.87487402E7", "3.75419055E7", "100.2", "23.2", 1.35, 0.1773199131451042, 0.5803197157476138, "no"], ["drama", "3046350", "3060695", "1.12608319E7", "1.12497591E7", "2.25105911E7", "100.1", "13.9", 0.51, 0.6096767378995565, 0.7992123453976473, "no"], ["kids & family", "1833729", "1828024", "8914577.6", "8932982.1", "1.78475596E7", "99.8", "11.0", -0.74, 0.4564325057909595, 0.6846487586864393, "no"], ["action", "2362305", "2364750", "8009712.9", "8017144.7", "1.60268576E7", "99.9", "9.9", -0.44, 0.6570784784577488, 0.7992123453976473, "no"], ["reality", "1026609", "1019474", "5530396.4", "5523133.1", "1.10535295E7", "100.1", "6.8", 0.38, 0.7028990809939428, 0.801908977308997, "no"], ["thriller", "1977238", "2000650", "5027340.2", "5117074.7", "1.01444149E7", "98.2", "6.3", -8.35, 0.0, 0.0, "yes (FDR)"], ["documentary", "1078922", "1075226", "4878478.1", "4854437.6", "9732915.8", "100.5", "6.0", 1.35, 0.1766647504489205, 0.5803197157476138, "no"], ["horror", "1617149", "1606852", "4387050.8", "4359778.7", "8746829.6", "100.6", "5.4", 2.25, 0.02419505759062157, 0.17420441465247533, "borderline"], ["crime", "988303", "985269", "2930481.3", "2950254.3", "5880735.6", "99.3", "3.6", -1.67, 0.09464346363077825, 0.4347188106875327, "no"], ["entertainment", "1108493", "1104705", "2181129.0", "2185939.3", "4367068.3", "99.8", "2.7", -0.37, 0.7128079798302196, 0.801908977308997, "no"], ["sci-fi", "784394", "786674", "1659457.7", "1654146.1", "3313603.9", "100.3", "2.0", 0.77, 0.43948580215517574, 0.6846487586864393, "no"], ["fantasy", "571958", "566959", "1396544.2", "1371936.5", "2768480.7", "101.8", "1.7", 4.34, 1.4570118709311686e-05, 0.00017484142451174023, "yes (FDR)"], ["western", "274183", "272373", "1019948.4", "1013052.0", "2033000.5", "100.7", "1.3", 0.96, 0.3358767259860085, 0.6045781067748153, "no"], ["animation", "291818", "288117", "1014742.7", "1007757.6", "2022500.4", "100.7", "1.3", 0.98, 0.32544422392029615, 0.6045781067748153, "no"], ["romance", "529591", "530849", "921633.9", "924174.6", "1845808.5", "99.7", "1.1", -0.54, 0.5906619226657499, 0.7992123453976473, "no"], ["adventure", "484100", "475842", "759355.3", "752837.2", "1512192.5", "100.9", "0.9", 1.66, 0.09660418015278505, 0.4347188106875327, "no"], ["news", "214231", "212838", "510669.7", "508311.3", "1018981.0", "100.5", "0.6", 0.43, 0.6660102878313727, 0.7992123453976473, "no"], ["mystery", "187147", "184683", "448815.4", "438607.0", "887422.4", "102.3", "0.5", 2.08, 0.03730378005295654, 0.22382268031773922, "borderline"], ["lifestyle", "126401", "125606", "308553.8", "304506.0", "613059.8", "101.3", "0.4", 1.14, 0.2546401388350854, 0.6045781067748153, "no"], ["anime", "105407", "104115", "239463.8", "243145.6", "482609.4", "98.5", "0.3", -1.0, 0.3182726892464831, 0.6045781067748153, "no"], ["sport", "396507", "395444", "237657.8", "234479.9", "472137.7", "101.4", "0.3", 0.99, 0.3231522078371878, 0.6045781067748153, "no"], ["war", "89152", "95025", "123208.7", "135124.1", "258332.8", "91.2", "0.2", -9.86, 0.0, 0.0, "yes (FDR)"], ["music", "54680", "54090", "78055.6", "78179.6", "156235.2", "99.8", "0.1", -0.09, 0.9285081004578319, 0.9550369033280557, "no"], ["game show", "19802", "19556", "58971.3", "58098.7", "117069.9", "101.5", "0.1", 0.63, 0.5299201000846956, 0.7630849441219617, "no"], ["talk show", "12824", "12631", "47830.9", "46034.5", "93865.3", "103.9", "0.1", 1.18, 0.23898791004096553, 0.6045781067748153, "no"], ["holiday", "21947", "22001", "36175.9", "35688.7", "71864.7", "101.4", "0.0", 0.81, 0.41676126414367065, 0.6846487586864393, "no"], ["adult", "79075", "77774", "24220.4", "24233.9", "48454.3", "99.9", "0.0", -0.04, 0.9706087272534969, 0.9706087272534969, "no"], ["musicals", "23758", "23036", "21743.9", "20512.0", "42255.9", "106.0", "0.0", 3.11, 0.0018595679356327999, 0.0167361114206952, "yes (FDR)"], ["ambient", "6908", "6914", "18358.3", "18290.7", "36648.9", "100.4", "0.0", 0.1, 0.9235531415952738, 0.9550369033280557, "no"], ["science & nature", "9780", "9771", "16010.2", "16607.7", "32617.9", "96.4", "0.0", -1.01, 0.3132387309371034, 0.6045781067748153, "no"], ["foreign/international", "24506", "24582", "15033.1", "14813.1", "29846.2", "101.5", "0.0", 0.77, 0.4387764738795097, 0.6846487586864393, "no"], ["(unknown)", "260863", "260630", "7700.1", "8712.7", "16412.9", "88.4", "0.0", -1.5, 0.13243029824131414, 0.5297211929652565, "no"], ["lgbt", "27522", "27161", "7114.8", "7291.6", "14406.4", "97.6", "0.0", -1.13, 0.25788778613641594, 0.6045781067748153, "no"], ["biography", "2184", "2080", "1316.5", "1348.7", "2665.2", "97.6", "0.0", -0.46, 0.6419480764664827, 0.7992123453976473, "no"], ["independent", "1506", "1550", "346.9", "338.2", "685.1", "102.6", "0.0", 0.28, 0.7802730250832084, 0.8512069364544091, "no"], ["mockumentary", "11", "12", "1.3", "3.5", "4.8", "37.6", "0.0", -0.97, 0.33042355700802895, 0.6045781067748153, "no"], ["history", "1", "0", "0.0", "0.0", "0.0", null, "0.0", null, null, null, "\u2014"]]};
+// Columns: genre, hold_viewers, control_viewers, hold_tvt_hrs, control_tvt_hrs,
+//          grand_total_hrs, ratio_pct, share_pct, welch_t, p, p_bh, significant
+const textCols = [0, 11], ratioCol = 6, pctCols = [7], sciCols = [9, 10];
+let sortIdx = 5, sortDir = 'desc';
+
+function fmtSci(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return '—';
+  if (n === 0) return '0';
+  if (n >= 0.001) return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3});
+  return n.toExponential(1);
+}
+function sigStyle(v) {
+  if (v === 'yes (FDR)') return 'background:#d4edda;font-weight:600;';
+  if (v === 'borderline') return 'background:#fff3cd;';
+  return '';
+}
+
+function ratioClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 99) return 'background:#f8d7da;';
+  if (n <= 101) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return v;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function build() {
+  let data = DATA.rows.slice();
+  data.sort((a,b) => {
+    let x=a[sortIdx], y=b[sortIdx];
+    const nx=parseFloat(x), ny=parseFloat(y);
+    if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+    if (x<y) return sortDir==='asc'?-1:1;
+    if (x>y) return sortDir==='asc'?1:-1;
+    return 0;
+  });
+  let h = '<table><thead><tr>';
+  DATA.columns.forEach((c,i) => {
+    const cls = textCols.includes(i)?'txt':'';
+    const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+    h += `<th class="${cls}" onclick="sortBy(${i})">${c}${arrow}</th>`;
+  });
+  h += '</tr></thead><tbody>';
+  data.forEach(r => {
+    h += '<tr>';
+    r.forEach((v,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      let disp = fmt(v);
+      if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+      if (sciCols.includes(i)) disp = fmtSci(v);
+      if (i===ratioCol) {
+        disp = `<span class="ratio-cell" style="${ratioClass(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span>`;
+      }
+      if (i===11) {
+        h += `<td class="${cls}" style="${sigStyle(v)}">${v}</td>`;
+        return;
+      }
+      h += `<td class="${cls}">${disp}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('genreTable').innerHTML = h;
+}
+function sortBy(i) {
+  if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+  else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+  build();
+}
+build();
+</script>
+</body>
+</html>
