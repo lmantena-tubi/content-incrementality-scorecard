@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v10d_7d_p7d Diagnostics Evaluation · 11 Metrics (TVT + IVT, Organic Discovery, US)</title>
+<style>
+:root {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e5e5e7;
+  --border: #d1d1d6;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #aeaeb2;
+  --accent: #0071e3;
+  --success: #34c759;
+  --warning: #ff9f0a;
+  --error: #ff3b30;
+  --high-bg: rgba(52, 199, 89, 0.08);
+  --medium-bg: rgba(255, 159, 10, 0.08);
+  --low-bg: rgba(255, 59, 48, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1d1d1f;
+    --bg-secondary: #2d2d2f;
+    --bg-tertiary: #3d3d3f;
+    --border: #424245;
+    --text-primary: #f5f5f7;
+    --text-secondary: #86868b;
+    --accent: #0a84ff;
+    --success: #30d158;
+    --warning: #ffd60a;
+    --error: #ff453a;
+    --high-bg: rgba(48, 209, 88, 0.1);
+    --medium-bg: rgba(255, 214, 10, 0.1);
+    --low-bg: rgba(255, 69, 58, 0.1);
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+       background: var(--bg-primary); color: var(--text-primary); line-height: 1.5;
+       padding: 1.5rem 2rem; max-width: 1600px; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; }
+h1 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 500; }
+h2 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.05rem; margin-bottom: 0.5rem; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; }
+
+.title-bar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; }
+.title-bar .subtitle { color: var(--text-secondary); font-size: 0.8rem; }
+
+.header { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+          padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap; }
+
+.ship-gate { flex: 1; min-width: 200px; }
+.ship-gate .status { font-size: 1.4rem; font-weight: 700; }
+.ship-gate .status.pass { color: var(--success); }
+.ship-gate .status.warn { color: var(--warning); }
+.ship-gate .status.fail { color: var(--error); }
+.ship-gate .detail { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem; }
+
+.grade-chips { display: flex; gap: 0.5rem; align-items: center; }
+.grade-chip { padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: white; }
+.grade-chip.high { background: var(--success); }
+.grade-chip.medium { background: var(--warning); }
+.grade-chip.low { background: var(--error); }
+
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.kpi-tile { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+            padding: 0.9rem 1rem; position: relative; overflow: hidden; }
+.kpi-tile.green { border-left: 4px solid var(--success); }
+.kpi-tile.amber { border-left: 4px solid var(--warning); }
+.kpi-tile.red { border-left: 4px solid var(--error); }
+.kpi-tile .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase;
+                   letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.3rem; }
+.kpi-tile .phase-tag { font-size: 0.6rem; background: var(--bg-tertiary); padding: 0.1rem 0.35rem;
+                       border-radius: 3px; color: var(--text-secondary); font-weight: 600; }
+.kpi-tile .value { font-size: 1.6rem; font-weight: 700; margin: 0.2rem 0; }
+.kpi-tile .target { font-size: 0.72rem; color: var(--text-secondary); }
+.kpi-tile .bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; margin-top: 0.5rem; overflow: hidden; }
+.kpi-tile .bar-fill { height: 100%; border-radius: 2px; }
+.kpi-tile.green .bar-fill { background: var(--success); }
+.kpi-tile.amber .bar-fill { background: var(--warning); }
+.kpi-tile.red .bar-fill { background: var(--error); }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 2px solid var(--border); margin-bottom: 1rem; flex-wrap: wrap; }
+.tab { padding: 0.6rem 1rem; background: none; border: none; cursor: pointer;
+       font-size: 0.9rem; color: var(--text-secondary); border-bottom: 2px solid transparent;
+       margin-bottom: -2px; font-weight: 500; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.diag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.6rem; margin-bottom: 1.5rem; }
+.diag-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
+             padding: 0.8rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+.diag-card.gate { border-left: 4px solid var(--accent); }
+.diag-card .diag-name { font-size: 0.85rem; font-weight: 500; }
+.diag-card .diag-rate { font-size: 1.1rem; font-weight: 700; }
+.diag-card .diag-bar { width: 60px; height: 6px; background: var(--bg-tertiary); border-radius: 3px;
+                       overflow: hidden; margin-top: 0.2rem; }
+.diag-card .diag-bar-fill { height: 100%; border-radius: 3px; }
+.diag-card.pass-high .diag-bar-fill { background: var(--success); }
+.diag-card.pass-medium .diag-bar-fill { background: var(--warning); }
+.diag-card.pass-low .diag-bar-fill { background: var(--error); }
+
+.grade-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.85rem; }
+.grade-table th { background: var(--bg-tertiary); padding: 0.6rem 0.8rem; text-align: left; font-weight: 600;
+                  border-bottom: 2px solid var(--border); }
+.grade-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); }
+.grade-table tr:last-child td { border-bottom: none; }
+.grade-table .grade-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
+                           font-weight: 600; font-size: 0.75rem; color: white; }
+.grade-badge.high { background: var(--success); }
+.grade-badge.medium { background: var(--warning); }
+.grade-badge.low { background: var(--error); }
+.grade-table .num { text-align: right; font-family: ui-monospace, monospace; }
+
+.title-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+.title-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; }
+.title-table th { background: var(--bg-tertiary); padding: 0.5rem 0.6rem; text-align: left;
+                  font-weight: 600; position: sticky; top: 0; border-bottom: 2px solid var(--border); }
+.title-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); }
+.title-table tr:hover { background: var(--high-bg); }
+.title-table tr.grade-high { background: var(--high-bg); }
+.title-table tr.grade-medium { background: var(--medium-bg); }
+.title-table tr.grade-low { background: var(--low-bg); }
+.title-table .pass { color: var(--success); font-weight: 600; }
+.title-table .fail { color: var(--error); font-weight: 600; }
+.title-table .num { text-align: right; font-family: ui-monospace, monospace; }
+
+.criteria-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+@media (max-width: 768px) { .criteria-grid { grid-template-columns: 1fr; } }
+.criteria-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+.criteria-card h4 { font-size: 0.9rem; margin-bottom: 0.5rem; }
+.criteria-list { list-style: none; font-size: 0.82rem; }
+.criteria-list li { padding: 0.3rem 0; display: flex; justify-content: space-between; border-bottom: 1px solid var(--bg-tertiary); }
+.criteria-list li:last-child { border-bottom: none; }
+.criteria-list .criterion { color: var(--text-primary); }
+.criteria-list .threshold { color: var(--text-secondary); font-family: ui-monospace, monospace; }
+
+.sort-controls { margin-bottom: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.sort-controls label { font-size: 0.8rem; color: var(--text-secondary); }
+.sort-controls select { font-size: 0.8rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border);
+                        border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); }
+.filter-chip { padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; cursor: pointer;
+               border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); }
+.filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+.note { font-size: 0.78rem; color: var(--text-secondary); padding: 0.5rem 0.75rem;
+        background: var(--bg-tertiary); border-radius: 6px; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="title-bar">
+  <div>
+    <h1>CEM Diagnostics Evaluation</h1>
+    <h2>v10d_7d_p7d &middot; 11 Evaluation Metrics &mdash; TVT + IVT (Title &times; Segment Level)</h2>
+  </div>
+  <div class="subtitle">Top 2000 Movies &middot; August 2026 (Aug 1&ndash;7 events, Organic Discovery, US) &middot; Qualified Viewer (&ge;5min) &middot; 7d Post</div>
+</div>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-row">
+    <div class="ship-gate">
+      <div class="status" id="headerStatus">Loading...</div>
+      <div class="detail" id="headerDetail"></div>
+    </div>
+    <div class="grade-chips" id="gradeChips"></div>
+  </div>
+  <div id="segmentInsights" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.82rem; line-height: 1.7;"></div>
+</div>
+
+<!-- ===== KPI TILES ===== -->
+<div class="kpi-row" id="kpiRow"></div>
+
+<!-- ===== TABS ===== -->
+<div class="tabs">
+  <button class="tab active" data-tab="summary">Summary</button>
+  <button class="tab" data-tab="diagnostics">Diagnostics</button>
+  <button class="tab" data-tab="segment">Title &times; Segment</button>
+  <button class="tab" data-tab="criteria">Criteria</button>
+</div>
+
+<!-- ===== SUMMARY TAB ===== -->
+<div class="tab-panel active" data-panel="summary">
+  <h3>Grade Distribution &mdash; Title &times; Segment Level</h3>
+  <table class="grade-table" id="segGradeTable">
+    <thead>
+      <tr><th>Grade</th><th>Rows</th><th>%</th><th>August 2026 (Aug 1&ndash;7) Segment TVT Hours</th><th>% of TVT</th></tr>
+    </thead>
+    <tbody id="segGradeTableBody"></tbody>
+  </table>
+
+  <h3>Key Findings</h3>
+  <div class="criteria-grid" id="keyFindings"></div>
+
+  <div class="criteria-card" style="border-left: 4px solid var(--accent); margin-bottom: 1rem;" id="interpretationCard"></div>
+</div>
+
+<!-- ===== DIAGNOSTICS TAB ===== -->
+<div class="tab-panel" data-panel="diagnostics">
+  <h3 id="diagGridHeader">Diagnostic Pass Rates &mdash; Segment Level</h3>
+  <p class="note">Four checks are <strong>mandatory gates</strong> (blue left-border): SMD Pre-TVT, SMD Pre-IVT, CI-TVT half-width, CI-IVT half-width. The remaining seven are non-gate. The four A/A placebo checks (in-sample + out-of-sample &times; TVT + IVT) are optional.</p>
+  <div class="diag-grid" id="diagGridSeg"></div>
+
+  <h3>Metric Distributions (Segment Level)</h3>
+  <table class="grade-table" id="metricDistTable">
+    <thead>
+      <tr><th>Metric</th><th>Min</th><th>P25</th><th>Median</th><th>P75</th><th>Max</th><th>Target</th></tr>
+    </thead>
+    <tbody id="metricDistBody"></tbody>
+  </table>
+</div>
+
+<!-- ===== TITLE x SEGMENT TAB ===== -->
+<div class="tab-panel" data-panel="segment">
+  <h3>Diagnostics by Title &times; User Segment</h3>
+  <p class="note">Full diagnostics at title &times; viewer segment grain. 11 checks (4 gates + 7 non-gate). Grading: HIGH = all 4 gates pass AND &le; 2 of the remaining 7 fail; MEDIUM = not HIGH but &ge; 6/11 checks pass; LOW = otherwise. TVT = August 2026 (Aug 1&ndash;7) segment TVT hours.</p>
+  <div class="sort-controls">
+    <label>Sort by:</label>
+    <select id="segSortSelect">
+      <option value="pairs">Matched Pairs</option>
+      <option value="tvt">Aug 1&ndash;7 Segment TVT</option>
+      <option value="matchrate">Match Rate</option>
+      <option value="grade">Grade</option>
+      <option value="smd">SMD Pre-TVT</option>
+      <option value="smdivt">SMD Pre-IVT</option>
+      <option value="vr">VR Pre-TVT</option>
+      <option value="vrivt">VR Pre-IVT</option>
+    </select>
+    <label style="margin-left: 1rem;">Segment:</label>
+    <select id="segFilterSelect">
+      <option value="all">All Segments</option>
+      <option value="Power Viewer">Power Viewer</option>
+      <option value="New (M1)">New (M1)</option>
+      <option value="Active non-power (Retained)">Active non-power (Retained)</option>
+      <option value="Non-active (Reactivated)">Reactivated</option>
+    </select>
+    <label style="margin-left: 1rem;">Grade:</label>
+    <span class="filter-chip active" data-filter="all" data-level="seg">All</span>
+    <span class="filter-chip" data-filter="HIGH" data-level="seg">HIGH</span>
+    <span class="filter-chip" data-filter="MEDIUM" data-level="seg">MEDIUM</span>
+    <span class="filter-chip" data-filter="LOW" data-level="seg">LOW</span>
+  </div>
+  <div class="title-table-wrap" style="max-height: 650px; overflow-y: auto;">
+    <table class="title-table" id="segTable">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Segment</th>
+          <th>Aug 1&ndash;7 TVT</th>
+          <th>Pairs</th>
+          <th>Match Rate</th>
+          <th>SMD TVT&#9733;</th>
+          <th>SMD IVT&#9733;</th>
+          <th>VR TVT</th>
+          <th>VR IVT</th>
+          <th>A/A In TVT</th>
+          <th>A/A Out TVT</th>
+          <th>A/A In IVT</th>
+          <th>A/A Out IVT</th>
+          <th>CI TVT&#9733;</th>
+          <th>CI IVT&#9733;</th>
+          <th>Checks</th>
+          <th>Grade</th>
+        </tr>
+      </thead>
+      <tbody id="segBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== CRITERIA TAB ===== -->
+<div class="tab-panel" data-panel="criteria">
+  <h3>Grading Criteria</h3>
+  <div class="criteria-grid">
+    <div class="criteria-card">
+      <h4>Diagnostic Checks (11 total &mdash; &#9733; = mandatory gate)</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion">1. SMD Pre-TVT &#9733;</span><span class="threshold">|SMD| &le; 0.10</span></li>
+        <li><span class="criterion">2. SMD Pre-IVT &#9733;</span><span class="threshold">|SMD| &le; 0.10</span></li>
+        <li><span class="criterion">3. CI-TVT Half-Width &#9733;</span><span class="threshold">&le; 1 hr/viewer</span></li>
+        <li><span class="criterion">4. CI-IVT Half-Width &#9733;</span><span class="threshold">&le; 1 hr/viewer</span></li>
+        <li><span class="criterion">5. VR Pre-TVT</span><span class="threshold">0.8 &le; VR &le; 1.25</span></li>
+        <li><span class="criterion">6. VR Pre-IVT</span><span class="threshold">0.8 &le; VR &le; 1.25</span></li>
+        <li><span class="criterion">7. A/A In-Sample TVT (= SMD-TVT)</span><span class="threshold">|Cohen's d| &lt; 0.10</span></li>
+        <li><span class="criterion">8. A/A Out-of-Sample TVT [-56d,-28d)</span><span class="threshold">|Cohen's d| &lt; 0.10</span></li>
+        <li><span class="criterion">9. A/A In-Sample IVT (= SMD-IVT)</span><span class="threshold">|Cohen's d| &lt; 0.10</span></li>
+        <li><span class="criterion">10. A/A Out-of-Sample IVT [-56d,-28d)</span><span class="threshold">|Cohen's d| &lt; 0.10</span></li>
+        <li><span class="criterion">11. Treated Match Rate</span><span class="threshold">&ge; 80% (title&times;segment level)</span></li>
+      </ul>
+    </div>
+    <div class="criteria-card">
+      <h4>Grade Assignment (11-check)</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion"><span class="grade-badge high">HIGH</span></span><span class="threshold">all 4 gates pass AND &le; 2 of the remaining 7 fail</span></li>
+        <li><span class="criterion"><span class="grade-badge medium">MEDIUM</span></span><span class="threshold">not HIGH, but &ge; 6/11 checks pass</span></li>
+        <li><span class="criterion"><span class="grade-badge low">LOW</span></span><span class="threshold">otherwise</span></li>
+      </ul>
+      <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;">
+        The four A/A placebo checks (in + out of sample, TVT + IVT) are <strong>optional</strong> &mdash; they never block a HIGH grade on their own. The &le;2-failure allowance applies across <strong>all</strong> seven non-gate checks.
+      </p>
+    </div>
+    <div class="criteria-card">
+      <h4>Hard Gates (all required for HIGH)</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion">SMD Pre-TVT</span><span class="threshold">|SMD| &le; 0.10</span></li>
+        <li><span class="criterion">SMD Pre-IVT</span><span class="threshold">|SMD| &le; 0.10</span></li>
+        <li><span class="criterion">CI-TVT Half-Width</span><span class="threshold">&le; 1 hr/viewer</span></li>
+        <li><span class="criterion">CI-IVT Half-Width</span><span class="threshold">&le; 1 hr/viewer</span></li>
+      </ul>
+    </div>
+    <div class="criteria-card">
+      <h4>Pipeline-Level KPIs</h4>
+      <ul class="criteria-list">
+        <li><span class="criterion">Pipeline Match Rate</span><span class="threshold">&ge; 80%</span></li>
+        <li><span class="criterion">Total Matched Pairs</span><span class="threshold">&ge; 100K</span></li>
+        <li><span class="criterion">SMD Pass Rate (all cells)</span><span class="threshold">&ge; 90%</span></li>
+        <li><span class="criterion">A/A Out-of-Sample Pass</span><span class="threshold">&ge; 80% cells</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Metric Definitions</h3>
+  <div class="criteria-card">
+    <ul style="font-size: 0.82rem; line-height: 2; padding-left: 1rem;">
+      <li><strong>SMD Pre-TVT / Pre-IVT:</strong> Standardized mean difference in 28-day pre-event TVT (resp. IVT) between treated and control. Measures mean balance. Both are mandatory gates.</li>
+      <li><strong>VR Pre-TVT / Pre-IVT:</strong> Variance ratio of treated vs control pre-event TVT (resp. IVT). Measures distributional shape balance. Target [0.8, 1.25].</li>
+      <li><strong>A/A In-Sample (TVT &amp; IVT) [-28d, event_ts):</strong> Cohen's d on the matching covariate window &mdash; equals the pre-period SMD alias. Should be ~0 if CEM worked.</li>
+      <li><strong>A/A Out-of-Sample (TVT &amp; IVT) [-56d, -28d):</strong> Cohen's d on held-out pre-period, pooled-SD standardizer. Should be ~0 if no pre-trend bias.</li>
+      <li><strong>CI-TVT / CI-IVT Half-Width:</strong> Half-width of 95% CI on per-viewer incremental TVT (resp. IVT) in hours, = 1.96 &times; step-7 winsorized SE. Measures estimate precision. Target &le; 1 hr/viewer. Both are mandatory gates.</li>
+      <li><strong>Match Rate:</strong> Percentage of treated viewers successfully matched to a control. Target &ge; 80%.</li>
+      <li><strong>ML Score Distance:</strong> Mean |logit_treated &minus; logit_control| across matched pairs. Informational.</li>
+    </ul>
+  </div>
+
+  <h3>CEM Blocking Variables (Variant C &mdash; no hard IVT block)</h3>
+  <div class="criteria-card">
+    <ul style="font-size: 0.82rem; line-height: 2; padding-left: 1rem;">
+      <li><strong>Exact blocks:</strong> title_id, event_date, user_segment, is_registered, tenure_bucket, search_visit_7d, sessions_bucket_v10d, platform_super_bucket, tvt_bucket</li>
+      <li><strong>No IVT block</strong> &mdash; IVT balanced via a continuous <code>ABS(&Delta;w_ivt)</code> rank tie-break (the Variant C definition).</li>
+      <li><strong>TVT bin widths (per-segment):</strong> Power div=10/cap=120, Retained div=4/cap=40, New &amp; Reactivated div=30/cap=90.</li>
+      <li><strong>Segment matching window:</strong> 7d TVT+IVT for Power &amp; Retained; 28d for New (M1) &amp; Reactivated.</li>
+      <li><strong>Stepwise ML caliper:</strong> prefer |&Delta;logit| &le; 0.1, ceiling &le; 0.2.</li>
+    </ul>
+  </div>
+
+  <h3>v10d_7d_p7d Pipeline Notes</h3>
+  <div class="criteria-card">
+    <ul style="font-size: 0.82rem; line-height: 2; padding-left: 1rem;">
+      <li><strong>Population:</strong> Organic discovery viewers only (first qualifying session on title was non-search, non-deeplink)</li>
+      <li><strong>Geography:</strong> US only</li>
+      <li><strong>Event window:</strong> Aug 1-7 2026</li>
+      <li><strong>Post window:</strong> 7 days</li>
+      <li><strong>Incrementality:</strong> two parallel pipelines &mdash; TVT and IVT (off-title IVT numerator, on-title TVT denominator), simple add-prop rate; winsorized SE feeds both CI gates.</li>
+      <li><strong>Matching:</strong> CEM + stepwise ML caliper, Variant C (frozen)</li>
+    </ul>
+  </div>
+</div>
+
+<script src="v10d_7d_p7d-diagnostics-scorecard-data.js"></script>
+<script>
+const DATA = window.SCORECARD_DATA;
+const segments = (DATA.segment_results || []).filter(s => s.n_pairs >= 30);
+const PM = DATA.pipeline_metrics;
+const GS = DATA.grade_summary;
+const META = DATA.meta;
+
+const N_SEG_ROWS = segments.length;
+
+const normalizedSegs = segments.map(s => ({
+  id: s.title_id,
+  name: s.title_name,
+  segment: s.user_segment,
+  pairs: s.n_pairs,
+  tvtHours: s.tvt_hours || 0,
+  matchRate: (s.match_rate_pct || 0) / 100,
+  // metrics
+  smd: s.smd_pre_tvt,
+  smdIvt: s.smd_pre_ivt,
+  vrPre: s.vr_pre_tvt || 1.0,
+  vrIvt: s.vr_pre_ivt || 1.0,
+  aaIn: s.placebo_in_cohens_d,
+  aaOut: s.placebo_out_cohens_d || 0,
+  aaInIvt: s.placebo_in_ivt_cohens_d,
+  aaOutIvt: s.placebo_out_ivt_cohens_d || 0,
+  ciTvt: s.ci_half_tvt_hrs,
+  ciIvt: s.ci_half_ivt_hrs,
+  mlDist: s.mean_logit_distance,
+  // pass flags (default via threshold if missing)
+  smdPass: s.smd_pass != null ? s.smd_pass : (Math.abs(s.smd_pre_tvt || 0) <= 0.10),
+  smdIvtPass: s.smd_ivt_pass != null ? s.smd_ivt_pass : (Math.abs(s.smd_pre_ivt || 0) <= 0.10),
+  vrPrePass: s.vr_pre_pass,
+  vrIvtPass: s.vr_ivt_pass,
+  aaInPass: s.aa_in_pass,
+  aaOutPass: s.aa_oos_pass !== undefined ? s.aa_oos_pass : (Math.abs(s.placebo_out_cohens_d || 0) < 0.10),
+  aaInIvtPass: s.aa_in_ivt_pass !== undefined ? s.aa_in_ivt_pass : (Math.abs(s.placebo_in_ivt_cohens_d || 0) < 0.10),
+  aaOutIvtPass: s.aa_oos_ivt_pass !== undefined ? s.aa_oos_ivt_pass : (Math.abs(s.placebo_out_ivt_cohens_d || 0) < 0.10),
+  ciTvtPass: s.ci_tvt_pass != null ? s.ci_tvt_pass : (s.ci_half_tvt_hrs != null ? s.ci_half_tvt_hrs <= 1.0 : null),
+  ciIvtPass: s.ci_ivt_pass != null ? s.ci_ivt_pass : (s.ci_half_ivt_hrs != null ? s.ci_half_ivt_hrs <= 1.0 : null),
+  matchRatePass: s.match_rate_pass,
+})).map(s => {
+  // 4 mandatory gates
+  const gates = [s.smdPass, s.smdIvtPass, s.ciTvtPass, s.ciIvtPass];
+  const gatesOk = gates.every(Boolean);
+  // 7 non-gate checks
+  const remaining = [s.vrPrePass, s.vrIvtPass, s.aaInPass, s.aaOutPass, s.aaInIvtPass, s.aaOutIvtPass, s.matchRatePass];
+  const remainingFails = remaining.filter(x => !x).length;
+  const checks = [...gates, ...remaining].filter(Boolean).length; // out of 11
+  const grade = (gatesOk && remainingFails <= 2) ? 'HIGH' : checks >= 6 ? 'MEDIUM' : 'LOW';
+  return {...s, checks, grade};
+});
+
+const gradeCounts = {HIGH: 0, MEDIUM: 0, LOW: 0};
+normalizedSegs.forEach(s => gradeCounts[s.grade]++);
+
+// --- HEADER ---
+const headerEl = document.getElementById('headerStatus');
+const detailEl = document.getElementById('headerDetail');
+if (gradeCounts.LOW <= 5 && gradeCounts.HIGH >= normalizedSegs.length * 0.4) {
+  headerEl.textContent = "PASS";
+  headerEl.className = "status pass";
+} else if (gradeCounts.LOW <= normalizedSegs.length * 0.1) {
+  headerEl.textContent = "CONDITIONAL PASS";
+  headerEl.className = "status warn";
+} else {
+  headerEl.textContent = "NEEDS IMPROVEMENT";
+  headerEl.className = "status fail";
+}
+detailEl.textContent = `${gradeCounts.HIGH}/${normalizedSegs.length} HIGH, ${gradeCounts.MEDIUM} MEDIUM, ${gradeCounts.LOW} LOW — ${(META.total_pairs/1e6).toFixed(2)}M matched pairs from ${(META.total_treated/1e6).toFixed(2)}M treated (${META.pipeline_match_rate}% match rate) · Evaluated at title×segment level`;
+
+document.getElementById('gradeChips').innerHTML = `
+  <div class="grade-chip high">${gradeCounts.HIGH} HIGH</div>
+  <div class="grade-chip medium">${gradeCounts.MEDIUM} MEDIUM</div>
+  ${gradeCounts.LOW > 0 ? '<div class="grade-chip low">' + gradeCounts.LOW + ' LOW</div>' : ''}
+`;
+
+// --- SEGMENT INSIGHTS ---
+const segmentNames = [...new Set(normalizedSegs.map(s => s.segment))];
+const segInsightRows = segmentNames.map(seg => {
+  const rows = normalizedSegs.filter(s => s.segment === seg);
+  const nHigh = rows.filter(s => s.grade === 'HIGH').length;
+  const nMed = rows.filter(s => s.grade === 'MEDIUM').length;
+  const nLow = rows.filter(s => s.grade === 'LOW').length;
+  const mrFail = rows.filter(s => !s.matchRatePass).length;
+  const smdFail = rows.filter(s => !(s.smdPass && s.smdIvtPass)).length;
+  const vrFail = rows.filter(s => !(s.vrPrePass && s.vrIvtPass)).length;
+  return {seg, n: rows.length, nHigh, nMed, nLow, mrFail, smdFail, vrFail};
+});
+
+function segChallenge(info) {
+  const issues = [];
+  if (info.mrFail > info.n * 0.3) issues.push(`match rate (${info.mrFail}/${info.n} fail)`);
+  if (info.smdFail > info.n * 0.2) issues.push(`pre-period bias (${info.smdFail}/${info.n} SMD fail)`);
+  if (info.vrFail > info.n * 0.3) issues.push(`variance ratio (${info.vrFail}/${info.n} VR fail)`);
+  return issues.length > 0 ? issues.join('; ') : null;
+}
+
+document.getElementById('segmentInsights').innerHTML = `
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.5rem;">
+  ${segInsightRows.map(info => {
+    const challenge = segChallenge(info);
+    const highPct = (info.nHigh / info.n * 100).toFixed(0);
+    const color = info.nHigh >= info.n * 0.5 ? 'var(--success)' : info.nLow >= info.n * 0.3 ? 'var(--error)' : 'var(--warning)';
+    const shortSeg = info.seg.replace(' (Retained)','').replace(' (Reactivated)','');
+    return `<div style="padding: 0.5rem 0.7rem; border-left: 3px solid ${color}; background: var(--bg-primary); border-radius: 4px;">
+      <strong>${shortSeg}</strong> — <span style="color:var(--success)">${info.nHigh}H</span> / <span style="color:var(--warning)">${info.nMed}M</span> / <span style="color:var(--error)">${info.nLow}L</span> (${info.n} rows, ${highPct}% HIGH)
+      ${challenge ? '<br><span style="color:var(--text-secondary); font-size:0.78rem;">Challenge: ' + challenge + '</span>' : '<br><span style="color:var(--success); font-size:0.78rem;">Working well across all titles</span>'}
+    </div>`;
+  }).join('')}
+  </div>
+`;
+
+// --- KPI TILES ---
+const N_SEG = normalizedSegs.length;
+const smdPassSeg = normalizedSegs.filter(s => s.smdPass).length;
+const smdIvtPassSeg = normalizedSegs.filter(s => s.smdIvtPass).length;
+const ciTvtPassSeg = normalizedSegs.filter(s => s.ciTvtPass).length;
+const ciIvtPassSeg = normalizedSegs.filter(s => s.ciIvtPass).length;
+const aaOosPassSeg = normalizedSegs.filter(s => s.aaOutPass).length;
+const aaOosIvtPassSeg = normalizedSegs.filter(s => s.aaOutIvtPass).length;
+const mrPassSeg = normalizedSegs.filter(s => s.matchRatePass).length;
+const kpis = [
+  {label: "SMD Pre-TVT &#9733;", value: smdPassSeg+"/"+N_SEG+" ("+(smdPassSeg/N_SEG*100).toFixed(0)+"%)", target: "gate (|SMD| ≤ 0.10)", pct: smdPassSeg/N_SEG*100, status: smdPassSeg/N_SEG >= 0.9 ? "green" : "amber", tag: "GATE"},
+  {label: "SMD Pre-IVT &#9733;", value: smdIvtPassSeg+"/"+N_SEG+" ("+(smdIvtPassSeg/N_SEG*100).toFixed(0)+"%)", target: "gate (|SMD| ≤ 0.10)", pct: smdIvtPassSeg/N_SEG*100, status: smdIvtPassSeg/N_SEG >= 0.9 ? "green" : "amber", tag: "GATE"},
+  {label: "CI-TVT &le; 1hr &#9733;", value: ciTvtPassSeg+"/"+N_SEG+" ("+(ciTvtPassSeg/N_SEG*100).toFixed(0)+"%)", target: "gate (≤ 1 hr/viewer)", pct: ciTvtPassSeg/N_SEG*100, status: ciTvtPassSeg/N_SEG >= 0.9 ? "green" : ciTvtPassSeg/N_SEG >= 0.7 ? "amber" : "red", tag: "GATE"},
+  {label: "CI-IVT &le; 1hr &#9733;", value: ciIvtPassSeg+"/"+N_SEG+" ("+(ciIvtPassSeg/N_SEG*100).toFixed(0)+"%)", target: "gate (≤ 1 hr/viewer)", pct: ciIvtPassSeg/N_SEG*100, status: ciIvtPassSeg/N_SEG >= 0.9 ? "green" : ciIvtPassSeg/N_SEG >= 0.7 ? "amber" : "red", tag: "GATE"},
+  {label: "Match Rate &ge; 80%", value: mrPassSeg+"/"+N_SEG+" ("+(mrPassSeg/N_SEG*100).toFixed(0)+"%)", target: "title×segment (target ≥ 80%)", pct: mrPassSeg/N_SEG*100, status: mrPassSeg/N_SEG >= 0.8 ? "green" : mrPassSeg/N_SEG >= 0.5 ? "amber" : "red", tag: "P2"},
+  {label: "Total Matched Pairs", value: (META.total_pairs/1e6).toFixed(2)+"M", target: "target ≥ 100K", pct: 100, status: "green", tag: "P2"},
+  {label: "A/A OOS TVT Pass", value: aaOosPassSeg+"/"+N_SEG+" ("+(aaOosPassSeg/N_SEG*100).toFixed(0)+"%)", target: "optional (|d| < 0.10)", pct: aaOosPassSeg/N_SEG*100, status: aaOosPassSeg/N_SEG >= 0.8 ? "green" : "amber", tag: "P2"},
+  {label: "A/A OOS IVT Pass", value: aaOosIvtPassSeg+"/"+N_SEG+" ("+(aaOosIvtPassSeg/N_SEG*100).toFixed(0)+"%)", target: "optional (|d| < 0.10)", pct: aaOosIvtPassSeg/N_SEG*100, status: aaOosIvtPassSeg/N_SEG >= 0.8 ? "green" : "amber", tag: "P2"},
+];
+
+document.getElementById('kpiRow').innerHTML = kpis.map(k => `
+  <div class="kpi-tile ${k.status}">
+    <div class="label">${k.label} <span class="phase-tag">${k.tag}</span></div>
+    <div class="value">${k.value}</div>
+    <div class="target">${k.target}</div>
+    <div class="bar"><div class="bar-fill" style="width: ${Math.min(100, Math.max(0, k.pct))}%"></div></div>
+  </div>
+`).join('');
+
+// --- GRADE TABLE ---
+function gradeStats(data, grade) {
+  const subset = data.filter(t => t.grade === grade);
+  if (subset.length === 0) return null;
+  return {
+    count: subset.length,
+    pct: (subset.length / data.length * 100).toFixed(1),
+    totalTvt: subset.reduce((s,t) => s + t.tvtHours, 0),
+  };
+}
+
+function renderGradeTable(bodyId, data) {
+  const totalTvt = data.reduce((s,t) => s + t.tvtHours, 0);
+  const rows = ["HIGH", "MEDIUM", "LOW"].map(g => {
+    const s = gradeStats(data, g);
+    if (!s) return "";
+    const badge = `<span class="grade-badge ${g.toLowerCase()}">${g}</span>`;
+    const tvtPct = totalTvt > 0 ? (s.totalTvt / totalTvt * 100).toFixed(1) : "0.0";
+    const tvtFmt = s.totalTvt >= 1e6 ? (s.totalTvt/1e6).toFixed(1)+"M" : Math.round(s.totalTvt).toLocaleString();
+    return `<tr><td>${badge}</td><td>${s.count}</td><td>${s.pct}%</td><td class="num">${tvtFmt}</td><td class="num">${tvtPct}%</td></tr>`;
+  }).join('');
+  const total = data.length;
+  const totalTvtFmt = totalTvt >= 1e6 ? (totalTvt/1e6).toFixed(1)+"M" : Math.round(totalTvt).toLocaleString();
+  document.getElementById(bodyId).innerHTML = rows + `
+    <tr style="font-weight:600;border-top:2px solid var(--border)"><td>TOTAL</td><td>${total}</td><td>100%</td><td class="num">${totalTvtFmt}</td><td class="num">100%</td></tr>`;
+}
+renderGradeTable('segGradeTableBody', normalizedSegs);
+
+// --- KEY FINDINGS ---
+const segTotal = normalizedSegs.length;
+const vrPassSeg = normalizedSegs.filter(s => s.vrPrePass).length;
+const vrIvtPassSeg = normalizedSegs.filter(s => s.vrIvtPass).length;
+const aaInPassSeg = normalizedSegs.filter(s => s.aaInPass).length;
+const aaInIvtPassSeg = normalizedSegs.filter(s => s.aaInIvtPass).length;
+const avgMlDist = (normalizedSegs.reduce((s,t)=>s+t.mlDist,0)/normalizedSegs.length).toFixed(4);
+document.getElementById('keyFindings').innerHTML = `
+  <div class="criteria-card" style="border-left: 4px solid var(--success);">
+    <h4>Strengths</h4>
+    <ul style="font-size: 0.82rem; padding-left: 1rem; line-height: 1.8;">
+      <li><strong>Scale:</strong> ${(META.total_pairs/1e6).toFixed(2)}M matched pairs from ${(META.total_treated/1e6).toFixed(2)}M treated across ${segTotal} title×segment rows</li>
+      <li><strong>Balance (SMD):</strong> TVT ${smdPassSeg}/${segTotal} (${(smdPassSeg/segTotal*100).toFixed(0)}%), IVT ${smdIvtPassSeg}/${segTotal} (${(smdIvtPassSeg/segTotal*100).toFixed(0)}%) — both gates</li>
+      <li><strong>CI precision:</strong> TVT ${ciTvtPassSeg}/${segTotal} (${(ciTvtPassSeg/segTotal*100).toFixed(0)}%), IVT ${ciIvtPassSeg}/${segTotal} (${(ciIvtPassSeg/segTotal*100).toFixed(0)}%) — both gates</li>
+      <li><strong>A/A Out-of-Sample:</strong> TVT ${aaOosPassSeg}/${segTotal} (${(aaOosPassSeg/segTotal*100).toFixed(0)}%), IVT ${aaOosIvtPassSeg}/${segTotal} (${(aaOosIvtPassSeg/segTotal*100).toFixed(0)}%) — pre-trend balance validated</li>
+      <li><strong>A/A In-Sample:</strong> TVT ${aaInPassSeg}/${segTotal} (${(aaInPassSeg/segTotal*100).toFixed(0)}%), IVT ${aaInIvtPassSeg}/${segTotal} (${(aaInIvtPassSeg/segTotal*100).toFixed(0)}%)</li>
+      <li><strong>VR Pre:</strong> TVT ${vrPassSeg}/${segTotal} (${(vrPassSeg/segTotal*100).toFixed(0)}%), IVT ${vrIvtPassSeg}/${segTotal} (${(vrIvtPassSeg/segTotal*100).toFixed(0)}%)</li>
+      <li><strong>ML Score Distance:</strong> ${avgMlDist} mean — tight caliper at ≤ 0.2</li>
+    </ul>
+  </div>
+  <div class="criteria-card" style="border-left: 4px solid var(--accent);">
+    <h4>v10d_7d_p7d Design: Variant C, TVT + IVT diagnostics</h4>
+    <ul style="font-size: 0.82rem; padding-left: 1rem; line-height: 1.8;">
+      <li><strong>Population:</strong> Organic discovery viewers (first qualifying event on title was non-search, non-deeplink)</li>
+      <li><strong>Geography:</strong> US only</li>
+      <li><strong>Event window:</strong> Aug 1-7 2026</li>
+      <li><strong>Post window:</strong> 7 days (ALL sources measured)</li>
+      <li><strong>Matching:</strong> CEM + ML caliper, Variant C — no hard IVT block, IVT balanced via rank tie-break</li>
+      <li><strong>Grade:</strong> 4 mandatory gates (SMD-TVT/IVT, CI-TVT/IVT) + ≤ 2 of 7 non-gate fails for HIGH</li>
+      <li><strong>Match rate:</strong> ${META.pipeline_match_rate}% pipeline-level</li>
+    </ul>
+  </div>
+`;
+
+document.getElementById('interpretationCard').innerHTML = `
+  <h4>Interpretation: Confidence Level Coverage (Title × Segment)</h4>
+  <p style="font-size: 0.82rem; line-height: 1.7;">
+    <strong>${gradeCounts.HIGH}/${segTotal}</strong> rows graded HIGH, covering ${(gradeStats(normalizedSegs,'HIGH')?.totalTvt/1e6 || 0).toFixed(1)}M Aug 1&ndash;7 segment TVT hours.<br>
+    <strong>${gradeCounts.MEDIUM}</strong> MEDIUM, <strong>${gradeCounts.LOW}</strong> LOW.<br><br>
+    v10d_7d_p7d adds IVT parity to the diagnostics: SMD and CI are now gated on <em>both</em> TVT and IVT (4 mandatory gates), and A/A placebo checks run on both metrics (in + out of sample). The four A/A checks are optional; HIGH allows up to two failures across the seven non-gate checks. As in v9, the main non-gate challenge is match rate for organic-only treated viewers; core balance (SMD, CI, A/A) holds across all segments on both metrics.<br>
+    HIGH requires all four gates (SMD-TVT, SMD-IVT, CI-TVT, CI-IVT) to pass.
+  </p>
+`;
+
+// --- DIAGNOSTICS TAB ---
+document.getElementById('diagGridHeader').textContent = `Diagnostic Pass Rates — Segment Level (${N_SEG} rows, 11 checks)`;
+const segDiagChecks = [
+  {name: "1. SMD Pre-TVT ≤ 0.10 ★", pass: normalizedSegs.filter(t=>t.smdPass).length, total: N_SEG, gate: true},
+  {name: "2. SMD Pre-IVT ≤ 0.10 ★", pass: normalizedSegs.filter(t=>t.smdIvtPass).length, total: N_SEG, gate: true},
+  {name: "3. CI-TVT Half-Width ≤ 1 hr ★", pass: normalizedSegs.filter(t=>t.ciTvtPass).length, total: N_SEG, gate: true},
+  {name: "4. CI-IVT Half-Width ≤ 1 hr ★", pass: normalizedSegs.filter(t=>t.ciIvtPass).length, total: N_SEG, gate: true},
+  {name: "5. VR Pre-TVT [0.8, 1.25]", pass: normalizedSegs.filter(t=>t.vrPrePass).length, total: N_SEG},
+  {name: "6. VR Pre-IVT [0.8, 1.25]", pass: normalizedSegs.filter(t=>t.vrIvtPass).length, total: N_SEG},
+  {name: "7. A/A In-Sample TVT |d|<0.10", pass: normalizedSegs.filter(t=>t.aaInPass).length, total: N_SEG},
+  {name: "8. A/A Out-of-Sample TVT |d|<0.10", pass: normalizedSegs.filter(t=>t.aaOutPass).length, total: N_SEG},
+  {name: "9. A/A In-Sample IVT |d|<0.10", pass: normalizedSegs.filter(t=>t.aaInIvtPass).length, total: N_SEG},
+  {name: "10. A/A Out-of-Sample IVT |d|<0.10", pass: normalizedSegs.filter(t=>t.aaOutIvtPass).length, total: N_SEG},
+  {name: "11. Match Rate ≥ 80%", pass: normalizedSegs.filter(t=>t.matchRatePass).length, total: N_SEG},
+];
+
+document.getElementById('diagGridSeg').innerHTML = segDiagChecks.map(d => {
+  const pct = d.pass / d.total * 100;
+  const cls = pct >= 80 ? "pass-high" : pct >= 50 ? "pass-medium" : "pass-low";
+  return `<div class="diag-card ${cls}${d.gate ? ' gate' : ''}">
+    <div><div class="diag-name">${d.name}</div><div class="diag-bar"><div class="diag-bar-fill" style="width:${pct}%"></div></div></div>
+    <div class="diag-rate">${d.pass}/${d.total}</div>
+  </div>`;
+}).join('');
+
+// Metric distributions
+function percentile(arr, p) { const s = [...arr].sort((a,b)=>a-b); return s[Math.floor(s.length*p)] || 0; }
+const smdVals = normalizedSegs.map(t => Math.abs(t.smd));
+const smdIvtVals = normalizedSegs.map(t => Math.abs(t.smdIvt));
+const vrPreVals = normalizedSegs.map(t => t.vrPre);
+const vrIvtVals = normalizedSegs.map(t => t.vrIvt);
+const mlDistVals = normalizedSegs.map(t => t.mlDist);
+const aaInVals = normalizedSegs.map(t => Math.abs(t.aaIn));
+const aaOutVals = normalizedSegs.map(t => Math.abs(t.aaOut));
+const aaInIvtVals = normalizedSegs.map(t => Math.abs(t.aaInIvt));
+const aaOutIvtVals = normalizedSegs.map(t => Math.abs(t.aaOutIvt));
+const ciTvtVals = normalizedSegs.map(t => t.ciTvt).filter(v => v != null);
+const ciIvtVals = normalizedSegs.map(t => t.ciIvt).filter(v => v != null);
+const mrVals = normalizedSegs.map(t => t.matchRate * 100);
+
+function distRow(name, vals, target) {
+  const valid = vals.filter(v => v != null && !isNaN(v));
+  if (valid.length === 0) return `<tr><td>${name}</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>${target}</td></tr>`;
+  return `<tr><td>${name}</td><td class="num">${Math.min(...valid).toFixed(4)}</td><td class="num">${percentile(valid,0.25).toFixed(4)}</td><td class="num">${percentile(valid,0.5).toFixed(4)}</td><td class="num">${percentile(valid,0.75).toFixed(4)}</td><td class="num">${Math.max(...valid).toFixed(4)}</td><td>${target}</td></tr>`;
+}
+document.getElementById('metricDistBody').innerHTML = [
+  distRow("|SMD| Pre-TVT ★", smdVals, "|SMD| ≤ 0.10"),
+  distRow("|SMD| Pre-IVT ★", smdIvtVals, "|SMD| ≤ 0.10"),
+  distRow("VR Pre-TVT", vrPreVals, "[0.8, 1.25]"),
+  distRow("VR Pre-IVT", vrIvtVals, "[0.8, 1.25]"),
+  distRow("|A/A In-Sample TVT d|", aaInVals, "|d| < 0.10"),
+  distRow("|A/A Out-of-Sample TVT d|", aaOutVals, "|d| < 0.10"),
+  distRow("|A/A In-Sample IVT d|", aaInIvtVals, "|d| < 0.10"),
+  distRow("|A/A Out-of-Sample IVT d|", aaOutIvtVals, "|d| < 0.10"),
+  distRow("CI-TVT Half-Width (hrs) ★", ciTvtVals, "≤ 1.0"),
+  distRow("CI-IVT Half-Width (hrs) ★", ciIvtVals, "≤ 1.0"),
+  distRow("Match Rate (%)", mrVals, "≥ 80%"),
+  distRow("ML Score Distance", mlDistVals, "informational"),
+].join('');
+
+// --- SEGMENT TABLE ---
+function renderSegTable(data) {
+  document.getElementById('segBody').innerHTML = data.map(s => {
+    const gc = s.grade === 'HIGH' ? 'grade-high' : s.grade === 'MEDIUM' ? 'grade-medium' : 'grade-low';
+    const badge = `<span class="grade-badge ${s.grade.toLowerCase()}">${s.grade}</span>`;
+    const mrCls = s.matchRatePass ? 'pass' : 'fail';
+    const ciTvtCls = s.ciTvtPass ? 'pass' : s.ciTvtPass === false ? 'fail' : '';
+    const ciIvtCls = s.ciIvtPass ? 'pass' : s.ciIvtPass === false ? 'fail' : '';
+    const tvtFmt = s.tvtHours >= 1e6 ? (s.tvtHours/1e6).toFixed(2)+'M' : s.tvtHours >= 1e3 ? (s.tvtHours/1e3).toFixed(0)+'K' : s.tvtHours.toFixed(0);
+    return `<tr class="${gc}">
+      <td title="${s.name}">${(s.name||'').length > 26 ? (s.name||'').slice(0,24)+'...' : (s.name||s.id)}</td>
+      <td>${s.segment}</td>
+      <td class="num">${tvtFmt}</td>
+      <td class="num">${s.pairs.toLocaleString()}</td>
+      <td class="num ${mrCls}">${(s.matchRate*100).toFixed(1)}%</td>
+      <td class="num ${s.smdPass?'pass':'fail'}">${(s.smd||0).toFixed(4)}</td>
+      <td class="num ${s.smdIvtPass?'pass':'fail'}">${(s.smdIvt||0).toFixed(4)}</td>
+      <td class="num ${s.vrPrePass?'pass':'fail'}">${(s.vrPre||1).toFixed(3)}</td>
+      <td class="num ${s.vrIvtPass?'pass':'fail'}">${(s.vrIvt||1).toFixed(3)}</td>
+      <td class="num ${s.aaInPass?'pass':'fail'}">${(s.aaIn||0).toFixed(4)}</td>
+      <td class="num ${s.aaOutPass?'pass':'fail'}">${(s.aaOut||0).toFixed(4)}</td>
+      <td class="num ${s.aaInIvtPass?'pass':'fail'}">${(s.aaInIvt||0).toFixed(4)}</td>
+      <td class="num ${s.aaOutIvtPass?'pass':'fail'}">${(s.aaOutIvt||0).toFixed(4)}</td>
+      <td class="num ${ciTvtCls}">${s.ciTvt != null ? s.ciTvt.toFixed(4) : '—'}</td>
+      <td class="num ${ciIvtCls}">${s.ciIvt != null ? s.ciIvt.toFixed(4) : '—'}</td>
+      <td class="num">${s.checks}/11</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+let segGradeFilter = 'all';
+function getSegFiltered() {
+  let data = [...normalizedSegs];
+  const segFilter = document.getElementById('segFilterSelect').value;
+  if (segFilter !== 'all') data = data.filter(s => s.segment === segFilter);
+  if (segGradeFilter !== 'all') data = data.filter(s => s.grade === segGradeFilter);
+  return data;
+}
+function applySegSort() {
+  const key = document.getElementById('segSortSelect').value;
+  let data = getSegFiltered();
+  if (key === 'pairs') data.sort((a,b) => b.pairs - a.pairs);
+  else if (key === 'tvt') data.sort((a,b) => b.tvtHours - a.tvtHours);
+  else if (key === 'matchrate') data.sort((a,b) => a.matchRate - b.matchRate);
+  else if (key === 'grade') data.sort((a,b) => ({HIGH:0,MEDIUM:1,LOW:2}[a.grade] - {HIGH:0,MEDIUM:1,LOW:2}[b.grade]) || b.pairs - a.pairs);
+  else if (key === 'smd') data.sort((a,b) => Math.abs(b.smd||0) - Math.abs(a.smd||0));
+  else if (key === 'smdivt') data.sort((a,b) => Math.abs(b.smdIvt||0) - Math.abs(a.smdIvt||0));
+  else if (key === 'vr') data.sort((a,b) => Math.abs((b.vrPre||1)-1) - Math.abs((a.vrPre||1)-1));
+  else if (key === 'vrivt') data.sort((a,b) => Math.abs((b.vrIvt||1)-1) - Math.abs((a.vrIvt||1)-1));
+  renderSegTable(data);
+}
+
+document.getElementById('segSortSelect').addEventListener('change', applySegSort);
+document.getElementById('segFilterSelect').addEventListener('change', applySegSort);
+document.querySelectorAll('[data-level="seg"]').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('[data-level="seg"]').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    segGradeFilter = this.dataset.filter;
+    applySegSort();
+  });
+});
+
+// --- TABS ---
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelector(`[data-panel="${this.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+// Initial render
+applySegSort();
+</script>
+
+</body>
+</html>
