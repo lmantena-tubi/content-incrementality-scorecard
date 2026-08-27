@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality — dsac_ci_v5_aug26 (two-arm) TVT Segmentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.1rem; }
+  .arm-legend { font-size: 12px; color: #444; margin-bottom: 1.1rem; }
+  .arm-legend .chip { display:inline-block; padding:2px 9px; border-radius: 10px; font-weight:700; margin-right:6px; }
+  .chip-a { background:#e3effb; color:#1f5fa6; }
+  .chip-b { background:#eafbf0; color:#1f8a4c; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.1rem; border-bottom: 2px solid #e2e6ea; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 18px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1.1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-bottom: 1rem; }
+  th, td { padding: 6px 9px; text-align: right; border-bottom: 1px solid #e8ebee; white-space: nowrap; }
+  th { background: #1B3A5C; color: #fff; font-weight: 600; cursor: pointer; position: sticky; top: 0; user-select: none; }
+  th:hover { background: #244b74; }
+  th.txt, td.txt { text-align: left; }
+  th.arm-a { background:#2E75B6; } th.arm-a:hover { background:#3d84c4; }
+  th.arm-b { background:#1f8a4c; } th.arm-b:hover { background:#26a15b; }
+  tbody tr:hover { background: #f2f7fc; }
+  .ratio-cell { font-weight: 600; border-radius: 3px; padding: 2px 6px; }
+  .kpi-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 1.1rem; }
+  .kpi { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 11px 16px; min-width: 135px; }
+  .kpi.a { border-left: 4px solid #2E75B6; }
+  .kpi.b { border-left: 4px solid #1f8a4c; }
+  .kpi .val { font-size: 20px; font-weight: 700; color: #1B3A5C; }
+  .kpi .lbl { font-size: 11.5px; color: #666; margin-top: 2px; }
+  .note { font-size: 12px; color: #888; margin: .4rem 0 .6rem; }
+  .genre-hdr td { background: #dce6f1; font-weight: 700; color: #1B3A5C; text-align: left; }
+  .scope-switch { display: flex; gap: 10px; margin-bottom: .9rem; flex-wrap: wrap; }
+  .scope-switch-btn { padding: 9px 16px; font-size: 12px; font-weight: 700; letter-spacing: .03em; border: 2px solid transparent; border-radius: 6px; cursor: pointer; background: #eef1f4; color: #667; }
+  .scope-switch-btn .scope-hint { font-weight: 400; opacity: .8; letter-spacing: 0; }
+  .scope-switch-btn.scope-title.active { background: #2E75B6; color: #fff; }
+  .scope-switch-btn.scope-overall.active { background: #6B4E9E; color: #fff; }
+  .scope-switch-btn:not(.active):hover { background: #e0e5ea; }
+  .tabs .tab-btn { display: none; }
+  .tabs.scope-title .tab-btn[data-scope="title"] { display: inline-block; }
+  .tabs.scope-overall .tab-btn[data-scope="overall"] { display: inline-block; }
+  .tab-btn.overall.active { color: #6B4E9E; border-bottom-color: #6B4E9E; }
+  .tab-btn.overall:hover { color: #6B4E9E; }
+  .tab-btn.diag.active { color: #b5651d; border-bottom-color: #b5651d; }
+  .tab-btn.diag:hover { color: #b5651d; }
+  .tabs.scope-diag .tab-btn[data-scope="diag"] { display: inline-block; }
+  .scope-switch-btn.scope-diag.active { background: #b5651d; color: #fff; }
+  .scope-banner-diag { background: #fbf1e6; border-left: 4px solid #b5651d; }
+  .diag-h { font-size: 15px; font-weight: 700; color: #1B3A5C; margin: 1.3rem 0 .5rem; }
+  .diag-p { font-size: 13px; line-height: 1.65; margin-bottom: .7rem; max-width: 1050px; }
+  .diag-p b { color: #1B3A5C; }
+  table.diag td, table.diag th { text-align: right; }
+  table.diag td.txt, table.diag th.txt { text-align: left; }
+  .pill { display:inline-block; padding:1px 7px; border-radius:3px; font-weight:600; font-size:11.5px; }
+  .pill-neg { background:#f8d7da; color:#842029; }
+  .pill-pos { background:#d4edda; color:#0f5132; }
+  .pill-flat { background:#fff3cd; color:#664d03; }
+  /* --- CI overlap visual --- */
+  .ci-plot { max-width: 900px; margin: .3rem 0 1.2rem; font-size: 12px; }
+  .ci-plot .ci-row { display: grid; grid-template-columns: 190px 1fr; align-items: center; margin: .55rem 0; }
+  .ci-plot .ci-label { font-weight: 600; color: #1B3A5C; padding-right: 10px; }
+  .ci-plot .ci-label .sub { display:block; font-weight:400; font-size:11px; color:#889; }
+  .ci-track { position: relative; height: 26px; }
+  .ci-axis-line { position:absolute; top:13px; left:0; right:0; height:2px; background:#e2e6ea; }
+  .ci-zero { position:absolute; top:-4px; bottom:-4px; width:2px; background:#9aa4b0; }
+  .ci-zero-lbl { position:absolute; top:-18px; transform:translateX(-50%); font-size:10px; color:#9aa4b0; }
+  .ci-bar { position:absolute; top:11px; height:6px; border-radius:3px; opacity:.55; }
+  .ci-whisker { position:absolute; top:8px; width:2px; height:12px; }
+  .ci-dot { position:absolute; top:7px; width:14px; height:14px; border-radius:50%; transform:translateX(-50%); border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.15); }
+  .ci-pt-lbl { position:absolute; top:-16px; transform:translateX(-50%); font-weight:700; font-size:11px; white-space:nowrap; }
+  .ci-inc { --c:#2E75B6; }
+  .ci-tvt { --c:#2e9e6b; }
+  .ci-diff { --c:#b5651d; }
+  .ci-bar-c { background:var(--c); } .ci-dot-c { background:var(--c); }
+  .ci-whisker-c { background:var(--c); } .ci-pt-c { color:var(--c); }
+  .ci-scale { position:relative; height:16px; margin-top:2px; color:#889; font-size:10px; }
+  .ci-tick { position:absolute; transform:translateX(-50%); }
+  .ci-caption { font-size:11.5px; color:#667; margin-top:.2rem; }
+  .scope-hdr { display: none; }
+  .scope-hdr.active { display: block; }
+  .scope-banner { border-radius: 6px; padding: 9px 14px; margin-bottom: 1rem; font-size: 13px; line-height: 1.5; }
+  .scope-banner-title { background: #eaf2fb; border-left: 4px solid #2E75B6; }
+  .scope-banner-overall { background: #f0ebf8; border-left: 4px solid #6B4E9E; }
+  .scope-banner b { color: #1B3A5C; }
+  .sig-yes { background:#d4edda; font-weight:600; }
+  .sig-bl { background:#fff3cd; }
+  tfoot .totals-row td { background:#eef1f4; font-weight:700; border-top:2px solid #1B3A5C; color:#1B3A5C; }
+  /* --- Why TVT scope --- */
+  .tabs.scope-why .tab-btn[data-scope="why"] { display: inline-block; }
+  .scope-switch-btn.scope-why.active { background: #0d7d74; color: #fff; }
+  .tab-btn.why.active { color: #0d7d74; border-bottom-color: #0d7d74; }
+  .tab-btn.why:hover { color: #0d7d74; }
+  .scope-banner-why { background: #e7f5f3; border-left: 4px solid #0d7d74; }
+  /* A/B/C decomposition flow */
+  .abc-flow { display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; margin:.4rem 0 1rem; }
+  .abc-card { flex:1 1 150px; border:1px solid #e2e6ea; border-radius:8px; padding:12px 14px; background:#f8f9fa; min-width:140px; }
+  .abc-card .abc-lbl { font-size:11.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:#667; }
+  .abc-card .abc-val { font-size:22px; font-weight:800; margin:3px 0 2px; }
+  .abc-card .abc-sub { font-size:11.5px; color:#778; line-height:1.4; }
+  .abc-card.loss { border-left:4px solid #c0392b; } .abc-card.loss .abc-val { color:#c0392b; }
+  .abc-card.gain { border-left:4px solid #1f8a4c; } .abc-card.gain .abc-val { color:#1f8a4c; }
+  .abc-card.net  { border-left:4px solid #1B3A5C; background:#eef1f4; } .abc-card.net .abc-val { color:#1B3A5C; }
+  .abc-op { display:flex; align-items:center; font-size:24px; font-weight:700; color:#99a; padding:0 2px; }
+  .abc-refill { font-size:13px; margin:.2rem 0 1rem; color:#333; }
+  .abc-refill b { color:#0d7d74; }
+  .why-h3 { font-size:14px; font-weight:700; color:#1B3A5C; margin:1.4rem 0 .5rem; }
+  .arm-col-head { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .arm-col-head > div { font-size:13px; font-weight:700; padding:6px 10px; border-radius:5px; }
+  .arm-col-head .ah-a { background:#e3effb; color:#1f5fa6; }
+  .arm-col-head .ah-b { background:#e7f5f3; color:#0d7d74; }
+  .sxs { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  .sxs h4 { font-size:12.5px; font-weight:700; color:#1B3A5C; margin:.2rem 0 .4rem; }
+  @media (max-width:1000px){ .sxs, .arm-col-head { grid-template-columns:1fr; } }
+  .delta-pos { color:#1f8a4c; font-weight:600; } .delta-neg { color:#c0392b; font-weight:600; }
+  .abc-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:1000px){ .abc-grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality — <code>dsac_ci_v5_aug26</code> · Two-Arm TVT Segmentation</h1>
+<p class="subtitle">Two holdback arms vs a shared Control · holdback-active window 2026-08-20 → 2026-08-24 (single consistent window across all tabs; titles released 2026-08-25) · post-exposure TVT · generated 2026-08-27</p>
+<div class="arm-legend">
+  <span class="chip chip-a">Incremental TVT</span> <code>top_inc_titles</code> — 25 held-back titles &nbsp;·&nbsp;
+  <span class="chip chip-b">Top TVT</span> <code>top_tvt_titles</code> — 17 held-back titles &nbsp;·&nbsp;
+  <b>Control</b> ≈ 1,787,838 exposed devices (shared). Each hold arm ≈ 1.73M exposed devices.
+</div>
+
+<div class="scope-hdr active" id="hdr-title">
+  <div class="scope-banner scope-banner-title"><b>SCOPE: HELD-BACK TITLES</b> — each arm sums TVT for <b>only its own held-back titles</b> vs the same titles in Control. This ratio is the <b>direct</b> effect of holding those titles back (typically well below 100%). The two arms hold <i>different</i> title sets, so each has its own Control baseline.</div>
+  <div class="kpi-row">
+    <div class="kpi a"><div class="val">23.2%</div><div class="lbl">Incremental TVT · Hold ÷ Control</div></div>
+    <div class="kpi a"><div class="val">143,179</div><div class="lbl">Incremental TVT · Hold TVT (hrs)</div></div>
+    <div class="kpi a"><div class="val">616,242</div><div class="lbl">Incremental TVT · Control TVT (hrs)</div></div>
+    <div class="kpi b"><div class="val">23.0%</div><div class="lbl">Top TVT · Hold ÷ Control</div></div>
+    <div class="kpi b"><div class="val">124,535</div><div class="lbl">Top TVT · Hold TVT (hrs)</div></div>
+    <div class="kpi b"><div class="val">540,559</div><div class="lbl">Top TVT · Control TVT (hrs)</div></div>
+  </div>
+  <div class="summary-box">
+    <b>Reading the ratio:</b> <b>Ratio = Hold TVT ÷ Control TVT</b>. Lower % = the holdback suppressed more of that slice's viewing = <b>stronger incrementality</b> (Tubi's surfacing drives more of the demand). ~100% = the holdback barely moved viewing (demand is self-driven).
+    Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;40% strong</span>
+    <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">40–70% moderate</span>
+    <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;70% weak</span>.
+    Viewer counts are distinct exposed devices (not upsampled). 10 titles are held back in <b>both</b> arms — those rows show a ratio under each arm's column.
+  </div>
+</div>
+
+<div class="scope-hdr" id="hdr-overall">
+  <div class="scope-banner scope-banner-overall"><b>SCOPE: WHOLE CATALOG</b> — sums <b>ALL post-exposure viewing</b> (every title watched, not just the held-back set) for each arm vs the shared Control. This ratio is the <b>net</b> catalog effect and sits near 100%: held-back demand largely substitutes to other titles. A genre meaningfully below 100% is a true net loss.</div>
+  <div class="kpi-row">
+    <div class="kpi a"><div class="val">96.7%</div><div class="lbl">Incremental TVT · Hold ÷ Control (all titles)</div></div>
+    <div class="kpi a"><div class="val">-405,933</div><div class="lbl">Incremental TVT · Net Δ hrs</div></div>
+    <div class="kpi a"><div class="val">11 / 36</div><div class="lbl">Incremental TVT · Genres sig (FDR)</div></div>
+    <div class="kpi b"><div class="val">96.3%</div><div class="lbl">Top TVT · Hold ÷ Control (all titles)</div></div>
+    <div class="kpi b"><div class="val">-454,202</div><div class="lbl">Top TVT · Net Δ hrs</div></div>
+    <div class="kpi b"><div class="val">9 / 36</div><div class="lbl">Top TVT · Genres sig (FDR)</div></div>
+  </div>
+  <div class="summary-box">
+    <b>What this measures:</b> total view-time per genre across <b>everything</b> exposed devices watched post-exposure. <b>Ratio = Hold ÷ Control</b>, expected near <b>100%</b> at catalog scale. <b>Below 100%</b> = net loss in that genre (true incrementality not recovered); <b>above 100%</b> = substitution <i>into</i> that genre.
+    Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;99% net loss</span>
+    <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">99–101% flat</span>
+    <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;101% net gain</span>.
+    <b>Welch t / p</b> test whether mean per-exposed-device genre TVT differs between arm and Control (mean over the full arm, non-viewers = 0 — ITT-style). <b>p(BH)</b> is Benjamini-Hochberg-corrected across all 36 genres; <b>"yes (FDR)"</b> survives correction.
+  </div>
+</div>
+
+<div class="scope-hdr" id="hdr-diag">
+  <div class="scope-banner scope-banner-diag"><b>DIAGNOSIS: WHY "TOP TVT" SHOWS THE LOWEST TVT</b> — the Statsig primary <code>tvt</code> metric reads <b>Incremental TVT −0.50% ±0.45%</b> vs <b>Top TVT −0.64% ±0.45%</b>. This tab shows that the 0.14pp gap is almost entirely (1) a residual pre-experiment baseline draw that CURE corrects, and (2) one real content effect: non-substitutable kids-&-family animation concentrated in the Top TVT arm.</div>
+</div>
+
+<div class="scope-hdr" id="hdr-why">
+  <div class="scope-banner scope-banner-why"><b>WHY TVT MOVES — SUBSTITUTION vs CANNIBALIZATION</b> — decomposes each arm's <b>arm-normalized</b> whole-catalog net TVT Δ into three channels: <b>A</b> direct held-title loss, <b>B</b> substitution gains (non-held titles that pick up demand), <b>C</b> cannibalization (non-held titles that <i>lose</i> demand). <b>NET = A + B + C</b>. The two arms are shown <b>side by side</b>. Hold TVT is scaled onto Control's device base (×<code>control_arm_size / hold_arm_size</code>) so the channels sum exactly to the net delta — this removes the ~2.8% arm-size gap baked into the raw Net Δ KPI.</div>
+</div>
+
+<div class="scope-switch">
+  <button class="scope-switch-btn scope-title active" data-scope="title">HELD-BACK TITLES <span class="scope-hint">· each arm's own titles · direct effect</span></button>
+  <button class="scope-switch-btn scope-overall" data-scope="overall">WHOLE CATALOG <span class="scope-hint">· every title watched · net effect</span></button>
+  <button class="scope-switch-btn scope-diag" data-scope="diag">WHY TOP TVT RANKS LOWEST <span class="scope-hint">· baseline balance · CURE · substitution</span></button>
+  <button class="scope-switch-btn scope-why" data-scope="why">WHY TVT · A/B/C DECOMPOSITION <span class="scope-hint">· direct loss · substitution · cannibalization</span></button>
+</div>
+
+<div class="tabs scope-title">
+  <button class="tab-btn active" data-tab="tab-title" data-scope="title">By Title</button>
+  <button class="tab-btn" data-tab="tab-genre" data-scope="title">By Genre</button>
+  <button class="tab-btn" data-tab="tab-segment" data-scope="title">By Viewer Segment</button>
+  <button class="tab-btn" data-tab="tab-gs" data-scope="title">Genre × Segment</button>
+  <button class="tab-btn overall" data-tab="tab-og" data-scope="overall">Overall Genre</button>
+  <button class="tab-btn overall" data-tab="tab-ogs" data-scope="overall">Overall Genre × Segment</button>
+  <button class="tab-btn diag" data-tab="tab-diag" data-scope="diag">Diagnosis</button>
+  <button class="tab-btn why" data-tab="tab-why" data-scope="why">Why TVT (A/B/C)</button>
+</div>
+
+<div class="tab-panel active" id="tab-title">
+  <div class="note">All 32 union titles. "Held in" shows which arm(s) held the title back; <b>10 titles are in both arms</b>. Control TVT is the same pool for both arms. Click any header to sort.</div>
+  <div id="titleTable"></div>
+</div>
+<div class="tab-panel" id="tab-genre">
+  <div class="note">TVT by <code>primary_genre_cms</code> — each arm vs Control on that arm's held-back titles.</div>
+  <div id="genreTable"></div>
+</div>
+<div class="tab-panel" id="tab-segment">
+  <div class="summary-box"><b>Viewer segment</b> assigned per device at first exposure from <code>device_okr_daily</code>, using the exact <code>v10d_control_pool</code> definition: <b>power_viewer</b> (≥8 visit-days in 28d AND ≥4 TVT hrs/visit-day), <b>new</b>, <b>retained</b>, <b>reactivated</b>, <b>unknown</b> (no OKR row — a coverage residual, not a tier).</div>
+  <div id="segTable"></div>
+</div>
+<div class="tab-panel" id="tab-gs">
+  <div class="note">TVT by genre × viewer segment, each arm vs Control. Grouped by genre. Cells with &lt;1 total TVT hour omitted.</div>
+  <div id="gsTable"></div>
+</div>
+<div class="tab-panel" id="tab-og">
+  <div class="note">Whole-catalog TVT by <code>primary_genre_cms</code> — <b>all titles</b>. Control is shared; each arm shows Hold hrs, Ratio, and Welch/BH-FDR significance. Click any header to sort.</div>
+  <div id="ogTable"></div>
+</div>
+<div class="tab-panel" id="tab-ogs">
+  <div class="note">Whole-catalog TVT by genre × viewer segment (<b>all titles</b>). Grouped by genre. Cells &lt;1 hr omitted. "Sig?" = raw Welch p&lt;0.05 (borderline) / survives BH-FDR (yes).</div>
+  <div id="ogsTable"></div>
+</div>
+<div class="tab-panel" id="tab-diag">
+  <div class="summary-box">
+    <b>TL;DR —</b> "Top TVT had the lowest TVT" is real in point estimate (−0.64% vs −0.50%) but <b>sits inside the noise band</b>: the two 95% CIs (±0.45%) overlap almost entirely, so the arms are <b>statistically indistinguishable</b> on total TVT. Two forces explain essentially the whole 0.14pp gap — a pre-experiment baseline draw (which CURE corrects) and one genuine content effect (non-substitutable kids-&-family animation held back in the Top TVT arm).
+  </div>
+
+  <div class="diag-h">1 · Pre-experiment bias — baseline (pre-28d) TVT balance</div>
+  <div class="diag-p">Trailing-28-day TVT per device measured at each device's own <code>first_exposure_ds</code> from <code>device_okr_daily</code> (the same covariate CURE adjusts on). Randomization is clean — no imbalance is statistically significant — <b>but the Top TVT arm drew a slightly lighter-viewing population</b>, starting <b>0.134% below</b> the Incremental arm. That residual baseline gap is the <b>same size and direction</b> as the 0.14pp post-period gap: nearly the entire observed "Top TVT is worse" difference is a pre-existing draw, not a treatment effect.</div>
+  <div id="diagBaseTable"></div>
+
+  <div class="diag-h">2 · Variance reduction (CURE) — why the ranking should converge / flip</div>
+  <div class="diag-p">The report ran with <b>CURE: Yes</b>. Pre-period TVT has a huge spread (SD ≈ 58 hr against a mean of 26 hr), so raw between-arm noise dwarfs a sub-1% effect. CURE regresses out that pre-period covariate, which (a) <b>credits Top TVT for starting lighter</b>, pulling the arms toward parity, and (b) <b>tightens the confidence intervals</b>. Because the raw gap (~0.13% of baseline) is itself within that noise, post-CURE the Incremental / Top TVT ordering is expected to be within-noise and <b>may flip</b> — the −0.64% is not a robust ranking signal.</div>
+  <div id="diagCiTable"></div>
+
+  <div class="diag-h">Confidence intervals overlap — the two arms are indistinguishable</div>
+  <div class="diag-p">Each arm's Statsig <code>tvt</code> effect is plotted against Control with its 95% CI. The two bands overlap across nearly their entire length and both straddle a large common region, so no ranking between them is supported. The bottom row is the <b>direct arm-to-arm difference</b>, whose CI <b>crosses zero</b>.</div>
+  <div id="diagCiPlot"></div>
+
+  <div class="diag-h">Direct test — Incremental arm vs Top TVT arm</div>
+  <div class="diag-p">Because both hold arms share the <i>same</i> Control, the cleanest test differences the two arms directly (Control cancels out). This is a <b>Welch two-sample t-test</b> on whole-catalog per-device TVT (ITT: every exposed device counts; non-viewers = 0), computed from <code>lm_dsac_ci_v5_aug26_overall_scratch</code>.</div>
+  <div id="diagTestTable"></div>
+  <div class="diag-p" style="margin-top:.4rem;"><b>Verdict: not significant (p = 0.21).</b> The arm-to-arm difference is −0.26% of the Incremental mean (95% CI [−0.66%, +0.15%], t = −1.24 on ~3.8M df). We <b>cannot reject</b> that the two holdback strategies cost the same total TVT — the −0.64% vs −0.50% ordering is statistical noise, consistent with the lighter baseline draw above.</div>
+
+  <div class="diag-h">3 · The one genuine content difference — non-substitutable kids &amp; family</div>
+  <div class="diag-p">Where the arms differ for a <i>real</i> reason is the <b>held-back title mix</b>, visible in the whole-catalog ITT genre tests (mean over the full arm, non-viewers = 0; BH-FDR corrected). The <b>Top TVT arm holds the big animated kids blockbusters</b> — Trolls (123k grand hrs), Cloudy With a Chance of Meatballs 2 (79k), Monsters vs. Aliens (66k) — all bucketed <code>kids &amp; family</code>. When those are held back, demand <b>does not substitute</b> to the rest of the catalog: kids &amp; family stays <b>−3.5% and significant</b>. The Incremental arm instead holds action / fantasy franchises (Lethal Weapon, Colombiana, Twilight, Godzilla) whose viewers substitute within-genre, so kids &amp; family even shows positive spillover (+3.7%). That single structural difference costs the Top TVT arm an extra <b>~48,300 net TVT hours</b> (whole-catalog: Incremental TVT 96.7% vs Top TVT 96.3% of Control).</div>
+  <div id="diagGenreTable"></div>
+
+  <div class="diag-h">Bottom line</div>
+  <div class="diag-p">
+    • The <b>−0.64% vs −0.50% ranking is inside the noise</b> — CIs overlap; not a reliable "Top TVT is worse" conclusion.<br>
+    • <b>~0.13pp of the 0.14pp gap is pre-experiment baseline bias</b> (Top TVT drew a lighter population); CURE corrects most of it and tightens the CIs, so the arms should converge.<br>
+    • The <b>only real content driver</b> is non-substitutable <b>kids &amp; family animation</b> concentrated in the Top TVT arm (−3.5% net, ~48k lost hours), vs. franchise titles in the Incremental arm that substitute within-genre.
+  </div>
+  <div class="note">Baseline table from <code>device_okr_daily</code> at <code>first_exposure_ds</code>; genre effects from the Whole Catalog → Overall Genre tab. Statsig primary <code>tvt</code> deltas &amp; CIs from the 8/25/2026 report (CURE: Yes, 95% CI).</div>
+</div>
+
+<div class="tab-panel" id="tab-why">
+  <div class="summary-box">
+    <b>Where does the held-back TVT go?</b> Holding a title back removes its viewing (<b>channel A</b>, always a loss). Some of that demand <b>substitutes</b> to other titles the device watches instead (<b>channel B</b>, a gain elsewhere in the catalog); the rest fails to redistribute and shows up as <b>cannibalization</b> — non-held titles that also lose TVT (<b>channel C</b>). The net whole-catalog cost is <b>NET = A + B + C</b>, and the headline metric is the <b>refill rate = (B + C) ÷ |A|</b>: how much of the hole the rest of the catalog fills back in. Both arms dig a similar-size hole, but the arm that refills <i>less</i> ends up with the larger net TVT loss.
+  </div>
+  <div id="whyKpi"></div>
+
+  <div class="why-h3">Net-decomposition — both arms side by side</div>
+  <div class="abc-grid2">
+    <div><div class="arm-col-head"><div class="ah-a" style="grid-column:1/-1;">Incremental TVT arm <code>top_inc_titles</code></div></div><div id="abcFlowInc"></div></div>
+    <div><div class="arm-col-head"><div class="ah-b" style="grid-column:1/-1;">Top TVT arm <code>top_tvt_titles</code></div></div><div id="abcFlowTvt"></div></div>
+  </div>
+
+  <div class="why-h3">Genre composition of the net delta — where demand leaked vs. was absorbed</div>
+  <div class="note">Per-genre A/B/C split (arm-normalized TVT hrs), most-negative net first. A genre with big <span class="delta-neg">negative net</span> is where holdbacks leaked demand that the catalog did not recover; <span class="delta-pos">positive net</span> genres absorbed substitution. <b>B ÷ |A|</b> and <b>C ÷ |A|</b> decompose that genre's refill rate — how much substitution (B) and cannibalization (C) it generated per hour of its own held-title hole; shown only where the genre held titles back (A ≠ 0). Their sum is the genre-level refill rate. Shown side by side.</div>
+  <div class="sxs">
+    <div><h4>Incremental TVT arm</h4><div id="genreInc"></div></div>
+    <div><h4>Top TVT arm</h4><div id="genreTvt"></div></div>
+  </div>
+
+  <div class="why-h3">Top 20 substituting titles — non-held gainers (where freed demand went)</div>
+  <div class="note">Non-held titles with the largest <span class="delta-pos">positive</span> arm-normalized TVT gain vs Control. Δ = normalized Hold − Control hrs. Shown for both arms side by side.</div>
+  <div class="sxs">
+    <div><h4>Incremental TVT arm</h4><div id="subsInc"></div></div>
+    <div><h4>Top TVT arm</h4><div id="subsTvt"></div></div>
+  </div>
+
+  <div class="why-h3">Top 20 cannibalizing titles — non-held losers (demand that leaked, didn't redistribute)</div>
+  <div class="note">Non-held titles with the largest <span class="delta-neg">negative</span> arm-normalized TVT change vs Control — often franchise siblings/anchors stranded when a related title was held (e.g. Twilight sequels, Everybody Hates Chris). Shown for both arms side by side.</div>
+  <div class="sxs">
+    <div><h4>Incremental TVT arm</h4><div id="cannInc"></div></div>
+    <div><h4>Top TVT arm</h4><div id="cannTvt"></div></div>
+  </div>
+  <div class="note">All figures arm-normalized (Hold TVT × Control_n / Hold_n) so A+B+C reconciles to the net delta. Per-program lists include titles with ≥50 combined TVT hrs (Control + Hold) to suppress long-tail noise; the aggregate A/B/C channels use the full catalog and reconcile exactly. Source: <code>video_session</code> post-exposure, held-title sets per arm, genre from <code>dsac_program_info.primary_genre_cms</code>.</div>
+</div>
+
+<script>
+const DATA = {"title": {"columns": ["Title", "Genre", "Held in", "Control TVT (hrs)", "Incremental TVT Hold (hrs)", "Incremental TVT Ratio %", "Top TVT Hold (hrs)", "Top TVT Ratio %", "Grand Total (hrs)"], "rows": [["Trolls", "kids & family", "Top TVT", 57853, null, null, 14653, 25, 133226], ["Colombiana", "action", "Incremental", 47288, 6128, 13, null, null, 108226], ["Friday", "comedy", "both", 64116, 21535, 34, 20984, 33, 106635], ["Rush Hour", "comedy", "both", 68081, 14882, 22, 14713, 22, 97675], ["Cloudy With a Chance of Meatballs 2", "kids & family", "Top TVT", 37729, null, null, 7164, 19, 85584], ["Rush Hour 2", "comedy", "both", 53170, 10674, 20, 10796, 20, 74639], ["Tyler Perry's Diary of a Mad Black Woman", "comedy", "both", 52703, 10411, 20, 9921, 19, 73035], ["It Takes Two", "comedy", "Incremental", 30123, 5358, 18, null, null, 72036], ["Monsters vs. Aliens", "kids & family", "Top TVT", 31437, null, null, 5926, 19, 71316], ["U.S. Marshals", "action", "Incremental", 28256, 4240, 15, null, null, 62618], ["Twilight", "fantasy", "both", 36094, 12262, 34, 12304, 34, 60660], ["Next Friday", "comedy", "both", 37037, 8960, 24, 8941, 24, 54938], ["Jack Reacher: Never Go Back", "action", "Incremental", 23822, 3773, 16, null, null, 52996], ["Rush Hour 3", "action", "both", 38692, 6054, 16, 5920, 15, 50665], ["Friday After Next", "comedy", "both", 30190, 6758, 22, 6873, 23, 43820], ["Godzilla", "sci-fi", "Incremental", 18356, 4111, 22, null, null, 41056], ["The Twilight Saga: New Moon", "fantasy", "both", 23131, 7347, 32, 6474, 28, 36953], ["The Twilight Saga: Eclipse", "fantasy", "Incremental", 17541, 5669, 32, null, null, 36497], ["The Twilight Saga: Breaking Dawn - Part 1", "fantasy", "Incremental", 15855, 5302, 33, null, null, 33682], ["Beauty Shop", "comedy", "Top TVT", 14525, null, null, 3266, 22, 32942], ["House Party", "comedy", "Incremental", 12525, 3678, 29, null, null, 30828], ["Lethal Weapon", "action", "Incremental", 11320, 2976, 26, null, null, 26200], ["I Know Where You Live", "thriller", "Top TVT", 11265, null, null, 1862, 17, 25676], ["Lethal Weapon 2", "action", "Incremental", 10173, 2630, 26, null, null, 23686], ["Lethal Weapon 4", "action", "Incremental", 9999, 2534, 25, null, null, 23340], ["Fist Fight", "comedy", "Top TVT", 9532, null, null, 1881, 20, 22599], ["Lethal Weapon 3", "action", "Incremental", 9516, 2354, 25, null, null, 22147], ["Hard to Kill", "action", "Incremental", 9274, 2611, 28, null, null, 21034], ["The One Next Door", "thriller", "Top TVT", 7626, null, null, 984, 13, 17061], ["Mars Attacks!", "sci-fi", "both", 5501, 1084, 20, 1053, 19, 7638], ["Becky 2: Bloodtears", "thriller", "Incremental", 1490, 433, 29, null, null, 3361], ["Love on the Edge", "thriller", "Incremental", 802, 180, 22, null, null, 1742]]}, "genre": {"columns": ["Genre", "Incremental TVT Hold (hrs)", "Incremental TVT Ctrl (hrs)", "Incremental TVT Hold Viewers", "Incremental TVT Ctrl Viewers", "Incremental TVT Ratio %", "Top TVT Hold (hrs)", "Top TVT Ctrl (hrs)", "Top TVT Hold Viewers", "Top TVT Ctrl Viewers", "Top TVT Ratio %"], "rows": [["comedy", 82256, 347944, 73756, 215236, 24, 77374, 329353, 70123, 199428, 23], ["fantasy", 30580, 92621, 21305, 47772, 33, 18778, 59225, 17018, 41910, 32], ["action", 33300, 188340, 26715, 117208, 18, 5920, 38692, 6498, 36462, 15], ["kids & family", 0, 0, 0, 0, null, 27744, 127019, 24438, 89973, 22], ["sci-fi", 5196, 23857, 4659, 18561, 22, 1053, 5501, 1299, 6035, 19], ["thriller", 613, 2292, 710, 2491, 27, 2846, 18891, 3612, 18443, 15]]}, "seg": {"columns": ["Viewer Segment", "Incremental TVT Hold (hrs)", "Incremental TVT Ctrl (hrs)", "Incremental TVT Hold Viewers", "Incremental TVT Ctrl Viewers", "Incremental TVT Ratio %", "Top TVT Hold (hrs)", "Top TVT Ctrl (hrs)", "Top TVT Hold Viewers", "Top TVT Ctrl Viewers", "Top TVT Ratio %"], "rows": [["retained", 72430, 292606, 59356, 166716, 25, 64033, 260851, 57388, 162841, 25], ["power_viewer", 41371, 195909, 21818, 62029, 21, 32514, 155520, 18739, 56108, 21], ["new", 16367, 64101, 15233, 38667, 26, 16015, 62035, 16066, 41795, 26], ["reactivated", 14275, 63893, 15045, 38362, 22, 14665, 66371, 16528, 43007, 22], ["unknown", 7501, 38545, 7412, 22706, 19, 6488, 33903, 7289, 22317, 19]]}, "gs": {"columns": ["Genre", "Viewer Segment", "Incremental TVT Hold (hrs)", "Incremental TVT Ctrl (hrs)", "Incremental TVT Hold Viewers", "Incremental TVT Ctrl Viewers", "Incremental TVT Ratio %", "Top TVT Hold (hrs)", "Top TVT Ctrl (hrs)", "Top TVT Hold Viewers", "Top TVT Ctrl Viewers", "Top TVT Ratio %"], "rows": [["action", "retained", 16327, 84932, 14303, 60423, 19, 3030, 17950, 3530, 17962, 17], ["action", "power_viewer", 11585, 64547, 7125, 28732, 18, 1696, 10212, 1496, 8366, 17], ["action", "new", 2438, 15028, 2350, 10984, 16, 551, 4062, 696, 3963, 14], ["action", "reactivated", 1583, 13503, 1564, 9870, 12, 380, 4368, 418, 4052, 9], ["action", "unknown", 1366, 10330, 1373, 7199, 13, 263, 2101, 358, 2119, 13], ["comedy", "retained", 38497, 155850, 36279, 106339, 25, 36502, 146146, 34277, 97687, 25], ["comedy", "power_viewer", 21681, 97311, 13254, 41243, 22, 19748, 91225, 12270, 37887, 22], ["comedy", "reactivated", 9054, 38027, 10124, 26809, 24, 8477, 36833, 9909, 25102, 23], ["comedy", "new", 8701, 34944, 9418, 25860, 25, 8780, 34610, 9263, 24897, 25], ["comedy", "unknown", 4323, 21812, 4681, 14985, 20, 3868, 20539, 4404, 13855, 19], ["fantasy", "retained", 14828, 40591, 9997, 22339, 37, 8618, 25381, 7681, 19083, 34], ["fantasy", "power_viewer", 5884, 23287, 2580, 7427, 25, 3546, 14719, 1995, 6521, 24], ["fantasy", "new", 4895, 12660, 3896, 7983, 39, 3173, 8256, 3204, 7104, 38], ["fantasy", "reactivated", 3364, 11059, 3419, 6916, 30, 2469, 7569, 3010, 6489, 33], ["fantasy", "unknown", 1610, 5024, 1413, 3107, 32, 972, 3300, 1128, 2713, 29], ["kids & family", "retained", 0, 0, 0, 0, null, 13899, 61262, 12919, 46946, 23], ["kids & family", "power_viewer", 0, 0, 0, 0, null, 6694, 33958, 3904, 16690, 20], ["kids & family", "new", 0, 0, 0, 0, null, 3128, 12373, 3208, 10681, 25], ["kids & family", "reactivated", 0, 0, 0, 0, null, 2861, 12862, 3040, 10010, 22], ["kids & family", "unknown", 0, 0, 0, 0, null, 1162, 6563, 1367, 5646, 18], ["sci-fi", "retained", 2442, 10059, 2482, 9449, 24, 583, 2786, 753, 3375, 21], ["sci-fi", "power_viewer", 2003, 10062, 1227, 5349, 20, 207, 1452, 180, 1064, 14], ["sci-fi", "new", 316, 1298, 390, 1342, 24, 97, 377, 142, 492, 26], ["sci-fi", "reactivated", 257, 1203, 337, 1287, 21, 102, 535, 130, 662, 19], ["sci-fi", "unknown", 178, 1235, 223, 1134, 14, 63, 351, 94, 442, 18], ["thriller", "retained", 337, 1173, 419, 1489, 29, 1400, 7326, 1886, 8218, 19], ["thriller", "power_viewer", 218, 702, 169, 525, 31, 623, 3953, 608, 3073, 16], ["thriller", "reactivated", 16, 101, 26, 116, 16, 375, 4204, 456, 3637, 9], ["thriller", "new", 18, 171, 53, 194, 10, 286, 2358, 441, 2390, 12], ["thriller", "unknown", 24, 144, 43, 167, 17, 161, 1050, 221, 1125, 15]]}, "og": {"columns": ["Genre", "Control TVT (hrs)", "Incremental TVT Hold (hrs)", "Incremental TVT Ratio %", "Incremental TVT Welch t", "Incremental TVT p", "Incremental TVT p(BH)", "Incremental TVT Sig?", "Top TVT Hold (hrs)", "Top TVT Ratio %", "Top TVT Welch t", "Top TVT p", "Top TVT p(BH)", "Top TVT Sig?"], "rows": [["comedy", 2805447, 2577119, 91.9, -14.1, 0.0, 0.0, "yes (FDR)", 2579132, 91.9, -13.59, 0.0, 0.0, "yes (FDR)"], ["drama", 2022784, 2037722, 100.7, 9.13, 0.0, 0.0, "yes (FDR)", 2015122, 99.6, 6.68, 2.4269475318305922e-11, 2.9123370381967106e-10, "yes (FDR)"], ["kids & family", 1374151, 1385612, 100.8, 6.25, 4.058442470977752e-10, 2.0871989850742725e-09, "yes (FDR)", 1284947, 93.5, -6.05, 1.4892223010321004e-09, 1.3403000709288904e-08, "yes (FDR)"], ["action", 1259362, 1132291, 89.9, -16.56, 0.0, 0.0, "yes (FDR)", 1253509, 99.5, 5.61, 1.9815782570375973e-08, 1.4267363450670701e-07, "yes (FDR)"], ["reality", 848652, 832862, 98.1, 1.34, 0.18117723419581777, 0.3836694371205553, "no", 830209, 97.8, 1.11, 0.26787459234256117, 0.576116167071703, "no"], ["documentary", 816633, 798290, 97.8, 0.82, 0.4114515098137983, 0.6732842887862154, "no", 788774, 96.6, -0.59, 0.5579552391345342, 0.8884327676243327, "no"], ["thriller", 812214, 820442, 101, 8.61, 0.0, 0.0, "yes (FDR)", 799095, 98.4, 3.09, 0.001996584812750113, 0.008984631657375508, "yes (FDR)"], ["horror", 706249, 722450, 102.3, 8.5, 0.0, 0.0, "yes (FDR)", 707697, 100.2, 5.35, 9.022456848306604e-08, 5.413474108983962e-07, "yes (FDR)"], ["crime", 517298, 521403, 100.8, 4.6, 4.18291820603045e-06, 1.67316728241218e-05, "yes (FDR)", 513425, 99.3, 2.86, 0.004247179128173739, 0.016988716512694957, "yes (FDR)"], ["entertainment", 324880, 313717, 96.6, -0.48, 0.6299624117348088, 0.7445433024666527, "no", 314438, 96.8, -0.19, 0.8521972902271557, 0.8884327676243327, "no"], ["sci-fi", 285342, 271198, 95, -2.35, 0.018878807022822963, 0.05663642106846889, "borderline", 279840, 98.1, 1.18, 0.2395859673710672, 0.576116167071703, "no"], ["fantasy", 171972, 110331, 64.2, -34.28, 0.0, 0.0, "yes (FDR)", 120798, 70.2, -27.53, 0.0, 0.0, "yes (FDR)"], ["animation", 165146, 163649, 99.1, 1.29, 0.19801585286589063, 0.39603170573178126, "no", 162134, 98.2, 0.78, 0.43505340318546026, 0.7830961257338285, "no"], ["romance", 161047, 161545, 100.3, 2.89, 0.0039065637221173954, 0.014063629399622624, "yes (FDR)", 158185, 98.2, 1.12, 0.26096200786717416, 0.576116167071703, "no"], ["western", 159649, 159438, 99.9, 1.82, 0.06917147000634438, 0.17786949430202842, "no", 155384, 97.3, 0.21, 0.8318190778362722, 0.8884327676243327, "no"], ["adventure", 115353, 118951, 103.1, 4.76, 1.9118061891365556e-06, 8.6031278511145e-06, "yes (FDR)", 116306, 100.8, 3.11, 0.0018435041427520282, 0.008984631657375508, "yes (FDR)"], ["news", 82019, 79402, 96.8, -0.16, 0.8699126629397649, 0.8699126629397649, "no", 77570, 94.6, -1.16, 0.2453636880584642, 0.576116167071703, "no"], ["mystery", 71933, 70506, 98, 0.39, 0.69450658520757, 0.7535816247362248, "no", 71493, 99.4, 1.06, 0.2880580835358515, 0.576116167071703, "no"], ["lifestyle", 63106, 60852, 96.4, -0.34, 0.7326488018268853, 0.7535816247362248, "no", 61606, 97.6, 0.28, 0.779447366046985, 0.8884327676243327, "no"], ["sport", 41233, 39243, 95.2, -0.74, 0.46030140682407406, 0.6785841747288818, "no", 40595, 98.5, 0.53, 0.5982944576399716, 0.8884327676243327, "no"], ["anime", 39456, 37544, 95.2, -0.65, 0.5129728348357983, 0.710270079003413, "no", 38979, 98.8, 0.56, 0.575714888486113, 0.8884327676243327, "no"], ["war", 20269, 20513, 101.2, 1.92, 0.054399791580780565, 0.15064557668523848, "no", 20128, 99.3, 1.09, 0.27462689045816147, 0.576116167071703, "no"], ["music", 12203, 11654, 95.5, -0.45, 0.6561461033539846, 0.7445433024666527, "no", 11758, 96.4, -0.18, 0.8567498023814721, 0.8884327676243327, "no"], ["talk show", 6697, 6814, 101.7, 0.6, 0.5480602705329711, 0.7307470273772949, "no", 6373, 95.2, -0.26, 0.7938119739904996, 0.8884327676243327, "no"], ["holiday", 5576, 6035, 108.2, 2.66, 0.007903012953468735, 0.025864406029534045, "yes (FDR)", 5445, 97.7, 0.17, 0.8637540796347678, 0.8884327676243327, "no"], ["game show", 4976, 4983, 100.2, 0.46, 0.6474510367205246, 0.7445433024666527, "no", 4691, 94.3, -0.45, 0.6517255601266063, 0.8884327676243327, "no"], ["adult", 3561, 3393, 95.3, -0.52, 0.6030672257078569, 0.7445433024666527, "no", 3499, 98.3, 0.32, 0.747854026802834, 0.8884327676243327, "no"], ["musicals", 3281, 3236, 98.7, 0.35, 0.7291772753158463, 0.7535816247362248, "no", 3056, 93.1, -0.95, 0.34449357121807633, 0.6527246612553025, "no"], ["ambient", 2811, 2577, 91.7, -0.72, 0.4712390102283901, 0.6785841747288818, "no", 2624, 93.4, -0.49, 0.6251276320132251, 0.8884327676243327, "no"], ["science & nature", 2498, 2340, 93.7, -0.44, 0.6618162688592468, 0.7445433024666527, "no", 2422, 96.9, -0.01, 0.9908931795119564, 0.9908931795119565, "no"], ["foreign/international", 2171, 2207, 101.6, 0.75, 0.45474827699210074, 0.6785841747288818, "no", 2086, 96.1, -0.23, 0.8199530782365057, 0.8884327676243327, "no"], ["(unknown)", 1383, 1534, 110.9, 0.91, 0.36452896023878845, 0.6249067889807802, "no", 1640, 118.6, 1.27, 0.20451325285882005, 0.576116167071703, "no"], ["lgbt", 1203, 1091, 90.7, -1.39, 0.1639408313659838, 0.36886687057346357, "no", 1065, 88.6, -1.84, 0.06559091623434377, 0.23612729844363756, "no"], ["biography", 180, 138, 76.7, -1.67, 0.09545592325276875, 0.229094215806645, "no", 164, 91.3, -0.43, 0.6656116808690877, 0.8884327676243327, "no"], ["independent", 55, 41, 74.2, -1.15, 0.24812444848519455, 0.44787800976338943, "no", 41, 75.4, -1.11, 0.26739869561513463, 0.576116167071703, "no"], ["mockumentary", 2, 0, 13.7, -1.15, 0.24882111653521632, 0.44787800976338943, "no", 2, 63.8, -0.35, 0.7283374872292094, 0.8884327676243327, "no"]], "totals": ["TOTAL (all genres)", 12910792, 12481123, 96.7, null, null, null, "", 12434232, 96.3, null, null, null, ""]}, "ogs": {"columns": ["Genre", "Viewer Segment", "Control TVT (hrs)", "Incremental TVT Hold (hrs)", "Incremental TVT Ratio %", "Incremental TVT Sig?", "Top TVT Hold (hrs)", "Top TVT Ratio %", "Top TVT Sig?"], "rows": [["(unknown)", "power_viewer", 688, 891, 129.4, "no", 939, 136.4, "no"], ["(unknown)", "retained", 519, 500, 96.4, "no", 543, 104.6, "no"], ["(unknown)", "new", 73, 68, 92.7, "no", 47, 64, "no"], ["(unknown)", "unknown", 58, 44, 76.1, "no", 59, 102.7, "no"], ["(unknown)", "reactivated", 45, 31, 69.4, "no", 52, 115.2, "no"], ["action", "power_viewer", 559078, 506877, 90.7, "yes (FDR)", 550326, 98.4, "no"], ["action", "retained", 503028, 449810, 89.4, "yes (FDR)", 502755, 99.9, "yes (FDR)"], ["action", "new", 77441, 69868, 90.2, "yes (FDR)", 79731, 103, "yes (FDR)"], ["action", "unknown", 61682, 55954, 90.7, "yes (FDR)", 61064, 99, "no"], ["action", "reactivated", 58133, 49781, 85.6, "yes (FDR)", 59633, 102.6, "yes (FDR)"], ["adult", "retained", 1722, 1686, 97.9, "no", 1737, 100.8, "no"], ["adult", "power_viewer", 1297, 1209, 93.2, "no", 1256, 96.9, "no"], ["adult", "unknown", 245, 171, 69.6, "no", 193, 78.8, "no"], ["adult", "new", 191, 214, 112.3, "no", 196, 103, "no"], ["adult", "reactivated", 106, 114, 106.7, "no", 116, 109.2, "no"], ["adventure", "power_viewer", 53873, 55930, 103.8, "yes (FDR)", 52825, 98.1, "no"], ["adventure", "retained", 45922, 46907, 102.1, "yes (FDR)", 46808, 101.9, "yes (FDR)"], ["adventure", "new", 6492, 6242, 96.1, "no", 6684, 103, "no"], ["adventure", "unknown", 4727, 4934, 104.4, "no", 4850, 102.6, "no"], ["adventure", "reactivated", 4339, 4939, 113.8, "yes (FDR)", 5140, 118.5, "yes (FDR)"], ["ambient", "power_viewer", 1438, 1369, 95.2, "no", 1478, 102.8, "no"], ["ambient", "retained", 1039, 952, 91.6, "no", 930, 89.5, "no"], ["ambient", "reactivated", 128, 98, 76.8, "no", 90, 69.9, "no"], ["ambient", "new", 116, 72, 61.8, "no", 61, 52.7, "no"], ["ambient", "unknown", 89, 86, 96.3, "no", 65, 73.1, "no"], ["animation", "power_viewer", 90115, 86606, 96.1, "no", 87414, 97, "no"], ["animation", "retained", 53068, 54424, 102.6, "yes (FDR)", 52718, 99.3, "no"], ["animation", "new", 8650, 9002, 104.1, "no", 8769, 101.4, "no"], ["animation", "unknown", 6700, 6279, 93.7, "no", 6061, 90.5, "no"], ["animation", "reactivated", 6613, 7339, 111, "borderline", 7172, 108.4, "no"], ["anime", "power_viewer", 16394, 15374, 93.8, "no", 16771, 102.3, "no"], ["anime", "retained", 15071, 14556, 96.6, "no", 14611, 96.9, "no"], ["anime", "new", 4536, 3884, 85.6, "no", 3913, 86.3, "no"], ["anime", "unknown", 1776, 1955, 110, "no", 1740, 97.9, "no"], ["anime", "reactivated", 1678, 1776, 105.8, "no", 1945, 115.9, "no"], ["biography", "retained", 84, 81, 97, "no", 74, 88.2, "no"], ["biography", "power_viewer", 58, 22, 37.9, "yes (FDR)", 59, 102, "no"], ["biography", "reactivated", 16, 12, 76.3, "no", 11, 65.9, "no"], ["biography", "unknown", 15, 4, 26.5, "no", 10, 68.4, "no"], ["biography", "new", 7, 18, 258.3, "no", 11, 148.5, "no"], ["comedy", "power_viewer", 1341410, 1258715, 93.8, "yes (FDR)", 1250408, 93.2, "yes (FDR)"], ["comedy", "retained", 1000801, 907699, 90.7, "yes (FDR)", 916042, 91.5, "yes (FDR)"], ["comedy", "new", 175430, 158615, 90.4, "yes (FDR)", 158751, 90.5, "yes (FDR)"], ["comedy", "reactivated", 154297, 134357, 87.1, "yes (FDR)", 135314, 87.7, "yes (FDR)"], ["comedy", "unknown", 133509, 117733, 88.2, "yes (FDR)", 118618, 88.8, "yes (FDR)"], ["crime", "power_viewer", 275994, 277440, 100.5, "yes (FDR)", 272334, 98.7, "no"], ["crime", "retained", 176270, 178227, 101.1, "yes (FDR)", 174825, 99.2, "borderline"], ["crime", "new", 23495, 23754, 101.1, "no", 24113, 102.6, "borderline"], ["crime", "unknown", 22622, 22937, 101.4, "no", 23466, 103.7, "borderline"], ["crime", "reactivated", 18918, 19045, 100.7, "no", 18688, 98.8, "no"], ["documentary", "power_viewer", 461773, 451274, 97.7, "no", 442522, 95.8, "no"], ["documentary", "retained", 264882, 257055, 97, "no", 256893, 97, "no"], ["documentary", "unknown", 35700, 35697, 100, "no", 35602, 99.7, "no"], ["documentary", "new", 28529, 28959, 101.5, "no", 28225, 98.9, "no"], ["documentary", "reactivated", 25749, 25305, 98.3, "no", 25532, 99.2, "no"], ["drama", "power_viewer", 950312, 950389, 100, "yes (FDR)", 940074, 98.9, "yes (FDR)"], ["drama", "retained", 803995, 810502, 100.8, "yes (FDR)", 798655, 99.3, "yes (FDR)"], ["drama", "unknown", 101279, 101930, 100.6, "borderline", 100935, 99.7, "borderline"], ["drama", "new", 92729, 96195, 103.7, "yes (FDR)", 96101, 103.6, "yes (FDR)"], ["drama", "reactivated", 74469, 78705, 105.7, "yes (FDR)", 79356, 106.6, "yes (FDR)"], ["entertainment", "power_viewer", 190166, 181695, 95.5, "no", 184378, 97, "no"], ["entertainment", "retained", 93947, 91791, 97.7, "no", 90657, 96.5, "no"], ["entertainment", "new", 19323, 19179, 99.3, "no", 18587, 96.2, "no"], ["entertainment", "unknown", 11937, 11197, 93.8, "no", 11368, 95.2, "no"], ["entertainment", "reactivated", 9507, 9855, 103.7, "no", 9447, 99.4, "no"], ["fantasy", "retained", 70213, 45108, 64.2, "yes (FDR)", 50157, 71.4, "yes (FDR)"], ["fantasy", "power_viewer", 59671, 41875, 70.2, "yes (FDR)", 43949, 73.7, "yes (FDR)"], ["fantasy", "new", 18471, 10581, 57.3, "yes (FDR)", 12183, 66, "yes (FDR)"], ["fantasy", "reactivated", 14957, 7497, 50.1, "yes (FDR)", 8454, 56.5, "yes (FDR)"], ["fantasy", "unknown", 8660, 5269, 60.8, "yes (FDR)", 6055, 69.9, "yes (FDR)"], ["foreign/international", "retained", 1017, 1045, 102.8, "no", 965, 94.9, "no"], ["foreign/international", "power_viewer", 812, 845, 104, "no", 788, 97, "no"], ["foreign/international", "new", 129, 121, 94.2, "no", 117, 90.6, "no"], ["foreign/international", "reactivated", 110, 86, 78.4, "no", 115, 104.7, "no"], ["foreign/international", "unknown", 103, 109, 105.6, "no", 101, 98.1, "no"], ["game show", "retained", 2219, 2073, 93.4, "no", 1874, 84.4, "no"], ["game show", "power_viewer", 2086, 2233, 107, "no", 2003, 96, "no"], ["game show", "reactivated", 238, 193, 81.3, "no", 214, 89.9, "no"], ["game show", "unknown", 221, 260, 117.8, "no", 312, 141.3, "borderline"], ["game show", "new", 211, 224, 106, "no", 288, 136.4, "no"], ["holiday", "power_viewer", 3532, 4003, 113.3, "yes (FDR)", 3403, 96.4, "no"], ["holiday", "retained", 1696, 1677, 98.9, "no", 1716, 101.2, "no"], ["holiday", "unknown", 204, 190, 93.5, "no", 183, 89.8, "no"], ["holiday", "new", 84, 86, 101.9, "no", 83, 98.6, "no"], ["holiday", "reactivated", 61, 78, 127.9, "no", 60, 97.7, "no"], ["horror", "power_viewer", 314398, 322157, 102.5, "yes (FDR)", 313139, 99.6, "borderline"], ["horror", "retained", 283582, 288532, 101.7, "yes (FDR)", 284252, 100.2, "yes (FDR)"], ["horror", "new", 41166, 42504, 103.3, "yes (FDR)", 42578, 103.4, "yes (FDR)"], ["horror", "unknown", 38219, 38366, 100.4, "no", 37026, 96.9, "no"], ["horror", "reactivated", 28884, 30891, 106.9, "yes (FDR)", 30703, 106.3, "yes (FDR)"], ["independent", "power_viewer", 32, 20, 63.1, "no", 17, 54.3, "no"], ["independent", "retained", 20, 13, 67.3, "no", 19, 97.4, "no"], ["independent", "unknown", 1, 5, 380.4, "no", 2, 113.3, "no"], ["independent", "new", 1, 2, 118.8, "no", 0, 1.8, "no"], ["independent", "reactivated", 0, 0, null, "\u2014", 3, null, "no"], ["kids & family", "power_viewer", 686174, 677121, 98.7, "no", 649123, 94.6, "borderline"], ["kids & family", "retained", 479968, 487945, 101.7, "yes (FDR)", 441499, 92, "yes (FDR)"], ["kids & family", "new", 82055, 87563, 106.7, "yes (FDR)", 76543, 93.3, "no"], ["kids & family", "reactivated", 71648, 76287, 106.5, "yes (FDR)", 67944, 94.8, "no"], ["kids & family", "unknown", 54305, 56697, 104.4, "yes (FDR)", 49838, 91.8, "borderline"], ["lgbt", "retained", 683, 613, 89.7, "no", 624, 91.4, "no"], ["lgbt", "power_viewer", 305, 296, 96.9, "no", 264, 86.6, "no"], ["lgbt", "new", 107, 73, 68.4, "borderline", 74, 69.1, "no"], ["lgbt", "unknown", 54, 60, 111.4, "no", 64, 119.7, "no"], ["lgbt", "reactivated", 53, 49, 92.7, "no", 38, 71.6, "no"], ["lifestyle", "power_viewer", 32937, 31760, 96.4, "no", 32390, 98.3, "no"], ["lifestyle", "retained", 23916, 22922, 95.8, "no", 22663, 94.8, "no"], ["lifestyle", "unknown", 2434, 2359, 96.9, "no", 2533, 104.1, "no"], ["lifestyle", "new", 1923, 1980, 103, "no", 2175, 113.1, "no"], ["lifestyle", "reactivated", 1897, 1831, 96.6, "no", 1845, 97.3, "no"], ["mockumentary", "retained", 2, 0, 13.7, "no", 2, 63.8, "no"], ["music", "power_viewer", 5458, 5341, 97.9, "no", 5412, 99.2, "no"], ["music", "retained", 5108, 4869, 95.3, "no", 4886, 95.6, "no"], ["music", "reactivated", 673, 604, 89.8, "no", 578, 85.9, "no"], ["music", "new", 530, 451, 85.2, "no", 484, 91.4, "no"], ["music", "unknown", 434, 388, 89.4, "no", 398, 91.8, "no"], ["musicals", "retained", 1489, 1418, 95.2, "no", 1315, 88.3, "no"], ["musicals", "power_viewer", 1077, 1123, 104.2, "no", 1040, 96.5, "no"], ["musicals", "new", 285, 297, 104.3, "no", 329, 115.5, "no"], ["musicals", "reactivated", 260, 235, 90.5, "no", 227, 87.3, "no"], ["musicals", "unknown", 170, 163, 96.2, "no", 146, 85.7, "no"], ["mystery", "power_viewer", 37873, 37064, 97.9, "no", 38499, 101.7, "no"], ["mystery", "retained", 26127, 25848, 98.9, "no", 25726, 98.5, "no"], ["mystery", "new", 3114, 2959, 95, "no", 2945, 94.6, "no"], ["mystery", "unknown", 2963, 2948, 99.5, "no", 2677, 90.4, "no"], ["mystery", "reactivated", 1858, 1686, 90.8, "no", 1645, 88.5, "no"], ["news", "power_viewer", 44435, 42862, 96.5, "no", 41432, 93.2, "no"], ["news", "retained", 29069, 28821, 99.1, "no", 27705, 95.3, "no"], ["news", "new", 4576, 3953, 86.4, "no", 4468, 97.6, "no"], ["news", "reactivated", 2143, 1930, 90, "no", 1994, 93, "no"], ["news", "unknown", 1795, 1837, 102.3, "no", 1971, 109.8, "no"], ["reality", "power_viewer", 441791, 430042, 97.3, "no", 432783, 98, "no"], ["reality", "retained", 302968, 301037, 99.4, "borderline", 295414, 97.5, "no"], ["reality", "new", 43069, 41070, 95.4, "no", 40885, 94.9, "no"], ["reality", "unknown", 32477, 32583, 100.3, "no", 32438, 99.9, "no"], ["reality", "reactivated", 28346, 28130, 99.2, "no", 28688, 101.2, "no"], ["romance", "power_viewer", 71151, 71042, 99.8, "no", 69373, 97.5, "no"], ["romance", "retained", 65602, 65844, 100.4, "yes (FDR)", 64777, 98.7, "no"], ["romance", "unknown", 8356, 8233, 98.5, "no", 8064, 96.5, "no"], ["romance", "new", 8140, 8335, 102.4, "no", 8274, 101.6, "no"], ["romance", "reactivated", 7798, 8090, 103.7, "no", 7696, 98.7, "no"], ["sci-fi", "power_viewer", 125305, 118523, 94.6, "no", 121950, 97.3, "no"], ["sci-fi", "retained", 115302, 111161, 96.4, "no", 114626, 99.4, "borderline"], ["sci-fi", "new", 17808, 16288, 91.5, "no", 17410, 97.8, "no"], ["sci-fi", "unknown", 13543, 13210, 97.5, "no", 13494, 99.6, "no"], ["sci-fi", "reactivated", 13384, 12016, 89.8, "borderline", 12360, 92.4, "no"], ["science & nature", "power_viewer", 1248, 1337, 107.2, "no", 1186, 95, "no"], ["science & nature", "retained", 1051, 782, 74.4, "borderline", 980, 93.2, "no"], ["science & nature", "unknown", 82, 84, 102.5, "no", 94, 114.2, "no"], ["science & nature", "new", 64, 58, 90.7, "no", 76, 118.1, "no"], ["science & nature", "reactivated", 53, 78, 146.6, "no", 87, 162.6, "no"], ["sport", "power_viewer", 19560, 17573, 89.8, "no", 19200, 98.2, "no"], ["sport", "retained", 14353, 14498, 101, "no", 14362, 100.1, "no"], ["sport", "new", 3344, 3212, 96, "no", 3151, 94.2, "no"], ["sport", "reactivated", 2287, 2216, 96.9, "no", 2226, 97.3, "no"], ["sport", "unknown", 1688, 1744, 103.3, "no", 1656, 98.1, "no"], ["talk show", "power_viewer", 4220, 4275, 101.3, "no", 3468, 82.2, "no"], ["talk show", "retained", 1710, 1915, 112, "no", 2318, 135.5, "yes (FDR)"], ["talk show", "new", 339, 173, 51.1, "borderline", 187, 55.1, "no"], ["talk show", "unknown", 235, 233, 99.2, "no", 227, 96.5, "no"], ["talk show", "reactivated", 192, 216, 112.8, "no", 174, 90.6, "no"], ["thriller", "power_viewer", 352131, 353587, 100.4, "yes (FDR)", 347109, 98.6, "borderline"], ["thriller", "retained", 339842, 341935, 100.6, "yes (FDR)", 335332, 98.7, "yes (FDR)"], ["thriller", "unknown", 45631, 46647, 102.2, "yes (FDR)", 44437, 97.4, "no"], ["thriller", "new", 38370, 39988, 104.2, "yes (FDR)", 37685, 98.2, "no"], ["thriller", "reactivated", 36240, 38285, 105.6, "yes (FDR)", 34533, 95.3, "no"], ["war", "retained", 9737, 9534, 97.9, "no", 9485, 97.4, "no"], ["war", "power_viewer", 7622, 7944, 104.2, "no", 7910, 103.8, "no"], ["war", "new", 1039, 1063, 102.4, "no", 1005, 96.7, "no"], ["war", "unknown", 1007, 983, 97.6, "no", 959, 95.2, "no"], ["war", "reactivated", 865, 990, 114.4, "no", 768, 88.8, "no"], ["western", "power_viewer", 87038, 86146, 99, "no", 84835, 97.5, "no"], ["western", "retained", 54641, 55166, 101, "borderline", 52892, 96.8, "no"], ["western", "new", 7394, 7538, 102, "no", 7276, 98.4, "no"], ["western", "unknown", 5592, 5658, 101.2, "no", 5746, 102.7, "no"], ["western", "reactivated", 4984, 4928, 98.9, "no", 4637, 93, "no"]]}, "diag": {"base": {"columns": ["Arm", "Devices", "Avg pre-28d TVT (hr)", "vs Control", "Welch t", "Median (hr)", "Avg visit-days", "OKR coverage"], "rows": [["Control", "1,958,027", "25.984", "\u2014", "\u2014", "4.716", "7.86", "90.1%"], ["top_inc_titles (Incremental TVT)", "1,902,352", "25.979", "\u22120.021%", "\u22120.09", "4.687", "7.86", "90.1%"], ["top_tvt_titles (Top TVT)", "1,899,515", "25.944", "<span class='pill pill-neg'>\u22120.155%</span>", "\u22120.68", "4.689", "7.86", "90.1%"]]}, "ci": {"columns": ["Arm", "Statsig tvt \u0394%", "95% CI", "Baseline draw vs Control", "Interpretation"], "rows": [["Incremental TVT (top_inc_titles)", "\u22120.50%", "[\u22120.95%, \u22120.05%]", "\u22120.021%", "within noise"], ["Top TVT (top_tvt_titles)", "\u22120.64%", "[\u22121.09%, \u22120.19%]", "\u22120.155%", "lighter draw explains most of gap"], ["Arm-to-arm gap", "0.14pp", "CIs overlap heavily", "0.134%", "<span class='pill pill-flat'>not sig. (direct test p=0.21)</span>"]]}, "genre": {"columns": ["Genre (net catalog effect, ITT)", "Incremental TVT arm", "Top TVT arm", "Why"], "rows": [["kids &amp; family", "<span class='pill pill-pos'>+3.7% (sig)</span>", "<span class='pill pill-neg'>\u22123.5% (sig)</span>", "animation held back in Top TVT; no close substitute"], ["action", "<span class='pill pill-neg'>\u22127.5% (sig)</span>", "<span class='pill pill-pos'>+2.5% (sig)</span>", "franchises held back in Incremental arm"], ["fantasy", "<span class='pill pill-neg'>\u221233.6% (sig)</span>", "<span class='pill pill-neg'>\u221227.2% (sig)</span>", "Twilight held in both arms"], ["comedy", "<span class='pill pill-neg'>\u22125.4% (sig)</span>", "<span class='pill pill-neg'>\u22125.2% (sig)</span>", "Rush Hour / Friday held in both arms"]]}, "test": {"columns": ["Quantity", "Incremental TVT arm", "Top TVT arm", "Difference (Top TVT \u2212 Incremental)"], "rows": [["Exposed devices (ITT N)", "1,902,352", "1,899,515", "\u2014"], ["Mean TVT / device", "6.2496 hr", "6.2335 hr", "\u22120.0161 hr"], ["Std. dev.", "12.634 hr", "12.593 hr", "\u2014"], ["Difference (% of Incremental mean)", "\u2014", "\u2014", "<b>\u22120.257%</b>"], ["95% CI of difference", "\u2014", "\u2014", "[\u22120.66%, +0.15%]"], ["Welch t (df \u2248 3.8M)", "\u2014", "\u2014", "\u22121.24"], ["Two-sided p-value", "\u2014", "\u2014", "<span class='pill pill-flat'>0.214 \u2014 not significant</span>"]]}, "ciplot": {"axis": [-1.4, 0.6], "rows": [{"cls": "ci-inc", "label": "Incremental TVT", "sub": "vs Control", "pt": -0.5, "lo": -0.95, "hi": -0.05}, {"cls": "ci-tvt", "label": "Top TVT", "sub": "vs Control", "pt": -0.64, "lo": -1.09, "hi": -0.19}, {"cls": "ci-diff", "label": "Top TVT \u2212 Incremental", "sub": "direct arm-to-arm test", "pt": -0.26, "lo": -0.66, "hi": 0.15}], "caption": "Points = effect estimate; bars = 95% CI. The two Control-relative bands (blue, green) overlap heavily; the direct arm-to-arm difference (orange) crosses 0 (p = 0.21). No ranking between the arms is statistically supported."}}};
+const KPI = {"title": {"a_hold": 151945, "a_ctrl": 655054, "a_ratio": 23.2, "b_hold": 133715, "b_ctrl": 578681, "b_ratio": 23.1}, "overall": {"a_hold": 12481123, "a_ctrl": 12910792, "a_ratio": 96.7, "a_delta": -429669, "b_hold": 12434232, "b_ctrl": 12910792, "b_ratio": 96.3, "b_delta": -476560, "a_bh": 11, "b_bh": 9, "n_genres": 36}};
+const WHY = {"inc": {"chan": {"A": -498427, "B": 839037, "C": -403501, "net": -62890, "hole": 498427, "refill_hrs": 435536, "refill_pct": 87.4, "ctrl_n": 1958255, "arm_n": 1902560, "scale": 1.0293, "ctrl_total": 13101608, "arm_total_norm": 13038718}, "subs": [["Baby Boy", "drama", "movie", 24080, 30369, 6289, 26.1], ["Major Payne", "comedy", "movie", 28034, 33800, 5766, 20.6], ["Bringing Down the House", "comedy", "movie", 24936, 30083, 5147, 20.6], ["Courage the Cowardly Dog", "comedy", "series", 84611, 89692, 5081, 6.0], ["Trolls", "kids & family", "movie", 58727, 63464, 4737, 8.1], ["Dodgeball: A True Underdog Story", "comedy", "movie", 25503, 30184, 4681, 18.4], ["Tales From the Crypt", "horror", "series", 83640, 88255, 4615, 5.5], ["Transformers: Dark of the Moon", "action", "movie", 31510, 36080, 4570, 14.5], ["Little Man", "comedy", "movie", 22576, 27134, 4558, 20.2], ["Tom and Jerry Theatricals", "kids & family", "series", 64953, 69509, 4556, 7.0], ["Cloudy With a Chance of Meatballs 2", "kids & family", "movie", 38348, 42562, 4214, 11.0], ["The Little Rascals", "kids & family", "movie", 31133, 35324, 4191, 13.5], ["Superbad", "comedy", "movie", 35572, 39671, 4099, 11.5], ["Ghost Rider", "action", "movie", 16602, 20662, 4060, 24.5], ["Hook", "kids & family", "movie", 23927, 27765, 3838, 16.0], ["Fat Albert", "comedy", "movie", 13677, 17209, 3532, 25.8], ["Monsters vs. Aliens", "kids & family", "movie", 32083, 35539, 3456, 10.8], ["Geostorm", "action", "movie", 22084, 25490, 3406, 15.4], ["The Wrong Baby Daddy", "drama", "movie", 32080, 35470, 3390, 10.6], ["Me, Myself and Irene", "comedy", "movie", 18305, 21529, 3224, 17.6]], "cann": [["Everybody Hates Chris", "comedy", "series", 344561, 331969, -12592, -3.7], ["Taken", "action", "series", 43099, 38653, -4446, -10.3], ["New York Minute", "kids & family", "movie", 6127, 3948, -2179, -35.6], ["American Pickers", "reality", "series", 14401, 12548, -1853, -12.9], ["Knight Rider", "action", "series", 32746, 30915, -1831, -5.6], ["The Haves and the Have Nots", "drama", "series", 57607, 55787, -1820, -3.2], ["Rabbids Invasion", "kids & family", "series", 11924, 10162, -1762, -14.8], ["What's New, Scooby-Doo?", "kids & family", "series", 74056, 72425, -1631, -2.2], ["ION Mystery", "entertainment", "linear", 19249, 17620, -1629, -8.5], ["The First 48", "documentary", "series", 41736, 40217, -1519, -3.6], ["The PJs", "comedy", "series", 20248, 18887, -1361, -6.7], ["Whose Line Is It Anyway? (1998)", "comedy", "series", 10463, 9140, -1323, -12.6], ["Sabrina the Teenage Witch", "comedy", "series", 19406, 18099, -1307, -6.7], ["Ed, Edd n Eddy", "kids & family", "series", 38300, 37093, -1207, -3.2], ["The Rifleman", "western", "series", 10259, 9097, -1162, -11.3], ["Dateline 24/7", "entertainment", "linear", 27591, 26490, -1101, -4.0], ["60 Days In", "reality", "series", 4173, 3084, -1089, -26.1], ["Like Nastya", "kids & family", "series", 36582, 35556, -1026, -2.8], ["My Lottery Dream Home", "lifestyle", "series", 5338, 4335, -1003, -18.8], ["Mois\u00e9s y los diez mandamientos", "drama", "series", 6338, 5336, -1002, -15.8]], "genre": [["comedy", -263233, 156896, -47315, -153653, 8], ["action", -153796, 85228, -25725, -94293, 9], ["fantasy", -61212, 5298, -2734, -58648, 4], ["sci-fi", -18510, 17005, -4742, -6247, 2], ["entertainment", 0, 13104, -14593, -1489, 0], ["sport", 0, 1617, -2476, -859, 0], ["anime", 0, 2314, -3052, -738, 0], ["lifestyle", 0, 4935, -5484, -548, 0], ["ambient", 0, 75, -276, -201, 0], ["music", 0, 892, -1056, -164, 0], ["lgbt", 0, 50, -143, -92, 0], ["adult", 0, 179, -260, -82, 0], ["science & nature", 0, 106, -187, -81, 0], ["biography", 0, 13, -36, -23, 0], ["news", 0, 4477, -4453, 24, 0], ["musicals", 0, 236, -177, 58, 0], ["foreign/international", 0, 139, -76, 63, 0], ["game show", 0, 540, -403, 137, 0], ["(unknown)", 0, 291, -106, 185, 0], ["talk show", 0, 540, -216, 324, 0], ["mystery", 0, 2977, -2473, 504, 0], ["holiday", 0, 656, -128, 528, 0], ["war", 0, 1690, -925, 765, 0], ["animation", 0, 7468, -4400, 3068, 0], ["western", 0, 10456, -6087, 4369, 0], ["documentary", 0, 46909, -42364, 4546, 0], ["romance", 0, 10147, -4972, 5175, 0], ["adventure", 0, 10359, -3486, 6872, 0], ["reality", 0, 48859, -40030, 8828, 0], ["crime", 0, 30884, -11916, 18968, 0], ["thriller", -1677, 48237, -14532, 32029, 2], ["horror", 0, 50100, -13342, 36758, 0], ["kids & family", 0, 77141, -24894, 52247, 0], ["drama", 0, 135099, -61148, 73951, 0]]}, "tvt": {"chan": {"A": -440953, "B": 778745, "C": -431381, "net": -93589, "hole": 440953, "refill_hrs": 347364, "refill_pct": 78.8, "ctrl_n": 1958255, "arm_n": 1899763, "scale": 1.0308, "ctrl_total": 13101608, "arm_total_norm": 13008019}, "subs": [["Colombiana", "action", "movie", 48162, 57402, 9240, 19.2], ["It Takes Two", "comedy", "movie", 30719, 38267, 7548, 24.6], ["The Little Rascals", "kids & family", "movie", 31133, 37130, 5997, 19.3], ["Taken", "action", "series", 43099, 48289, 5190, 12.0], ["Baby Boy", "drama", "movie", 24080, 28925, 4845, 20.1], ["Major Payne", "comedy", "movie", 28034, 32181, 4147, 14.8], ["Fatal Attraction", "documentary", "series", 58114, 62202, 4088, 7.0], ["Superbad", "comedy", "movie", 35572, 39655, 4083, 11.5], ["The Bernie Mac Show", "comedy", "series", 57542, 61536, 3994, 6.9], ["Little Man", "comedy", "movie", 22576, 26564, 3988, 17.7], ["Dodgeball: A True Underdog Story", "comedy", "movie", 25503, 29475, 3972, 15.6], ["Bringing Down the House", "comedy", "movie", 24936, 28880, 3944, 15.8], ["A Neighbor to Die For", "drama", "movie", 15234, 19117, 3883, 25.5], ["Transformers: Dark of the Moon", "action", "movie", 31510, 35375, 3865, 12.3], ["Scooby-Doo Where Are You?", "kids & family", "series", 54343, 58084, 3741, 6.9], ["The Wrong Baby Daddy", "drama", "movie", 32080, 35712, 3632, 11.3], ["Dennis the Menace", "comedy", "movie", 19829, 23458, 3629, 18.3], ["Hook", "kids & family", "movie", 23927, 27399, 3472, 14.5], ["The Little Rascals Save the Day", "kids & family", "movie", 16236, 19698, 3462, 21.3], ["Tales From the Crypt", "horror", "series", 83640, 87037, 3397, 4.1]], "cann": [["Everybody Hates Chris", "comedy", "series", 344561, 336680, -7881, -2.3], ["The Twilight Saga: Eclipse", "fantasy", "movie", 17895, 13999, -3896, -21.8], ["The First 48", "documentary", "series", 41736, 38486, -3250, -7.8], ["Barbershop: The Next Cut", "comedy", "movie", 9138, 6201, -2937, -32.1], ["The Twilight Saga: Breaking Dawn - Part 1", "fantasy", "movie", 16145, 13210, -2935, -18.2], ["The Haves and the Have Nots", "drama", "series", 57607, 55596, -2011, -3.5], ["The Twilight Saga: Breaking Dawn - Part 2", "fantasy", "movie", 19533, 17618, -1915, -9.8], ["Looney Tunes", "kids & family", "series", 126157, 124259, -1898, -1.5], ["The Scooby-Doo Show", "animation", "series", 49967, 48192, -1775, -3.6], ["Sanford and Son", "comedy", "series", 98994, 97361, -1633, -1.6], ["Sabrina the Teenage Witch", "comedy", "series", 19406, 17830, -1576, -8.1], ["Bed of Roses", "drama", "series", 18924, 17367, -1557, -8.2], ["Kitchen Nightmares (2023)", "reality", "series", 20657, 19345, -1312, -6.4], ["Garfield and Friends", "kids & family", "series", 15051, 13771, -1280, -8.5], ["Dateline 24/7", "entertainment", "linear", 27591, 26335, -1256, -4.6], ["Barbershop 2: Back in Business", "comedy", "movie", 5408, 4246, -1162, -21.5], ["Empire", "drama", "series", 52193, 51036, -1157, -2.2], ["Seeking Persephone", "romance", "series", 21747, 20598, -1149, -5.3], ["ION", "entertainment", "linear", 24811, 23669, -1142, -4.6], ["Heart of a Woman", "thriller", "movie", 8468, 7376, -1092, -12.9]], "genre": [["comedy", -249671, 151680, -49918, -147909, 8], ["kids & family", -98277, 70794, -21511, -48994, 3], ["fantasy", -40025, 3176, -11072, -47920, 2], ["documentary", 0, 41960, -45135, -3175, 0], ["entertainment", 0, 13579, -15319, -1740, 0], ["news", 0, 4678, -6250, -1572, 0], ["game show", 0, 277, -400, -123, 0], ["musicals", 0, 213, -333, -120, 0], ["talk show", 0, 175, -290, -115, 0], ["lgbt", 0, 45, -154, -108, 0], ["ambient", 0, 118, -220, -103, 0], ["music", 0, 1000, -1092, -91, 0], ["science & nature", 0, 48, -80, -32, 0], ["biography", 0, 5, -9, -4, 0], ["foreign/international", 0, 33, -27, 6, 0], ["adult", 0, 177, -165, 12, 0], ["holiday", 0, 493, -385, 108, 0], ["(unknown)", 0, 316, -20, 296, 0], ["lifestyle", 0, 4524, -4195, 329, 0], ["war", 0, 1589, -1160, 430, 0], ["sport", 0, 2967, -2508, 459, 0], ["western", 0, 7641, -6958, 683, 0], ["anime", 0, 3617, -2762, 855, 0], ["mystery", 0, 3380, -1732, 1648, 0], ["animation", 0, 7826, -6051, 1775, 0], ["romance", 0, 8260, -6411, 1849, 0], ["sci-fi", -4425, 13625, -5894, 3306, 1], ["adventure", 0, 9279, -4763, 4516, 0], ["reality", 0, 48136, -40928, 7208, 0], ["thriller", -15989, 43542, -15986, 11567, 2], ["crime", 0, 25355, -13618, 11738, 0], ["horror", 0, 40634, -17091, 23544, 0], ["action", -32567, 87916, -22279, 33070, 1], ["drama", 0, 119486, -65299, 54187, 0]]}};
+
+function ratioClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 40) return 'background:#f8d7da;';
+  if (n <= 70) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function ratioClassNet(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 99) return 'background:#f8d7da;';
+  if (n <= 101) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return v;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+function fmtSci(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return '—';
+  if (n === 0) return '0';
+  if (n >= 0.001) return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3});
+  return n.toExponential(1);
+}
+function sigCls(v) {
+  if (v === 'yes (FDR)') return 'sig-yes';
+  if (v === 'borderline') return 'sig-bl';
+  return '';
+}
+
+// generic sortable table. opts: textCols, ratioCols(scale='title'|'net'), pctCols, sciCols, sigCols, armACols, armBCols, defaultSort, defaultDir
+function renderTable(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const textCols = opts.textCols || [0];
+  const ratioCols = opts.ratioCols || [];
+  const ratioScale = opts.ratioScale || {};
+  const pctCols = opts.pctCols || [];
+  const sciCols = opts.sciCols || [];
+  const sigCols = opts.sigCols || [];
+  const armA = opts.armACols || [];
+  const armB = opts.armBCols || [];
+  let sortIdx = opts.defaultSort != null ? opts.defaultSort : null;
+  let sortDir = opts.defaultDir || 'desc';
+  function build() {
+    let data = rows.slice();
+    if (sortIdx !== null) {
+      data.sort((a,b) => {
+        let x=a[sortIdx], y=b[sortIdx];
+        const nx=parseFloat(x), ny=parseFloat(y);
+        if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+        if (x===null) return 1; if (y===null) return -1;
+        if (x<y) return sortDir==='asc'?-1:1;
+        if (x>y) return sortDir==='asc'?1:-1;
+        return 0;
+      });
+    }
+    let h = '<table><thead><tr>';
+    cols.forEach((c,i) => {
+      let cls = textCols.includes(i)?'txt':'';
+      if (armA.includes(i)) cls += ' arm-a'; if (armB.includes(i)) cls += ' arm-b';
+      const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+      h += `<th class="${cls}" onclick="window.__sort_${containerId}(${i})">${c}${arrow}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      r.forEach((v,i) => {
+        let cls = textCols.includes(i)?'txt':'';
+        let disp = fmt(v);
+        if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+        if (sciCols.includes(i)) disp = fmtSci(v);
+        if (ratioCols.includes(i)) {
+          const rc = (ratioScale[i]==='net'?ratioClassNet(v):ratioClass(v));
+          disp = `<span class="ratio-cell" style="${rc}">${v===null||v===''?'—':fmt(v)+'%'}</span>`;
+          h += `<td>${disp}</td>`; return;
+        }
+        if (sigCols.includes(i)) { h += `<td class="txt ${sigCls(v)}">${v}</td>`; return; }
+        h += `<td class="${cls}">${disp}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody>';
+    if (opts.totals) {
+      h += '<tfoot><tr class="totals-row">';
+      opts.totals.forEach((v,i) => {
+        let cls = textCols.includes(i)?'txt':'';
+        let disp = fmt(v);
+        if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+        if (ratioCols.includes(i)) {
+          const rc = (ratioScale[i]==='net'?ratioClassNet(v):ratioClass(v));
+          h += `<td><span class="ratio-cell" style="${rc}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`; return;
+        }
+        h += `<td class="${cls}">${disp}</td>`;
+      });
+      h += '</tr></tfoot>';
+    }
+    h += '</table>';
+    document.getElementById(containerId).innerHTML = h;
+  }
+  window['__sort_'+containerId] = function(i) {
+    if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+    build();
+  };
+  build();
+}
+
+function renderGrouped(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const ratioCols = opts.ratioCols || [];
+  const ratioScale = opts.ratioScale || {};
+  const sigCols = opts.sigCols || [];
+  const armA = opts.armACols || [];
+  const armB = opts.armBCols || [];
+  let h = '<table><thead><tr>';
+  cols.forEach((c,i) => {
+    let cls = (i===0||i===1)?'txt':'';
+    if (armA.includes(i)) cls += ' arm-a'; if (armB.includes(i)) cls += ' arm-b';
+    h += `<th class="${cls}">${c}</th>`;
+  });
+  h += '</tr></thead><tbody>';
+  let cur = null;
+  rows.forEach(r => {
+    if (r[0] !== cur) { cur = r[0]; h += `<tr class="genre-hdr"><td colspan="${cols.length}">${cur}</td></tr>`; }
+    h += '<tr>';
+    r.forEach((v,i) => {
+      if (i===0) { h += `<td class="txt" style="padding-left:22px;">${v}</td>`; return; }
+      if (i===1) { h += `<td class="txt">${v}</td>`; return; }
+      if (ratioCols.includes(i)) {
+        const rc = (ratioScale[i]==='net'?ratioClassNet(v):ratioClass(v));
+        h += `<td><span class="ratio-cell" style="${rc}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`;
+      } else if (sigCols.includes(i)) { h += `<td class="txt ${sigCls(v)}">${v}</td>`; }
+      else h += `<td>${fmt(v)}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = h;
+}
+
+// By Title: Title(0) Genre(1) HeldIn(2) Ctrl(3) INChold(4) INCratio(5) TVThold(6) TVTratio(7) Grand(8)
+renderTable('titleTable', DATA.title.columns, DATA.title.rows, {
+  textCols:[0,1,2], ratioCols:[5,7], ratioScale:{5:'title',7:'title'},
+  armACols:[4,5], armBCols:[6,7], defaultSort:8, defaultDir:'desc'
+});
+// two-arm genre/seg: dim(0) INChold(1) INCctrl(2) INChv(3) INCcv(4) INCratio(5) TVThold(6) TVTctrl(7) TVThv(8) TVTcv(9) TVTratio(10)
+renderTable('genreTable', DATA.genre.columns, DATA.genre.rows, {
+  textCols:[0], ratioCols:[5,10], ratioScale:{5:'title',10:'title'},
+  armACols:[1,2,3,4,5], armBCols:[6,7,8,9,10], defaultSort:1, defaultDir:'desc'
+});
+renderTable('segTable', DATA.seg.columns, DATA.seg.rows, {
+  textCols:[0], ratioCols:[5,10], ratioScale:{5:'title',10:'title'},
+  armACols:[1,2,3,4,5], armBCols:[6,7,8,9,10], defaultSort:1, defaultDir:'desc'
+});
+// gs: genre(0) seg(1) then arm cols shifted +1: INChold(2)..INCratio(6) TVThold(7)..TVTratio(11)
+renderGrouped('gsTable', DATA.gs.columns, DATA.gs.rows, {
+  ratioCols:[6,11], ratioScale:{6:'title',11:'title'}, armACols:[2,3,4,5,6], armBCols:[7,8,9,10,11]
+});
+// og: Genre(0) Ctrl(1) INChold(2) INCratio(3) INCt(4) INCp(5) INCpbh(6) INCsig(7) TVThold(8) TVTratio(9) TVTt(10) TVTp(11) TVTpbh(12) TVTsig(13)
+renderTable('ogTable', DATA.og.columns, DATA.og.rows, {
+  textCols:[0,7,13], ratioCols:[3,9], ratioScale:{3:'net',9:'net'},
+  sciCols:[5,6,11,12], sigCols:[7,13], armACols:[2,3,4,5,6,7], armBCols:[8,9,10,11,12,13],
+  defaultSort:1, defaultDir:'desc', totals:DATA.og.totals
+});
+// ogs: Genre(0) Seg(1) Ctrl(2) INChold(3) INCratio(4) INCsig(5) TVThold(6) TVTratio(7) TVTsig(8)
+renderGrouped('ogsTable', DATA.ogs.columns, DATA.ogs.rows, {
+  ratioCols:[4,7], ratioScale:{4:'net',7:'net'}, sigCols:[5,8], armACols:[3,4,5], armBCols:[6,7,8]
+});
+
+// ---- diagnosis tab: plain static tables ----
+function renderStatic(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const textCols = opts.textCols || [0];
+  let h = '<table class="diag"><thead><tr>';
+  cols.forEach((c,i) => { h += `<th class="${textCols.includes(i)?'txt':''}">${c}</th>`; });
+  h += '</tr></thead><tbody>';
+  rows.forEach(r => {
+    h += '<tr>';
+    r.forEach((v,i) => { h += `<td class="${textCols.includes(i)?'txt':''}">${v===null||v===undefined?'—':v}</td>`; });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = h;
+}
+renderStatic('diagBaseTable', DATA.diag.base.columns, DATA.diag.base.rows, {textCols:[0]});
+renderStatic('diagCiTable', DATA.diag.ci.columns, DATA.diag.ci.rows, {textCols:[0]});
+renderStatic('diagGenreTable', DATA.diag.genre.columns, DATA.diag.genre.rows, {textCols:[0]});
+renderStatic('diagTestTable', DATA.diag.test.columns, DATA.diag.test.rows, {textCols:[0]});
+
+// ---- CI overlap forest plot ----
+function renderCiPlot(containerId, spec) {
+  const rows = spec.rows;              // [{cls,label,sub,pt,lo,hi}]
+  const lo = spec.axis[0], hi = spec.axis[1];
+  const x = v => ((v - lo) / (hi - lo)) * 100;   // % across track
+  let h = '<div class="ci-plot">';
+  rows.forEach(r => {
+    const fmt = v => (v>0?'+':'') + v.toFixed(2) + '%';
+    h += `<div class="ci-row"><div class="ci-label">${r.label}<span class="sub">${r.sub||''}</span></div>`;
+    h += `<div class="ci-track ${r.cls}">`;
+    h += `<div class="ci-axis-line"></div>`;
+    h += `<div class="ci-zero" style="left:${x(0)}%"></div>`;
+    h += `<div class="ci-bar ci-bar-c" style="left:${x(r.lo)}%;width:${x(r.hi)-x(r.lo)}%"></div>`;
+    h += `<div class="ci-whisker ci-whisker-c" style="left:${x(r.lo)}%"></div>`;
+    h += `<div class="ci-whisker ci-whisker-c" style="left:${x(r.hi)}%"></div>`;
+    h += `<div class="ci-dot ci-dot-c" style="left:${x(r.pt)}%"></div>`;
+    h += `<div class="ci-pt-lbl ci-pt-c" style="left:${x(r.pt)}%">${fmt(r.pt)}</div>`;
+    h += `<div style="position:absolute;top:-16px;left:${x(r.hi)}%;margin-left:8px;font-size:10px;color:#889;white-space:nowrap;">[${fmt(r.lo)}, ${fmt(r.hi)}]</div>`;
+    h += `</div></div>`;
+  });
+  // scale ticks
+  h += '<div class="ci-row"><div></div><div class="ci-scale">';
+  const nt = 5;
+  for (let i=0;i<=nt;i++) { const v = lo + (hi-lo)*i/nt; h += `<span class="ci-tick" style="left:${x(v)}%">${(v>0?'+':'')+v.toFixed(1)}%</span>`; }
+  h += '</div></div>';
+  h += '</div>';
+  h += `<div class="ci-caption">${spec.caption||''}</div>`;
+  document.getElementById(containerId).innerHTML = h;
+}
+renderCiPlot('diagCiPlot', DATA.diag.ciplot);
+
+// ---- Why TVT (A/B/C decomposition) ----
+function sign(n){ return (n>0?'+':'') + Math.round(n).toLocaleString(); }
+function renderAbcFlow(containerId, ch) {
+  const h = `<div class="abc-flow">
+    <div class="abc-card loss"><div class="abc-lbl">A · Direct held-title loss</div><div class="abc-val">${sign(ch.A)}</div><div class="abc-sub">TVT lost on this arm's held-back titles (the hole)</div></div>
+    <div class="abc-op">+</div>
+    <div class="abc-card gain"><div class="abc-lbl">B · Substitution gains</div><div class="abc-val">${sign(ch.B)}</div><div class="abc-sub">non-held titles that picked up demand</div></div>
+    <div class="abc-op">+</div>
+    <div class="abc-card loss"><div class="abc-lbl">C · Cannibalization</div><div class="abc-val">${sign(ch.C)}</div><div class="abc-sub">non-held titles that also lost demand</div></div>
+    <div class="abc-op">=</div>
+    <div class="abc-card net"><div class="abc-lbl">Net catalog Δ</div><div class="abc-val">${sign(ch.net)}</div><div class="abc-sub">arm-normalized whole-catalog TVT hrs</div></div>
+  </div>
+  <div class="abc-refill">Refill rate <b>${ch.refill_pct}%</b> — the rest of the catalog refilled ${Math.round(ch.refill_hrs).toLocaleString()} of the ${Math.round(ch.hole).toLocaleString()}-hr hole (B+C ÷ |A|). Arm-size scale ×${ch.scale} (Control ${ch.ctrl_n.toLocaleString()} ÷ Hold ${ch.arm_n.toLocaleString()} devices).</div>`;
+  document.getElementById(containerId).innerHTML = h;
+}
+renderAbcFlow('abcFlowInc', WHY.inc.chan);
+renderAbcFlow('abcFlowTvt', WHY.tvt.chan);
+
+// KPI comparison strip
+(function(){
+  const i=WHY.inc.chan, t=WHY.tvt.chan;
+  const h = `<div class="kpi-row">
+    <div class="kpi a"><div class="val">${sign(i.net)}</div><div class="lbl">Incremental TVT · Net Δ (arm-normalized)</div></div>
+    <div class="kpi a"><div class="val">${i.refill_pct}%</div><div class="lbl">Incremental TVT · Refill rate (B+C ÷ |A|)</div></div>
+    <div class="kpi b"><div class="val">${sign(t.net)}</div><div class="lbl">Top TVT · Net Δ (arm-normalized)</div></div>
+    <div class="kpi b"><div class="val">${t.refill_pct}%</div><div class="lbl">Top TVT · Refill rate (B+C ÷ |A|)</div></div>
+  </div>`;
+  document.getElementById('whyKpi').innerHTML = h;
+})();
+
+// Genre composition tables (per arm)
+const GENRE_COLS = ['Genre','A · Held Δ','B · Subs','B ÷ |A|','C · Cannib','C ÷ |A|','Net Δ','# Held'];
+function whyGenreRender(containerId, rows) {
+  // rows: [genre, A, B, C, net, held]. B÷|A| and C÷|A| decompose this genre's
+  // refill rate (only when A≠0 — i.e. the genre actually held titles back).
+  const data = rows.map(r => {
+    const [genre, A, B, C, net, held] = r;
+    const bpa = A !== 0 ? Math.round(B / Math.abs(A) * 1000) / 10 : null;
+    const cpa = A !== 0 ? Math.round(C / Math.abs(A) * 1000) / 10 : null;
+    return [genre, A, B, bpa, C, cpa, net, held];
+  });
+  renderTable(containerId, GENRE_COLS, data, {
+    textCols:[0], pctCols:[3,5], defaultSort:6, defaultDir:'asc'
+  });
+}
+whyGenreRender('genreInc', WHY.inc.genre);
+whyGenreRender('genreTvt', WHY.tvt.genre);
+
+// Top substituting / cannibalizing title tables (per arm)
+const TITLE_COLS = ['Title','Genre','Type','Control hrs','Hold hrs (norm)','Δ hrs','Δ %'];
+function whyTitleRender(containerId, rows) {
+  renderTable(containerId, TITLE_COLS, rows.map(r=>r.slice()), {
+    textCols:[0,1,2], pctCols:[6], defaultSort:5, defaultDir:'desc'
+  });
+}
+whyTitleRender('subsInc', WHY.inc.subs);
+whyTitleRender('subsTvt', WHY.tvt.subs);
+// cannibalizing: sort ascending (most-negative first)
+function whyCannRender(containerId, rows) {
+  renderTable(containerId, TITLE_COLS, rows.map(r=>r.slice()), {
+    textCols:[0,1,2], pctCols:[6], defaultSort:5, defaultDir:'asc'
+  });
+}
+whyCannRender('cannInc', WHY.inc.cann);
+whyCannRender('cannTvt', WHY.tvt.cann);
+
+function showTab(btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.tab).classList.add('active');
+}
+function showScope(scope) {
+  document.querySelectorAll('.scope-switch-btn').forEach(b => b.classList.toggle('active', b.dataset.scope === scope));
+  const tabs = document.querySelector('.tabs');
+  tabs.classList.remove('scope-title','scope-overall','scope-diag','scope-why'); tabs.classList.add('scope-'+scope);
+  document.querySelectorAll('.scope-hdr').forEach(h => h.classList.remove('active'));
+  const hdr = document.getElementById('hdr-'+scope); if (hdr) hdr.classList.add('active');
+  const first = document.querySelector('.tab-btn[data-scope="'+scope+'"]'); if (first) showTab(first);
+}
+document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => showTab(btn)));
+document.querySelectorAll('.scope-switch-btn').forEach(btn => btn.addEventListener('click', () => showScope(btn.dataset.scope)));
+</script>
+</body>
+</html>
