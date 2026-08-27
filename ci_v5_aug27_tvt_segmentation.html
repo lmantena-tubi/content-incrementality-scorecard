@@ -120,6 +120,12 @@
   .sxs h4 { font-size:12.5px; font-weight:700; color:#1B3A5C; margin:.2rem 0 .4rem; }
   @media (max-width:1000px){ .sxs, .arm-col-head { grid-template-columns:1fr; } }
   .delta-pos { color:#1f8a4c; font-weight:600; } .delta-neg { color:#c0392b; font-weight:600; }
+  .why-narrative { max-width: 1050px; margin: .4rem 0 1.4rem; }
+  .why-narrative .thesis-hi { background:#e7f5f3; border-left:4px solid #0d7d74; border-radius:5px; padding:11px 15px; font-size:15px; color:#0d3f3a; margin:.2rem 0 .9rem; }
+  .why-p { font-size:13px; line-height:1.65; margin-bottom:.7rem; }
+  .why-p b { color:#1B3A5C; }
+  .why-list { font-size:13px; line-height:1.7; margin:.1rem 0 .9rem 1.3rem; }
+  .why-list li { margin-bottom:.28rem; }
   .abc-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
   @media (max-width:1000px){ .abc-grid2 { grid-template-columns:1fr; } }
 </style>
@@ -261,6 +267,22 @@
   <div class="summary-box">
     <b>Where does the held-back TVT go?</b> Holding a title back removes its viewing (<b>channel A</b>, always a loss). Some of that demand <b>substitutes</b> to other titles the device watches instead (<b>channel B</b>, a gain elsewhere in the catalog); the rest fails to redistribute and shows up as <b>cannibalization</b> — non-held titles that also lose TVT (<b>channel C</b>). The net whole-catalog cost is <b>NET = A + B + C</b>, and the headline metric is the <b>refill rate = (B + C) ÷ |A|</b>: how much of the hole the rest of the catalog fills back in. Both arms dig a similar-size hole, but the arm that refills <i>less</i> ends up with the larger net TVT loss.
   </div>
+
+  <div class="why-narrative">
+    <div class="why-h3" style="margin-top:.6rem;">The one-line thesis: refill rate</div>
+    <div class="thesis-hi"><b>Incremental refills 87.4% of the hole it digs. Top TVT refills only 78.8%.</b></div>
+    <ul class="why-list">
+      <li><b>Incremental TVT:</b> digs <span class="delta-neg">−498,427</span> hrs on its held titles, the catalog nets back <span class="delta-pos">+435,536</span> → <b>87.4% back</b> → residual <span class="delta-neg">−62,890</span> hrs.</li>
+      <li><b>Top TVT:</b> digs <span class="delta-neg">−440,953</span> hrs, the catalog nets back <span class="delta-pos">+347,364</span> → <b>78.8% back</b> → residual <span class="delta-neg">−93,589</span> hrs.</li>
+    </ul>
+    <div class="why-p">Top TVT ends up with the larger net loss <i>despite removing ~57k fewer hours of demand</i>, because <b>8.6 points less</b> of the freed demand comes back to the catalog. That refill gap — not the size of the hole — is the entire result: it costs the Top TVT arm an extra <b>~30,700 net TVT hours</b>.</div>
+
+    <div class="why-h3">Why the refill is worse for Top TVT — two mechanical reasons, both in the data below</div>
+    <div class="why-p"><b>1 · Weaker substitution (+B is ~60k lower).</b> Incremental's held set is action/fantasy franchises (Lethal Weapon ×4, Colombiana, Godzilla, Twilight) plus comedy — each with many live same-genre neighbors that absorb the freed viewers, so B = <span class="delta-pos">+839,037</span>. Top TVT's set leans on animated kids blockbusters (Trolls, Cloudy 2, Monsters vs. Aliens); kids &amp; family demand is stickier and has fewer live substitutes, so less of it re-lands and B = <span class="delta-pos">+778,745</span>.</div>
+    <div class="why-p"><b>2 · Deeper cannibalization (−C is ~28k deeper).</b> Top TVT strands the sequels of franchises whose entry points it holds. The clearest case is the <b>Twilight funnel</b>: holding the early films leaves the later ones live and bleeding — <b>The Twilight Saga: Eclipse (−3,896), Breaking Dawn Part 1 (−2,935), Breaking Dawn Part 2 (−1,915)</b> ≈ <b>−8,746 hrs</b> of stranded sequel demand. Incremental holds those same fantasy sequels itself, so their loss sits in its <i>direct-loss</i> bucket (A), not cannibalization (C).</div>
+    <div class="why-p">The genre-level fingerprint of this funnel: two genres flip sign between the arms, negative <i>only</i> for Top TVT — <b>kids &amp; family</b> (Incremental net <span class="delta-pos">+52,247</span> vs Top TVT <span class="delta-neg">−48,994</span>) and <b>documentary</b> (<span class="delta-pos">+4,546</span> vs <span class="delta-neg">−3,175</span>). Kids &amp; family is non-substitutable animation held back in Top TVT; documentary goes negative because Top TVT's held demand (kids/comedy) never flows into docs, so docs feel only the background drag with no offsetting substitution.</div>
+  </div>
+
   <div id="whyKpi"></div>
 
   <div class="why-h3">Net-decomposition — both arms side by side</div>
