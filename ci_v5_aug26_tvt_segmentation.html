@@ -270,7 +270,7 @@
   </div>
 
   <div class="why-h3">Genre composition of the net delta — where demand leaked vs. was absorbed</div>
-  <div class="note">Per-genre A/B/C split (arm-normalized TVT hrs), most-negative net first. A genre with big <span class="delta-neg">negative net</span> is where holdbacks leaked demand that the catalog did not recover; <span class="delta-pos">positive net</span> genres absorbed substitution. Shown side by side.</div>
+  <div class="note">Per-genre A/B/C split (arm-normalized TVT hrs), most-negative net first. A genre with big <span class="delta-neg">negative net</span> is where holdbacks leaked demand that the catalog did not recover; <span class="delta-pos">positive net</span> genres absorbed substitution. <b>B ÷ |A|</b> and <b>C ÷ |A|</b> decompose that genre's refill rate — how much substitution (B) and cannibalization (C) it generated per hour of its own held-title hole; shown only where the genre held titles back (A ≠ 0). Their sum is the genre-level refill rate. Shown side by side.</div>
   <div class="sxs">
     <div><h4>Incremental TVT arm</h4><div id="genreInc"></div></div>
     <div><h4>Top TVT arm</h4><div id="genreTvt"></div></div>
@@ -552,10 +552,18 @@ renderAbcFlow('abcFlowTvt', WHY.tvt.chan);
 })();
 
 // Genre composition tables (per arm)
-const GENRE_COLS = ['Genre','A · Held Δ','B · Subs','C · Cannib','Net Δ','# Held'];
+const GENRE_COLS = ['Genre','A · Held Δ','B · Subs','B ÷ |A|','C · Cannib','C ÷ |A|','Net Δ','# Held'];
 function whyGenreRender(containerId, rows) {
-  renderTable(containerId, GENRE_COLS, rows.map(r=>r.slice()), {
-    textCols:[0], defaultSort:4, defaultDir:'asc'
+  // rows: [genre, A, B, C, net, held]. B÷|A| and C÷|A| decompose this genre's
+  // refill rate (only when A≠0 — i.e. the genre actually held titles back).
+  const data = rows.map(r => {
+    const [genre, A, B, C, net, held] = r;
+    const bpa = A !== 0 ? Math.round(B / Math.abs(A) * 1000) / 10 : null;
+    const cpa = A !== 0 ? Math.round(C / Math.abs(A) * 1000) / 10 : null;
+    return [genre, A, B, bpa, C, cpa, net, held];
+  });
+  renderTable(containerId, GENRE_COLS, data, {
+    textCols:[0], pctCols:[3,5], defaultSort:6, defaultDir:'asc'
   });
 }
 whyGenreRender('genreInc', WHY.inc.genre);
