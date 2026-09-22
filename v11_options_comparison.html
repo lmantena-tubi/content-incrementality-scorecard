@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Series Event-Definition Options A–D — Coverage, Duplication, Complexity</title>
+<style>
+  :root{
+    --ink:#1a2230; --mut:#5c6b82; --line:#e2e8f0; --bg:#f7f9fc; --card:#fff;
+    --accent:#2c5cc5; --accent-soft:#eaf0fc; --good:#155724; --good-bg:#d4edda;
+    --warn:#8a6d1b; --warn-bg:#fdf3d6; --bad:#7a1f2b; --bad-bg:#f8d7da;
+    --a:#7a5cc5; --b:#1D9E75; --c:#D85A30; --d:#534AB7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       color:var(--ink);background:var(--bg);line-height:1.55;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 90px}
+  header.hd{border-bottom:2px solid var(--accent);padding-bottom:18px;margin-bottom:8px}
+  h1{font-size:26px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px}
+  h2{font-size:19px;margin:38px 0 10px;padding-top:8px;border-top:1px solid var(--line)}
+  h2:first-of-type{border-top:none}
+  h3{font-size:15px;margin:22px 0 6px;color:var(--accent)}
+  p{margin:8px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:14px 0;
+        box-shadow:0 1px 2px rgba(20,30,50,.04)}
+  .lead{font-size:16px;background:var(--accent-soft);border-left:4px solid var(--accent)}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}
+  th{background:#eef2f8;font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.tot td{background:#f4f7fb;font-weight:600}
+  code{background:#eef2f8;border-radius:4px;padding:1px 5px;font-size:12.5px;
+       font-family:"SF Mono",Menlo,Consolas,monospace}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+  .pill-good{background:var(--good-bg);color:var(--good)}
+  .pill-warn{background:var(--warn-bg);color:var(--warn)}
+  .pill-bad{background:var(--bad-bg);color:var(--bad)}
+  .pill-ship{background:#e5e0fb;color:#3a2e86}
+  ul.tight{margin:6px 0;padding-left:22px}
+  ul.tight li{margin:4px 0}
+  .note{font-size:13px;color:var(--mut)}
+  .flag{background:var(--warn-bg);border:1px solid #ecd9a0;border-radius:8px;padding:12px 16px;margin:14px 0;font-size:14px}
+  .foot{margin-top:44px;padding-top:14px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  @media(max-width:900px){.grid4{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+  .opt{background:#fff;border:1px solid var(--line);border-top:4px solid var(--mut);border-radius:8px;padding:14px 16px}
+  .opt.A{border-top-color:var(--a)} .opt.B{border-top-color:var(--b)}
+  .opt.C{border-top-color:var(--c)} .opt.D{border-top-color:var(--d)}
+  .opt h4{margin:0 0 2px;font-size:15px}
+  .opt .rule{font-size:12.5px;color:var(--mut);margin:0 0 8px}
+  .opt ul{margin:4px 0 4px;padding-left:18px;font-size:13px}
+  .opt li{margin:3px 0}
+  .pro{color:var(--good);font-weight:700}
+  .con{color:var(--bad);font-weight:700}
+  .nest{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:15px;text-align:center;
+        background:#0f1826;color:#dfe7f5;border-radius:8px;padding:14px;margin:12px 0;letter-spacing:.5px}
+  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+  @media(max-width:900px){.kpi{grid-template-columns:1fr 1fr}}
+  .kpi div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+  .kpi b{display:block;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .kpi span{font-size:12px;color:var(--mut)}
+  .bar{height:9px;border-radius:5px;background:#e8edf5;overflow:hidden;margin-top:3px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  .mono{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hd">
+  <h1>Series event-definition options A–D</h1>
+  <div class="sub">Content Incrementality v11 · Top-2000 US SERIES · events Aug 8–14 2026 · 7-day post ·
+  Coverage, duplication, leak profile, complexity — measured, not asserted</div>
+</header>
+
+<div class="card lead">
+  <strong>What this decides.</strong> When does a viewer's session on a show count as a <em>treated event</em>?
+  All four options are thresholds on one quantity — the gap between the event and the viewer's last prior
+  session on the same show (any episode, show grain). They sit on an <strong>identical candidate pool of
+  5,945,788 (viewer × show) pairs</strong>, so every comparison below is strict pool inclusion: nothing is
+  gained by one option that another cannot also see.
+  <strong>Option B ships today.</strong> Every figure on this page comes from
+  <code>v11_coverage_*</code> / <code>v11_dup_*</code> / <code>v11_series_watch_*</code> on Databricks.
+</div>
+
+<h2>1 · The four options</h2>
+
+<div class="grid4">
+  <div class="opt A">
+    <h4>A · Lifetime</h4>
+    <p class="rule">Keep only if <b>no on-title session in 180 days</b>. All segments.</p>
+    <ul><li>Pool <b>2,379,492</b></li><li>40.0% of candidates</li><li>63.7% of B</li></ul>
+  </div>
+  <div class="opt B">
+    <h4>B · Segment 7d/28d <span class="pill pill-ship">ships</span></h4>
+    <p class="rule">Gap &gt; <b>7d</b> (Power, Retained) or &gt; <b>28d</b> (New M1, Reactivated).</p>
+    <ul><li>Pool <b>3,733,698</b></li><li>62.8% of candidates</li><li>baseline</li></ul>
+  </div>
+  <div class="opt C">
+    <h4>C · Fixed 28d</h4>
+    <p class="rule">Gap &gt; <b>28d</b>. One rule, all segments.</p>
+    <ul><li>Pool <b>2,941,309</b></li><li>49.5% of candidates</li><li>78.8% of B</li></ul>
+  </div>
+  <div class="opt D">
+    <h4>D · No screen</h4>
+    <p class="rule"><b>No prior-viewing test</b> — exact v10e movie parity.</p>
+    <ul><li>Pool <b>5,945,788</b></li><li>100% of candidates</li><li>159.2% of B</li></ul>
+  </div>
+</div>
+
+<div class="nest">A &nbsp;⊆&nbsp; C &nbsp;⊆&nbsp; B &nbsp;⊆&nbsp; D</div>
+
+<div class="flag">
+  <strong>The structural fact that reframes C.</strong> For <b>New (M1)</b> and <b>Non-active (Reactivated)</b>,
+  C is <em>byte-identical</em> to B — B's own branch for those segments is already 28d (both read
+  <span class="mono">pct_vs_option_b = 100</span>). C's entire 21.2% pool loss therefore lands on
+  <b>Power Viewer</b> (−27.6%) and <b>Retained</b> (−22.0%). "C is uniform across segments" is true, but it only
+  <em>changes</em> two of four segments — and those two are the highest-TVT, best-matched cells.
+</div>
+
+<h2>2 · Why this is a series question: series vs movie watching behaviour</h2>
+
+<p>Every screen exists to keep <em>continuation</em> out of the treated definition. So the first question is how
+much continuation there is. Decomposing US TVT Aug 8–14 by the gap to the device's previous day on the same
+title (3% sample, <code>device_id</code> × title × day, 180d lookback):</p>
+
+<table>
+  <tr><th>Share of that content type's TVT</th><th class="num">new<br><span class="note">no prior 180d</span></th>
+      <th class="num">within 1d</th><th class="num">2–7d</th><th class="num">8–28d</th><th class="num">&gt;28d</th>
+      <th class="num">continuation<br>total</th><th class="num">avg sessions<br>/device-day</th></tr>
+  <tr><td><b>MOVIE</b></td><td class="num">76.20</td><td class="num">6.48</td><td class="num">6.19</td>
+      <td class="num">3.71</td><td class="num">7.43</td><td class="num"><b>23.80</b></td><td class="num">1.3–1.7</td></tr>
+  <tr><td><b>SERIES</b></td><td class="num">19.79</td><td class="num">51.97</td><td class="num">16.44</td>
+      <td class="num">6.85</td><td class="num">4.95</td><td class="num"><b>80.21</b></td><td class="num">4.3–10.3</td></tr>
+  <tr><td>LINEAR <span class="note">(reference)</span></td><td class="num">15.93</td><td class="num">48.16</td>
+      <td class="num">22.18</td><td class="num">7.82</td><td class="num">5.90</td><td class="num">84.07</td><td class="num">1.7–3.9</td></tr>
+</table>
+
+<p><strong>Series viewing is 80.2% continuation; movies are 23.8%.</strong> That single contrast is why the
+movie pipeline needs no treated screen and the series pipeline does. Under option D — the "movie parity"
+choice — a series treated event is a re-watch or a mid-binge continuation four times out of five, where for
+movies it is a genuine first encounter three times out of four. <em>D is parity in code, not parity in
+meaning.</em></p>
+
+<p>The exact intra-day read confirms how tight series continuation is: <b>81.8% of series TVT</b> sits in a
+session that began <b>less than an hour</b> after the previous session on the same show
+(<code>v11_series_watch_intraday</code>, <span class="mono">B_video_session_exact</span>). Series continuation
+is not a weekly habit — it is the next episode, minutes later.</p>
+
+<h3>Content type × segment — where the continuation mass actually lives</h3>
+<p class="note">Rows sum to 100% across the five buckets. Aug 8–14 2026, US, 3% sample,
+<code>device_id</code> grain. Right-hand column = that segment's share of the content type's total TVT.</p>
+
+<table>
+  <tr><th></th><th>segment</th><th class="num">new</th><th class="num">within 1d</th><th class="num">2–7d</th>
+      <th class="num">8–28d</th><th class="num">&gt;28d</th><th class="num">continuation</th>
+      <th class="num">seg % of type's TVT</th></tr>
+  <tr><td rowspan="5"><b>MOVIE</b></td><td>New (M1)</td><td class="num">89.6</td><td class="num">6.0</td>
+      <td class="num">3.6</td><td class="num">0.8</td><td class="num">—</td><td class="num">10.4</td><td class="num">6.3%</td></tr>
+  <tr><td>Reactivated</td><td class="num">95.5</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+      <td class="num">4.5</td><td class="num">4.5</td><td class="num">3.4%</td></tr>
+  <tr><td>Retained</td><td class="num">79.0</td><td class="num">6.6</td><td class="num">5.1</td><td class="num">2.6</td>
+      <td class="num">6.7</td><td class="num">21.0</td><td class="num">48.5%</td></tr>
+  <tr><td>Power Viewer</td><td class="num">69.3</td><td class="num">7.0</td><td class="num">8.3</td><td class="num">5.7</td>
+      <td class="num">9.7</td><td class="num">30.7</td><td class="num">41.8%</td></tr>
+  <tr class="tot"><td>all</td><td class="num">76.2</td><td class="num">6.5</td><td class="num">6.2</td>
+      <td class="num">3.7</td><td class="num">7.4</td><td class="num">23.8</td><td class="num">100%</td></tr>
+  <tr><td rowspan="5"><b>SERIES</b></td><td>New (M1)</td><td class="num">44.2</td><td class="num">41.0</td>
+      <td class="num">11.8</td><td class="num">3.0</td><td class="num">—</td><td class="num">55.8</td><td class="num">4.5%</td></tr>
+  <tr><td>Reactivated</td><td class="num">76.4</td><td class="num">—</td><td class="num">—</td><td class="num">—</td>
+      <td class="num">23.6</td><td class="num">23.6</td><td class="num">1.9%</td></tr>
+  <tr><td>Retained</td><td class="num">25.9</td><td class="num">41.7</td><td class="num">16.7</td><td class="num">8.6</td>
+      <td class="num">7.1</td><td class="num">74.1</td><td class="num">33.2%</td></tr>
+  <tr><td><b>Power Viewer</b></td><td class="num"><b>12.8</b></td><td class="num"><b>60.1</b></td><td class="num">17.2</td>
+      <td class="num">6.4</td><td class="num">3.5</td><td class="num"><b>87.2</b></td><td class="num"><b>60.4%</b></td></tr>
+  <tr class="tot"><td>all</td><td class="num">19.8</td><td class="num">52.0</td><td class="num">16.4</td>
+      <td class="num">6.9</td><td class="num">5.0</td><td class="num">80.2</td><td class="num">100%</td></tr>
+</table>
+
+<p><strong>Three things follow directly, and they drive every number in the rest of this report.</strong></p>
+<ul class="tight">
+  <li><b>Series Power Viewers are 60.4% of series TVT and 87.2% continuation.</b> Any prior-viewing screen is
+  overwhelmingly a screen on <em>this one cell</em>. That is the mechanical reason A and C shed most of their
+  pool from Power Viewer, and why the segment-conditional design in B exists at all.</li>
+  <li><b>The 8–28d bucket is 6.85% of series TVT</b> — the behavioural size of what B's 7d branch lets through
+  (§5 measures the same quantity from the pair side: 23.92% of B's kept TVT). <b>The &gt;28d bucket is 4.95%</b>
+  — the mid-season-resume band that C also misses and only A catches.</li>
+  <li><b>New (M1) and Reactivated barely continue at all</b> in the near bands (New: 3.0% at 8–28d, 0% beyond;
+  Reactivated: 0% inside 28d by construction, 23.6% at &gt;28d). A 28d screen on those segments is close to
+  free — which is exactly why C == B there.</li>
+</ul>
+
+<p class="note">Grain note: behaviour is <code>device_id</code>-grain on <code>device_watch_daily</code>
+(cheaper 180d lookback); the pipeline is <code>viewer_id</code>-grain. Shares are robust to this; absolute
+device counts are upsampled ×33.3 and should be read as estimates. Movies here are the <em>full</em> movie
+catalog, not v10e's top-2000.</p>
+
+<h2>3 · Coverage — layer by layer</h2>
+
+<h3>3.1 Universe: the top-2000 sees 95.4% of US series TVT</h3>
+<div class="kpi">
+  <div><b>127,152,080</b><span>all US series TVT hrs, Aug 8–14 · 28,692 programs</span></div>
+  <div><b>95.39%</b><span>captured by top-2000 (121,287,469 hrs)</span></div>
+  <div><b>52.56%</b><span>in the top 100 titles alone</span></div>
+  <div><b>18.80%</b><span>in the top 10</span></div>
+</div>
+<p class="note">Concentration ladder: top-10 18.80% · top-100 52.56% · top-500 80.17% · top-1000 88.98% ·
+top-2000 95.39%. Universe choice is <em>identical</em> across A–D, so this layer is common cost, not a
+differentiator. Listed because it is loss layer 1 of the headline funnel.</p>
+
+<h3>3.2 The pair funnel — where candidate pairs and TVT are lost</h3>
+<p>Every (viewer × show) pair with any US series TVT in the window, assigned to the <em>first</em> stage it
+fails. Mutually exclusive and exhaustive.</p>
+
+<table>
+  <tr><th>Funnel bucket</th><th class="num">pairs</th><th class="num">% pairs</th><th class="num">TVT hrs</th>
+      <th class="num">% TVT</th><th>Nature of the loss</th></tr>
+  <tr><td>1 · outside top-2000 universe</td><td class="num">3,778,450</td><td class="num">11.78</td>
+      <td class="num">5,864,611</td><td class="num">4.61</td><td>universe choice — common to A–D</td></tr>
+  <tr><td>2 · no qualifying session (&lt;5 min)</td><td class="num">6,160,754</td><td class="num">19.21</td>
+      <td class="num">173,299</td><td class="num">0.14</td><td>event bar — many pairs, almost no TVT</td></tr>
+  <tr><td>3 · outside 50% treated sample</td><td class="num">10,935,099</td><td class="num">34.10</td>
+      <td class="num">58,849,590</td><td class="num">46.28</td><td><b>sampling, not a loss</b> — recovered by design</td></tr>
+  <tr><td>4 · first qualifying not organic</td><td class="num">960,506</td><td class="num">3.00</td>
+      <td class="num">4,746,374</td><td class="num">3.73</td><td>SearchPage / deeplink exclusion</td></tr>
+  <tr><td>5 · no ML ranker score</td><td class="num">4,287,754</td><td class="num">13.37</td>
+      <td class="num">24,131,735</td><td class="num">18.98</td><td><span class="pill pill-warn">largest real loss</span> ranker log coverage</td></tr>
+  <tr><td>6 · screened: prior on-title</td><td class="num">2,212,090</td><td class="num">6.90</td>
+      <td class="num">18,622,888</td><td class="num">14.65</td><td><b>the option-dependent bucket</b></td></tr>
+  <tr><td>7 · treated, unmatched</td><td class="num">1,016,907</td><td class="num">3.17</td>
+      <td class="num">4,898,300</td><td class="num">3.85</td><td>match failure (72.3% match rate)</td></tr>
+  <tr class="tot"><td>8 · treated and matched <span class="note">= the measured population</span></td>
+      <td class="num">2,716,791</td><td class="num">8.47</td><td class="num">9,865,283</td><td class="num">7.76</td>
+      <td>covered</td></tr>
+</table>
+
+<p><b>Buckets 6 + 7 + 8 = 5,945,788 pairs / 33,386,472 TVT hrs = option D's pool exactly.</b> That is the
+candidate pool; only bucket 6 moves between options. Note the ordering of real losses: the <b>ML-score join
+(19.0% of TVT) costs more than every screen</b> — even D's zero screen cannot recover it. Choosing among
+A–D is a smaller lever than fixing ranker coverage.</p>
+
+<h3>3.3 Per-option pool and TVT retained</h3>
+
+<table>
+  <tr><th>Option</th><th class="num">pool pairs</th><th class="num">% of candidates</th><th class="num">% vs B</th>
+      <th class="num">pool TVT hrs</th><th class="num">% of candidate TVT</th><th class="num">viewers</th></tr>
+  <tr><td><b>A</b> lifetime 180d</td><td class="num">2,379,492</td><td class="num">40.02</td><td class="num">63.73</td>
+      <td class="num">8,633,419</td><td class="num">25.86</td><td class="num">1,756,773</td></tr>
+  <tr><td><b>C</b> fixed 28d</td><td class="num">2,941,309</td><td class="num">49.47</td><td class="num">78.78</td>
+      <td class="num">11,048,437</td><td class="num">33.09</td><td class="num">2,098,578</td></tr>
+  <tr class="tot"><td><b>B</b> segment 7d/28d <span class="note">(ships)</span></td><td class="num">3,733,698</td>
+      <td class="num">62.80</td><td class="num">100.00</td><td class="num">14,763,583</td><td class="num">44.22</td>
+      <td class="num">2,543,492</td></tr>
+  <tr><td><b>D</b> no screen</td><td class="num">5,945,788</td><td class="num">100.00</td><td class="num">159.24</td>
+      <td class="num">33,386,472</td><td class="num">100.00</td><td class="num">3,629,616</td></tr>
+</table>
+
+<p><strong>TVT falls faster than pairs.</strong> A keeps 40.0% of pairs but only 25.9% of candidate TVT; D's
+pool is 1.59× B's in pairs but 2.26× in TVT. Screens remove <em>heavy</em> viewers preferentially — which is
+the coverage cost stated honestly, and the same fact that makes the duplication numbers in §4 move.</p>
+
+<h3>3.4 Per-segment pool, relative to B (%)</h3>
+<table>
+  <tr><th>Segment</th><th class="num">A</th><th class="num">C</th><th class="num">B</th><th class="num">D</th><th>Read</th></tr>
+  <tr><td>Power Viewer</td><td class="num">57.78</td><td class="num">72.43</td><td class="num">100</td><td class="num">167.84</td>
+      <td>every option's swing cell — 60.4% of series TVT</td></tr>
+  <tr><td>Active non-power (Retained)</td><td class="num">62.30</td><td class="num">78.01</td><td class="num">100</td><td class="num">155.72</td>
+      <td>second-largest cell, same direction</td></tr>
+  <tr><td>Non-active (Reactivated)</td><td class="num">77.35</td><td class="num"><b>100</b></td><td class="num">100</td><td class="num">122.77</td>
+      <td><b>C == B</b>; only A bites, via the &gt;28d resume band</td></tr>
+  <tr><td>New (M1)</td><td class="num">96.81</td><td class="num"><b>100</b></td><td class="num">100</td><td class="num">181.92</td>
+      <td><b>C == B</b>; A near-free (nothing to screen)</td></tr>
+</table>
+
+<h3>3.5 Post-window coverage — the separate, larger question</h3>
+<p>Coverage also means: of all US series TVT, how much falls inside a treated viewer's post window? Measured
+on all Aug 8–14 events (3% sample, hour grain, anchored on <code>event_ts</code>):</p>
+
+<table>
+  <tr><th>Bucket</th><th class="num">% of US series TVT</th><th>Meaning</th></tr>
+  <tr><td>no treated event at all</td><td class="num">64.68</td><td>viewer never qualified in the window — the dominant gap</td></tr>
+  <tr><td>post days 7–28</td><td class="num"><b>19.65</b></td><td><b>the 28d-only increment</b></td></tr>
+  <tr><td>post days 1–7</td><td class="num">7.61</td><td rowspan="2">together = <b>11.88%</b>, the published 7d window</td></tr>
+  <tr><td>post day 0–1</td><td class="num">4.27</td></tr>
+  <tr><td>pre-event</td><td class="num">3.39</td><td>before the anchor</td></tr>
+  <tr><td>beyond 28d</td><td class="num">0.40</td><td>tail</td></tr>
+</table>
+
+<div class="kpi">
+  <div><b>11.88%</b><span>of US series TVT inside a 7d post window<div class="bar"><i style="width:11.88%"></i></div></span></div>
+  <div><b>31.53%</b><span>inside a 28d post window<div class="bar"><i style="width:31.53%"></i></div></span></div>
+  <div><b>19.65%</b><span>days 7–28 alone — larger than the whole 7d window</span></div>
+  <div><b>64.68%</b><span>belongs to viewers with no treated event</span></div>
+</div>
+
+<p><strong>The post window is the bigger coverage lever than the event screen.</strong> Days 7–28 carry more
+series TVT (19.65%) than the entire published 7d window (11.88%) — the behavioural reason the shipped 28d
+variant lands ≈1.67× catalog-wide / ≈2.10× on the top 100. Note this cuts the other way from §2's intra-day
+finding and both are true: continuation is <em>tight in time</em> (81.8% within an hour) but <em>long in
+span</em> (a binge keeps going for weeks). A 7d post catches the first burst and truncates the tail.</p>
+
+<h2>4 · Duplication — the flip side of coverage</h2>
+
+<p>A looser screen means a viewer is treated on more titles, so their post-window TVT enters the incremental
+sum more times. The multiplicity is <code>k</code> = titles per viewer surviving the screen. The quantity that
+inflates a pair-weighted sum is <b>pair-weighted mean k = Σk²·n<sub>k</sub> / Σk·n<sub>k</sub></b> (always ≥
+mean k), and <code>w_invk = AVG(1/k)</code> is the matching equal-split correction weight.</p>
+
+<table>
+  <tr><th>Option</th><th class="num">mean k</th><th class="num">pair-weighted mean k</th><th class="num">% pairs k≥2</th>
+      <th class="num">% pairs k≥5</th><th class="num">max k</th><th class="num">w_invk</th>
+      <th class="num">pw mean k<br>Power Viewer</th></tr>
+  <tr><td><b>A</b></td><td class="num">1.354</td><td class="num">1.853</td><td class="num">43.20</td>
+      <td class="num">4.17</td><td class="num">28</td><td class="num">0.7383</td><td class="num">2.199</td></tr>
+  <tr><td><b>C</b></td><td class="num">1.402</td><td class="num">1.963</td><td class="num">46.73</td>
+      <td class="num">5.14</td><td class="num">34</td><td class="num">0.7135</td><td class="num">2.384</td></tr>
+  <tr class="tot"><td><b>B</b> (ships)</td><td class="num">1.468</td><td class="num">2.124</td><td class="num">51.11</td>
+      <td class="num">6.65</td><td class="num">36</td><td class="num">0.6812</td><td class="num">2.654</td></tr>
+  <tr><td><b>D</b></td><td class="num">1.638</td><td class="num">2.600</td><td class="num">59.69</td>
+      <td class="num">11.69</td><td class="num">66</td><td class="num">0.6105</td><td class="num">3.343</td></tr>
+</table>
+
+<p>Monotone with looseness, as the nesting requires: <b>A 1.853 → C 1.963 → B 2.124 → D 2.600</b>. Under D,
+<b>59.7% of pairs</b> belong to a viewer treated on 2+ titles and Power Viewers average 3.34 — one viewer's
+post hours counted more than three times. Under A that falls to 2.20.</p>
+
+<div class="flag">
+  <strong>The honest correction to an earlier argument.</strong> "Option C avoids duplication" is <em>not</em> a
+  valid reason to prefer C. The published pipeline <b>already de-duplicates</b> via the step-10
+  <code>TSWEIGHT</code> ladder (pooled 0.145–0.476 by segment, i.e. it removes 52–86% of the raw sum).
+  Tightening the screen <em>and</em> applying the weight double-corrects. <b>C's genuine selling point is
+  cross-segment uniformity</b> — one rule, no segment-conditional confound — not duplication avoidance.
+</div>
+
+<h3>4.1 The consequence the option table usually omits: the weight is calibrated for B</h3>
+<p>The <code>TSWEIGHT</code> ladder is fitted on B's pool. Change the option and the correct weight moves, but
+the ladder does not follow. Catalog Incremental TVT under B as shipped, against the two direct measurements
+of the quantity the ladder proxies for:</p>
+
+<table>
+  <tr><th>Weighting</th><th class="num">Catalog Incr TVT (hrs)</th><th class="num">× published</th>
+      <th class="num">Power Viewer (hrs)</th><th class="num">× published</th></tr>
+  <tr class="tot"><td><code>TSWEIGHT</code> — <b>published</b></td><td class="num">3,352,037</td><td class="num">1.00</td>
+      <td class="num">267,207</td><td class="num">1.00</td></tr>
+  <tr><td><code>w_invk_pop</code> — equal split, population k</td><td class="num">7,624,418</td><td class="num">2.27</td>
+      <td class="num">1,266,602</td><td class="num">4.74</td></tr>
+  <tr><td><code>w_shareT_7d</code> — watch-share attribution</td><td class="num">4,445,808</td><td class="num">1.33</td>
+      <td class="num">467,259</td><td class="num">1.75</td></tr>
+  <tr><td><code>w_shareT_28d</code></td><td class="num">2,945,814</td><td class="num">0.88</td>
+      <td class="num">—</td><td class="num">—</td></tr>
+</table>
+
+<p><strong>The ladder already over-corrects by 1.33×–2.27× pooled, and 1.75×–4.74× for Power Viewer</strong>
+(by segment: Retained 2.12× / 1.24×, New 2.23× / 1.29×, Reactivated 1.80× / 1.46×). This matters for the option
+choice in a direction that is easy to get backwards:</p>
+<ul class="tight">
+  <li>Moving to <b>A or C</b> reduces multiplicity, so the <em>correct</em> weight rises toward 1 —
+  <b>widening</b> the existing over-correction unless the ladder is refitted. A tighter screen makes the
+  shipped weight <em>more</em> wrong, not less.</li>
+  <li>Moving to <b>D</b> raises multiplicity, so the correct weight falls — nudging the ladder <em>toward</em>
+  correctness while adding the most contamination. The two effects point in opposite directions; neither
+  alone decides.</li>
+  <li>Staying on <b>B</b> keeps a known, sized, signed bias. That is the cheapest defensible position, and it
+  is what the methodology doc should state rather than imply neutrality.</li>
+</ul>
+
+<h3>4.2 Three grains of k — measure on the wrong one and you flatter the weight</h3>
+<p>The catalog sum multiplies Δ/viewer by full-population viewer counts, so the multiplicity to correct for is
+titles-per-viewer in <em>that</em> population. Measuring on matched pairs loses titles to the ML join and the
+28% match failure, and because <code>1/k</code> is convex that <em>overstates</em> the correct weight:</p>
+
+<table>
+  <tr><th>Grain</th><th class="num">rows</th><th class="num">viewers</th><th class="num">pw mean k</th>
+      <th class="num">% k≥2</th><th class="num">max k</th><th class="num">w_invk</th><th>Role</th></tr>
+  <tr class="tot"><td><code>k_pop</code></td><td class="num">12,981,452</td><td class="num">8,254,633</td>
+      <td class="num">2.389</td><td class="num">56.84</td><td class="num">85</td><td class="num">0.6359</td>
+      <td><b>the benchmark</b> — same population as VIEWERS</td></tr>
+  <tr><td><code>k_treated</code></td><td class="num">3,826,770</td><td class="num">2,603,361</td>
+      <td class="num">2.130</td><td class="num">51.22</td><td class="num">37</td><td class="num">0.6803</td>
+      <td>after sampling + ML join</td></tr>
+  <tr><td><code>k_matched</code></td><td class="num">2,767,736</td><td class="num">2,043,506</td>
+      <td class="num">1.827</td><td class="num">43.54</td><td class="num">31</td><td class="num">0.7383</td>
+      <td>diagnostic only — never the weight</td></tr>
+</table>
+<p class="note">Power Viewer on <code>k_pop</code>: pw mean k <b>3.270</b>, 76.25% of pairs k≥2, max 85,
+<code>w_invk</code> 0.4828. The convexity gap (0.7383 vs 0.6359) is a 16% overstatement of the weight if you
+measure on the convenient table — enough on its own to flip an "over-corrects" verdict.</p>
+
+<h3>4.3 Two separate duplication channels — do not add them to the above</h3>
+<div class="grid2">
+  <div class="card">
+    <h4 style="margin:0 0 6px">Control reuse <span class="pill pill-good">small, and clean in v11</span></h4>
+    <table style="margin:6px 0">
+      <tr><th>Grain</th><th class="num">% pairs reused</th><th class="num">% above 3×</th><th class="num">max</th><th class="num">pw mean m</th></tr>
+      <tr><td>within cell</td><td class="num">3.654</td><td class="num">0.284</td><td class="num">26</td><td class="num">1.051</td></tr>
+      <tr><td>across cells</td><td class="num">36.39</td><td class="num">5.67</td><td class="num">56</td><td class="num">1.631</td></tr>
+    </table>
+    <p class="note">v10 breached its intended 3× cap at 172×. <b>v11 does not</b> — max 26× within cell, 0.284%
+    of pairs above 3×. Option-invariant: no option changes control-pool logic.</p>
+  </div>
+  <div class="card">
+    <h4 style="margin:0 0 6px">Calendar-window overlap <span class="pill pill-warn">not commensurable</span></h4>
+    <table style="margin:6px 0">
+      <tr><th>Window</th><th class="num">all pairs</th><th class="num">multi-event viewers</th></tr>
+      <tr><td>7d</td><td class="num">1.4422</td><td class="num">2.0381</td></tr>
+      <tr><td>28d</td><td class="num">1.5603</td><td class="num">2.4918</td></tr>
+    </table>
+    <p class="note"><code>duplication_factor_tvt</code> ≈ <code>kW/(s+W)</code> — how much calendar TVT is
+    re-counted relative to the union span. <b>Do not compare it to 1/TSWEIGHT</b>; only
+    <code>pw_mean_k</code> / <code>1/w_invk</code> are the right comparators. 480,700 of 2,043,506 viewers are
+    multi-event; single-event viewers are exactly 1.0.</p>
+  </div>
+</div>
+
+<h2>5 · Leak profile — what each option actually lets through</h2>
+<p>Among the pairs <b>B keeps</b>, how many had an on-title session before the event anyway? Gap measured to
+the last prior on-title session within 180 days.</p>
+
+<table>
+  <tr><th>Segment</th><th class="num">B's kept pairs</th><th class="num">8–28d leak<br>% pairs</th>
+      <th class="num">8–28d leak<br>% TVT</th><th class="num">29–180d resume<br>% pairs</th>
+      <th class="num">29–180d resume<br>% TVT</th><th class="num">any prior 180d<br>% pairs</th></tr>
+  <tr class="tot"><td><b>all</b></td><td class="num">3,733,698</td><td class="num">20.13</td><td class="num"><b>23.92</b></td>
+      <td class="num">14.86</td><td class="num">16.18</td><td class="num">36.27</td></tr>
+  <tr><td>Power Viewer</td><td class="num">—</td><td class="num"><b>26.10</b></td><td class="num"><b>30.15</b></td>
+      <td class="num">—</td><td class="num">—</td><td class="num">42.22</td></tr>
+  <tr><td>Non-active (Reactivated)</td><td class="num">—</td><td class="num">0.02</td><td class="num">~0</td>
+      <td class="num">22.62</td><td class="num"><b>28.84</b></td><td class="num">—</td></tr>
+  <tr><td>New (M1)</td><td class="num">—</td><td class="num">0.04</td><td class="num">~0</td>
+      <td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+</table>
+
+<ul class="tight">
+  <li><b>B's 7d branch leaks 23.92% of its kept TVT</b> — pairs with an on-title watch 8–28 days before the
+  event. For Power Viewer it is <b>30.15%</b>. This is the quantified form of "a power viewer who watched the
+  show 10 days ago still clears the screen." <b>C closes exactly this leak</b>, and closing it is C's real
+  argument.</li>
+  <li><b>The 29–180d resume band (16.18% of B's TVT, 28.84% for Reactivated) survives both B and C.</b> Only
+  A removes it. A mid-season return after two months is treated as discovery under B, C and D alike.</li>
+  <li><b>36.27% of B's kept pool had some prior on-title watch</b> inside 180 days. Under D that figure is by
+  construction higher still — which, read against §2's 80.2% series continuation baseline, is why D's treated
+  definition measures continuation rather than discovery.</li>
+</ul>
+
+<h2>6 · Complexity, code cost and statistical cost</h2>
+
+<table>
+  <tr><th>Axis</th><th>A · lifetime</th><th>B · segment 7d/28d</th><th>C · fixed 28d</th><th>D · no screen</th></tr>
+  <tr><td><b>Code delta from today</b></td><td>new 180d history scan + join</td>
+      <td><span class="pill pill-good">zero — ships</span></td>
+      <td>one literal (7→28) + delete the segment branch</td>
+      <td>delete the filter</td></tr>
+  <tr><td><b>Scan cost</b></td><td><span class="pill pill-bad">heaviest</span> 180d lookback beyond the
+      existing 28d window</td><td>reuses the existing 28d <code>engagement_metrics</code> scan</td>
+      <td>same scan as B</td><td><span class="pill pill-good">none</span></td></tr>
+  <tr><td><b>Rule to explain</b></td><td>one rule, but "lifetime" is really "not in 180d"</td>
+      <td><span class="pill pill-warn">two rules</span> — segment-conditional</td>
+      <td><span class="pill pill-good">one rule, one number</span></td>
+      <td><span class="pill pill-good">no rule</span></td></tr>
+  <tr><td><b>Movie (v10e) parity</b></td><td>no</td><td>no</td><td>no</td>
+      <td><span class="pill pill-good">exact</span> — but see §2, parity in code ≠ in meaning</td></tr>
+  <tr><td><b>Weight recalibration needed</b></td><td>yes — widens the existing over-correction most</td>
+      <td>no (bias already sized)</td><td>yes — widens it</td><td>yes — narrows it</td></tr>
+  <tr><td><b>Reportable cells / CI width</b></td><td>fewest pairs → fewest cells clear <code>n≥30</code></td>
+      <td>baseline</td><td>−21% pairs</td><td>most pairs, tightest CIs</td></tr>
+  <tr><td><b>Re-run required</b></td><td colspan="3">full pipeline steps 1–10 + publish, per option</td>
+      <td>full pipeline (but matching/control logic unchanged)</td></tr>
+</table>
+
+<h3>6.1 Statistical cost (measured on B; option-invariant in kind, not size)</h3>
+<table>
+  <tr><th>Clustering</th><th class="num">cells</th><th class="num">median SE ratio</th><th class="num">p90</th>
+      <th class="num">max</th><th class="num">significance flips</th></tr>
+  <tr><td>pooled within segment, on <code>treated_viewer_id</code></td><td class="num">4</td>
+      <td class="num"><b>1.1909</b></td><td class="num">1.2250</td><td class="num">1.2281</td><td class="num">0 of 4</td></tr>
+  <tr><td>within cell, on <code>control_viewer_id</code></td><td class="num">4,903</td><td class="num">1.0000</td>
+      <td class="num">1.0109</td><td class="num">1.2544</td><td class="num"><b>7 of 867</b></td></tr>
+</table>
+<p>Multiplicity inflates standard errors by a median <b>1.19×</b> when pooling within a segment; control reuse
+costs essentially nothing (median 1.0000). Only <b>7 of 867</b> significant cells lose significance. Looser
+options (D) raise the clustering penalty, tighter ones (A, C) lower it but shrink n — the two roughly offset,
+so <em>no option wins on precision by enough to decide the choice</em>.</p>
+
+<h2>7 · Pros and cons, side by side</h2>
+
+<div class="grid2">
+  <div class="opt A">
+    <h4>A · Lifetime (180d)</h4>
+    <p class="rule">Keep only if no on-title session in 180 days.</p>
+    <p><span class="pro">Pros</span></p>
+    <ul>
+      <li>Closest to a true "first encounter" — the only option that closes the <b>29–180d resume band</b>
+      (16.18% of B's TVT, 28.84% for Reactivated).</li>
+      <li>Lowest duplication of all four: pw mean k <b>1.853</b>, 43.2% of pairs k≥2, Power Viewer 2.199.</li>
+      <li>One uniform rule across segments.</li>
+      <li>Cleanest causal story for a discovery claim.</li>
+    </ul>
+    <p><span class="con">Cons</span></p>
+    <ul>
+      <li>Sheds <b>36.3% of B's pool and 41.5% of its TVT</b> — the harshest coverage cost by far.</li>
+      <li>Cost is concentrated where the TVT is: Power Viewer <b>−42.2%</b>, Retained −37.7%.</li>
+      <li>Heaviest implementation — a new 180d history scan beyond the existing 28d window.</li>
+      <li>Reduces multiplicity most, so it <b>widens</b> the already 1.33–2.27× over-correcting weight unless
+      the ladder is refitted.</li>
+      <li>"Lifetime" is a misnomer: it is "not in 180d." Series with long hiatuses still leak.</li>
+      <li>Fewest cells clear <code>n_pairs ≥ 30</code>; thinnest per-title reporting.</li>
+    </ul>
+  </div>
+
+  <div class="opt B">
+    <h4>B · Segment-conditional 7d/28d <span class="pill pill-ship">ships</span></h4>
+    <p class="rule">Gap &gt; 7d (Power, Retained) or &gt; 28d (New, Reactivated).</p>
+    <p><span class="pro">Pros</span></p>
+    <ul>
+      <li>Best coverage of the three screened options: <b>62.8%</b> of candidate pairs, <b>44.2%</b> of candidate TVT.</li>
+      <li>Screen window mirrors the per-segment matching window — internally coherent by design.</li>
+      <li>Zero code cost; reuses the existing 28d engagement scan. All published numbers and the
+      <code>TSWEIGHT</code> ladder are already calibrated to it.</li>
+      <li>Its bias is <b>measured and signed</b> (leak 23.92% of TVT; weight over-corrects 1.33–2.27×) — a
+      known quantity beats an unquantified alternative.</li>
+      <li>Middling duplication: pw mean k 2.124, between C's 1.963 and D's 2.600.</li>
+    </ul>
+    <p><span class="con">Cons</span></p>
+    <ul>
+      <li><b>Two rules, not one.</b> Hardest of the four to explain, and it confounds the segment cut with the
+      event definition — the segment both selects the rule and is the reporting dimension.</li>
+      <li><b>Leaks 23.92% of its kept TVT</b> (Power Viewer 30.15%) to on-title watching 8–28 days before the
+      event: a power viewer who watched the show 10 days ago still clears the screen.</li>
+      <li>Misses the 29–180d resume band entirely (16.18% of TVT).</li>
+      <li>Threshold incoherence: the event bar is 5 minutes but the screen fires on any TVT &gt; 0, so a
+      90-second accidental start disqualifies a viewer a 5-minute session would have qualified.</li>
+    </ul>
+  </div>
+
+  <div class="opt C">
+    <h4>C · Fixed 28d</h4>
+    <p class="rule">Gap &gt; 28d, every segment.</p>
+    <p><span class="pro">Pros</span></p>
+    <ul>
+      <li><b>One rule, one number.</b> Removes the segment-conditional confound — this is C's real and only
+      structural advantage.</li>
+      <li>Closes B's 8–28d leak exactly: the 23.92%-of-TVT band (30.15% for Power Viewer) goes to zero.</li>
+      <li>Cheapest change of the three alternatives — one literal plus deleting a branch.</li>
+      <li>Costs nothing for New (M1) and Reactivated: <b>C == B</b> there, so half the segments are untouched.</li>
+      <li>Lower duplication than B (pw mean k 1.963 vs 2.124) and lower clustering penalty.</li>
+    </ul>
+    <p><span class="con">Cons</span></p>
+    <ul>
+      <li>Costs <b>21.2% of pairs / 25.2% of TVT</b>, and because New and Reactivated are unaffected, the
+      <b>entire loss lands on Power Viewer (−27.6%) and Retained (−22.0%)</b> — the highest-TVT, best-matched
+      cells, 93.6% of series TVT between them.</li>
+      <li><span class="pill pill-bad">Withdrawn argument</span> "Avoids duplication" is not a valid pro — the
+      <code>TSWEIGHT</code> ladder already de-duplicates. Applying both <b>double-corrects</b>, and since the
+      ladder over-corrects by 1.33–2.27× today, C makes that worse.</li>
+      <li>Still misses the 29–180d resume band (16.18% of TVT) — the same blind spot as B.</li>
+      <li>28 days is as arbitrary as 7; it inherits the matching window's number without a behavioural
+      justification of its own.</li>
+      <li>Requires a full pipeline re-run plus a refitted weight to be reportable.</li>
+    </ul>
+  </div>
+
+  <div class="opt D">
+    <h4>D · No screen (v10e movie parity)</h4>
+    <p class="rule">No prior-viewing test at all.</p>
+    <p><span class="pro">Pros</span></p>
+    <ul>
+      <li><b>Exact code parity with the movie pipeline</b> — movies and series become comparable on the event
+      definition, one fewer methodology delta to explain.</li>
+      <li>Maximum coverage: the full 5,945,788-pair candidate pool, 2.26× B's TVT.</li>
+      <li>No screen to explain, no threshold to defend, zero new code.</li>
+      <li>Most pairs clear <code>n_pairs ≥ 30</code> — most reportable cells, tightest CIs.</li>
+      <li>Highest multiplicity means the correct de-dup weight is smallest, which happens to move the existing
+      ladder <em>toward</em> correctness rather than away.</li>
+    </ul>
+    <p><span class="con">Cons</span></p>
+    <ul>
+      <li><b>Maximum contamination, and for series that is the whole ballgame:</b> series TVT is <b>80.2%
+      continuation</b> vs movies' 23.8% (§2). Under D a series "treated event" is usually a re-watch or a
+      mid-binge continuation, so the measured effect is substantially continuation, not incremental discovery.</li>
+      <li>Series Power Viewers — <b>60.4% of series TVT and 87.2% continuation</b> — are almost entirely
+      unscreened.</li>
+      <li>Highest duplication: pw mean k <b>2.600</b>, 59.7% of pairs k≥2, 11.7% at k≥5, max 66; Power Viewer
+      3.343.</li>
+      <li>Largest clustering penalty on standard errors and the largest gap between treated and control on
+      prior on-title exposure (controls are screened to zero by construction, so the asymmetry is widest here).</li>
+      <li>Parity in code is not parity in meaning — the same rule measures different things on the two
+      catalogs, which arguably makes the movie/series comparison <em>less</em> valid, not more.</li>
+    </ul>
+  </div>
+</div>
+
+<h2>8 · Summary matrix</h2>
+
+<table>
+  <tr><th>Dimension</th><th>A</th><th>B <span class="note">(ships)</span></th><th>C</th><th>D</th></tr>
+  <tr><td>Pool vs B</td><td class="num">63.7%</td><td class="num">100%</td><td class="num">78.8%</td><td class="num">159.2%</td></tr>
+  <tr><td>Candidate TVT retained</td><td class="num">25.9%</td><td class="num">44.2%</td><td class="num">33.1%</td><td class="num">100%</td></tr>
+  <tr><td>Duplication (pw mean k)</td><td class="num">1.853 <span class="pill pill-good">best</span></td>
+      <td class="num">2.124</td><td class="num">1.963</td><td class="num">2.600 <span class="pill pill-bad">worst</span></td></tr>
+  <tr><td>Power Viewer duplication</td><td class="num">2.199</td><td class="num">2.654</td><td class="num">2.384</td><td class="num">3.343</td></tr>
+  <tr><td>8–28d leak</td><td>closed</td><td>23.92% of TVT</td><td>closed</td><td>open, wider</td></tr>
+  <tr><td>29–180d resume leak</td><td>closed</td><td>16.18% of TVT</td><td>16.18% — open</td><td>open, wider</td></tr>
+  <tr><td>Rule complexity</td><td>1 rule, heavy scan</td><td>2 rules</td><td><b>1 rule, cheapest</b></td><td>no rule</td></tr>
+  <tr><td>Segments actually changed vs B</td><td class="num">4 of 4</td><td>—</td><td class="num"><b>2 of 4</b></td><td class="num">4 of 4</td></tr>
+  <tr><td>Weight (<code>TSWEIGHT</code>) consequence</td><td>over-correction widens most</td>
+      <td>known: 1.33–2.27× over</td><td>over-correction widens</td><td>over-correction narrows</td></tr>
+  <tr><td>Movie comparability</td><td>no</td><td>no</td><td>no</td><td>exact in code only</td></tr>
+</table>
+
+<div class="card lead">
+  <strong>How to read this as a decision.</strong> The behaviour data (§2) settles one thing outright:
+  <b>a series pipeline needs some screen</b> — 80.2% continuation against movies' 23.8% means D's movie-parity
+  rule measures a different construct on series than it does on movies. Among the three screened options the
+  trade is one-dimensional and explicit: <b>A</b> buys the cleanest discovery definition at 41.5% of candidate
+  TVT; <b>C</b> buys cross-segment uniformity and closes B's largest leak for 25.2% of candidate TVT, all of it
+  from Power Viewer and Retained; <b>B</b> buys coverage and zero cost while carrying a leak and a weight bias
+  that are now both measured. Any move off B also requires refitting the <code>TSWEIGHT</code> ladder —
+  otherwise the change trades a sized bias for an unsized one.
+</div>
+
+<h2>9 · Caveats on these numbers</h2>
+<ul class="tight">
+  <li><b>Funnel-grain absolutes read ~2% low.</b> Buckets 7+8 = 3,733,698 vs <code>phase2_treated_v11</code> =
+  3,826,770, because <code>v11_coverage.sql</code> anchors on <code>fq.ts</code> rather than
+  <code>DATE_TRUNC('minute', fq.ts)</code>. <b>Ratios and shares are sound; absolute pair counts are ~2%
+  under.</b></li>
+  <li><b>Pool sizing is not a re-estimate.</b> §3–§5 size pools, coverage and leaks on the shared candidate
+  pool. Nobody has re-run matching under A, C or D, so no option's Δ/viewer or Incremental TVT is known.
+  Direction of Δ under a looser screen is <b>two-sided</b> (added pairs carry prior exposure, which inflates Δ;
+  they are also habitual watchers with higher counterfactuals, which deflates it) — a previous directional
+  prediction of this kind was wrong by +50%.</li>
+  <li><b>Behaviour is <code>device_id</code>-grain, 3% sample</b> (<code>device_watch_daily</code>), while the
+  pipeline is <code>viewer_id</code>-grain on <code>video_session</code>. Shares are robust; upsampled device
+  counts (×33.3) are estimates. The 180d lookback means "new" strictly means "not in 180 days."</li>
+  <li><b>Post-window coverage (§3.5) is measured on all Aug 8–14 events</b>, so its 28d figures are partly
+  censored for the later event days; the 7d figures are complete.</li>
+  <li><b>Control-pool logic is identical across all four options</b> — no option changes the control screen, so
+  the treated/control asymmetry on prior on-title exposure widens monotonically with looseness (widest under D)
+  and is not fixable by CEM, since no control with on-title history exists to block against.</li>
+  <li><code>v11_dup_window_overlap</code> labels its pooled rows <code>user_segment = 'unknown'</code> rather
+  than <code>'all'</code> — cosmetic, no numeric effect.</li>
+</ul>
+
+<div class="foot">
+  Sources — Databricks <code>core_dev.dsa</code>, warehouse <code>d91490098e4494d5</code>:
+  <code>v11_coverage_universe</code>, <code>_event_funnel</code>, <code>_option_sizing</code>,
+  <code>_post_window</code>, <code>_pair_funnel</code>;
+  <code>v11_dup_pair_multiplicity</code>, <code>_catalog_restatement</code>, <code>_window_overlap</code>,
+  <code>_control_reuse</code>, <code>_effective_n</code>;
+  <code>v11_series_watch_buckets</code>, <code>_by_segment</code>, <code>_intraday</code>;
+  plus <code>opt_multiplicity.sql</code> and <code>opt_leaks.sql</code> in
+  <code>content_incrementality_v11/notebooks/</code>.
+  Pooled <code>SEG_WEIGHT</code> = {Retained 0.352, New (M1) 0.361, Reactivated 0.476, Power Viewer 0.145}.
+  v11 as-shipped: 3,826,770 treated · 2,767,736 matched pairs (72.3%) · pooled Δ/viewer 0.8125 hrs.
+</div>
+
+</div>
+</body>
+</html>
