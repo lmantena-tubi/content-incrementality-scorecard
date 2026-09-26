@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Incrementality — dsac_ci_v7_sep26 TVT Segmentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, 'Segoe UI', sans-serif; background: #fff; color: #222; padding: 2rem 2.5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #1B3A5C; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #666; margin-bottom: 1.25rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.25rem; border-bottom: 2px solid #e2e6ea; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 600; color: #666; background: none; border: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: #2E75B6; border-bottom-color: #2E75B6; }
+  .tab-btn:hover { color: #2E75B6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .summary-box { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; margin-bottom: 1.1rem; font-size: 13px; line-height: 1.6; }
+  .summary-box b { color: #1B3A5C; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-bottom: 1rem; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid #e8ebee; white-space: nowrap; }
+  th { background: #1B3A5C; color: #fff; font-weight: 600; cursor: pointer; position: sticky; top: 0; user-select: none; }
+  th:hover { background: #244b74; }
+  th.txt, td.txt { text-align: left; }
+  tbody tr:hover { background: #f2f7fc; }
+  tr.grand { font-weight: 700; background: #eef3f8; }
+  tr.grand td { border-top: 2px solid #2E75B6; }
+  .ratio-cell { font-weight: 600; border-radius: 3px; padding: 2px 6px; }
+  .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .kpi { background: #f8f9fa; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 18px; min-width: 150px; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: #1B3A5C; }
+  .kpi .lbl { font-size: 12px; color: #666; margin-top: 2px; }
+  .note { font-size: 12px; color: #888; margin-top: .5rem; }
+  .genre-hdr td { background: #dce6f1; font-weight: 700; color: #1B3A5C; text-align: left; }
+  /* two-scope switch — pick a scope, see only its tabs */
+  .scope-switch { display: flex; gap: 10px; margin-bottom: .9rem; flex-wrap: wrap; }
+  .scope-switch-btn { padding: 9px 16px; font-size: 12px; font-weight: 700; letter-spacing: .03em; border: 2px solid transparent; border-radius: 6px; cursor: pointer; background: #eef1f4; color: #667; }
+  .scope-switch-btn .scope-hint { font-weight: 400; opacity: .8; letter-spacing: 0; }
+  .scope-switch-btn.scope-title.active { background: #2E75B6; color: #fff; }
+  .scope-switch-btn.scope-overall.active { background: #6B4E9E; color: #fff; }
+  .scope-switch-btn.scope-why.active { background: #0d7d74; color: #fff; }
+  .scope-switch-btn:not(.active):hover { background: #e0e5ea; }
+  /* hide tab buttons + panels not belonging to the active scope */
+  .tabs .tab-btn { display: none; }
+  .tabs.scope-title .tab-btn[data-scope="title"] { display: inline-block; }
+  .tabs.scope-overall .tab-btn[data-scope="overall"] { display: inline-block; }
+  .tabs.scope-why .tab-btn[data-scope="why"] { display: inline-block; }
+  .tab-btn.overall.active { color: #6B4E9E; border-bottom-color: #6B4E9E; }
+  .tab-btn.overall:hover { color: #6B4E9E; }
+  .tab-btn.why.active { color: #0d7d74; border-bottom-color: #0d7d74; }
+  .tab-btn.why:hover { color: #0d7d74; }
+  .scope-hdr { display: none; }
+  .scope-hdr.active { display: block; }
+  .scope-banner { border-radius: 6px; padding: 9px 14px; margin-bottom: 1rem; font-size: 13px; line-height: 1.5; }
+  .scope-banner-title { background: #eaf2fb; border-left: 4px solid #2E75B6; }
+  .scope-banner-overall { background: #f0ebf8; border-left: 4px solid #6B4E9E; }
+  .scope-banner-why { background: #e3f4f2; border-left: 4px solid #0d7d74; }
+  .scope-banner b { color: #1B3A5C; }
+  /* net-decomposition channel cards: A hole (red), B subs (green), C cannib (red), NET */
+  .decomp-flow { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; margin-bottom: 1rem; }
+  .decomp-card { flex: 1 1 150px; border: 1px solid #e2e6ea; border-radius: 6px; padding: 12px 16px; background: #f8f9fa; }
+  .decomp-card .val { font-size: 21px; font-weight: 700; }
+  .decomp-card .lbl { font-size: 12px; color: #555; margin-top: 3px; font-weight: 600; }
+  .decomp-card .sub { font-size: 11px; color: #888; margin-top: 2px; }
+  .decomp-card.loss { border-left: 4px solid #c0392b; } .decomp-card.loss .val { color: #c0392b; }
+  .decomp-card.gain { border-left: 4px solid #27833f; } .decomp-card.gain .val { color: #27833f; }
+  .decomp-card.net  { border-left: 4px solid #6B4E9E; background: #f0ebf8; } .decomp-card.net .val { color: #6B4E9E; }
+  .decomp-op { display: flex; align-items: center; font-size: 24px; font-weight: 700; color: #999; padding: 0 2px; }
+  .decomp-h3 { font-size: 15px; font-weight: 600; color: #1B3A5C; margin: 1.4rem 0 .6rem; }
+</style>
+</head>
+<body>
+
+<h1>Content Incrementality — <code>dsac_ci_v7_sep26</code> TVT Segmentation</h1>
+<p class="subtitle">27 held-back titles · holdback (<code>ci_v7_hold</code>) vs Control · exposure window 2026-09-21 → 2026-09-24 · post-exposure TVT · generated 2026-09-26</p>
+
+<div class="scope-hdr active" id="hdr-title">
+  <div class="scope-banner scope-banner-title"><b>SCOPE: HELD-BACK TITLES</b> — sums TVT for <b>only the 27 held-back titles</b>. This ratio is the <b>direct</b> effect of the holdback (typically well below 100%).</div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="val">207,966</div><div class="lbl">Hold TVT (hrs)</div></div>
+    <div class="kpi"><div class="val">739,959</div><div class="lbl">Control TVT (hrs)</div></div>
+    <div class="kpi"><div class="val">947,923</div><div class="lbl">Total TVT (hrs)</div></div>
+    <div class="kpi"><div class="val">28%</div><div class="lbl">Overall Hold ÷ Control</div></div>
+  </div>
+  <div class="summary-box">
+    <b>Reading the ratio:</b> <b>Ratio = Hold TVT ÷ Control TVT</b>. Lower % = the holdback suppressed more of that slice's viewing = <b>stronger incrementality</b> (Tubi's surfacing drives more of the demand). ~100% = the holdback barely moved viewing (demand is self-driven).
+    Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;40% strong</span>
+    <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">40–70% moderate</span>
+    <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;70% weak</span>.
+    Viewer counts are distinct devices (viewers among the exposed, not upsampled). each arm ≈ 3.41M exposed devices (Control 3,405,839 / hold 3,407,280)
+  </div>
+</div>
+<div class="scope-hdr" id="hdr-overall">
+  <div class="scope-banner scope-banner-overall"><b>SCOPE: WHOLE CATALOG</b> — sums <b>ALL post-exposure viewing</b> (every title watched, not just the held-back set). This ratio is the <b>net</b> catalog effect and sits near 100%: held-back demand largely substitutes to other titles. A genre meaningfully below 100% is a true net loss.</div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="val">26,616,530</div><div class="lbl">Hold TVT (hrs) — all titles</div></div>
+    <div class="kpi"><div class="val">26,635,087</div><div class="lbl">Control TVT (hrs) — all titles</div></div>
+    <div class="kpi"><div class="val">-18,557</div><div class="lbl">Net Δ (Hold − Control)</div></div>
+    <div class="kpi"><div class="val">99.9%</div><div class="lbl">Overall Hold ÷ Control</div></div>
+    <div class="kpi"><div class="val">12 / 36</div><div class="lbl">Genres sig. after FDR</div></div>
+  </div>
+  <div class="summary-box">
+    <b>What this measures:</b> total view-time per genre across <b>everything</b> exposed devices watched post-exposure — not just the held-back titles. <b>Ratio = Hold TVT ÷ Control TVT</b>, expected near <b>100%</b> at catalog scale. <b>Below 100%</b> = the holdback caused a <b>net loss</b> in that genre (true incrementality — demand wasn't recovered); <b>above 100%</b> = spillover / substitution <i>into</i> that genre.
+    Colors: <span style="background:#f8d7da;padding:1px 6px;border-radius:3px;">&lt;99% net loss</span>
+    <span style="background:#fff3cd;padding:1px 6px;border-radius:3px;">99–101% flat</span>
+    <span style="background:#d4edda;padding:1px 6px;border-radius:3px;">&gt;101% net gain</span>.
+    <br><b>Significance:</b> <b>Welch t</b> / <b>p-value</b> test whether mean per-exposed-device genre TVT differs between arms (mean over the <i>full</i> arm, so non-viewers = 0 — ITT-style). <b>p (BH-FDR)</b> is Benjamini-Hochberg-corrected across all 36 genres; <b>"yes (FDR)"</b> survives correction, <b>"borderline"</b> is raw p&lt;0.05 only.
+  </div>
+</div>
+<div class="scope-hdr" id="hdr-why">
+  <div class="scope-banner scope-banner-why"><b>WHY TVT MOVES — SUBSTITUTION vs CANNIBALIZATION</b> — decomposes the <b>arm-normalized</b> whole-catalog net TVT Δ into three channels: <b>A</b> direct held-title loss, <b>B</b> substitution gains (non-held titles that pick up demand), <b>C</b> cannibalization (non-held titles that <i>lose</i> demand). <b>NET = A + B + C</b> and reconciles to the whole-catalog Net Δ. Hold TVT is scaled onto Control's device base (×<code>control_arm_size / hold_arm_size</code>) so the channels sum exactly to the net delta.</div>
+</div>
+
+<div class="scope-switch">
+  <button class="scope-switch-btn scope-title active" data-scope="title">HELD-BACK TITLES <span class="scope-hint">· the 27 titles · direct effect</span></button>
+  <button class="scope-switch-btn scope-overall" data-scope="overall">WHOLE CATALOG <span class="scope-hint">· every title watched · net effect</span></button>
+  <button class="scope-switch-btn scope-why" data-scope="why">WHY TVT · A/B/C DECOMPOSITION <span class="scope-hint">· direct loss · substitution · cannibalization</span></button>
+</div>
+
+<div class="tabs scope-title">
+  <button class="tab-btn active" data-tab="tab-title" data-scope="title">By Title</button>
+  <button class="tab-btn" data-tab="tab-genre" data-scope="title">By Genre</button>
+  <button class="tab-btn" data-tab="tab-segment" data-scope="title">By Viewer Segment</button>
+  <button class="tab-btn" data-tab="tab-gs" data-scope="title">Genre × Segment</button>
+  <button class="tab-btn" data-tab="tab-ps" data-scope="title">By Page Source</button>
+  <button class="tab-btn" data-tab="tab-pst" data-scope="title">Page Source × Title</button>
+  <button class="tab-btn overall" data-tab="tab-og" data-scope="overall">Overall Genre</button>
+  <button class="tab-btn overall" data-tab="tab-ogs" data-scope="overall">Overall Genre × Segment</button>
+  <button class="tab-btn why" data-tab="tab-decomp" data-scope="why">Why TVT (A/B/C)</button>
+  <button class="tab-btn why" data-tab="tab-decomp-pv" data-scope="why">Why TVT — Power Viewers</button>
+</div>
+
+<div class="tab-panel active" id="tab-title">
+  <div class="note">All 27 titles. Click any column header to sort. "Genre" is <code>primary_genre_cms</code>.</div>
+  <div id="titleTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-genre">
+  <div class="note">TVT by <code>primary_genre_cms</code> × variant.</div>
+  <div id="genreTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-segment">
+  <div class="summary-box"><b>Viewer segment</b> is assigned per device at first exposure from <code>device_okr_daily</code>, using the <b>exact definition from the <code>v10d_control_pool</code> notebook</b>. Checked in precedence order:
+  <b>power_viewer</b> (≥8 visit-days in the last 28d <b>and</b> ≥4 TVT hrs per visit-day on average — the top / heavy-usage tier, checked first),
+  <b>new</b> (device_first_view within 28d),
+  <b>retained</b> (older device, last visit within 28d and not today),
+  <b>reactivated</b> (older device, dormant &gt;28d then returned),
+  <b>unknown</b> (no OKR row at exposure — a data-coverage residual, <i>not</i> a behavioral tier).</div>
+  <div id="segTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-gs">
+  <div class="note">TVT by genre × viewer segment × variant. Grouped by genre; ordered by TVT within genre. Cells with &lt;1 TVT hour omitted.</div>
+  <div id="gsTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-ps">
+  <div class="summary-box"><b>Where does the held-back viewing come from?</b> Post-exposure TVT across all 27 titles, split by the <b>session's originating page source</b> (definition lifted verbatim from the <code>v8b_page_source_pivot</code> notebook — Deeplink / autoplay / YMAL / HomePage / Search / MyStuff / DetailsPage / etc., long tail rolled into <b>Other</b>).
+  <b>Share of Hold %</b> = each source's slice of total hold-arm TVT. <b>Ratio</b> = Hold ÷ Control for that source (lower = the holdback suppressed that channel harder). The signature of a holdback: <b>HomePage and autoplay ratios collapse</b> (those surfacing channels were suppressed), while <b>Search and Deeplink hold up near ~100%+</b> (users actively seek the title out — that demand is incremental / self-driven).</div>
+  <div id="psTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-pst">
+  <div class="note">Per title: <b>% of that title's HOLD-arm TVT</b> coming from each page source (row sums to ~100%). Click any header to sort — e.g. sort by <code>Search</code> to find titles whose held-back demand is most search-driven. "Hold TVT (hrs)" is the title's total hold-arm view time.</div>
+  <div id="psTitleTable"></div>
+</div>
+<div class="tab-panel" id="tab-og">
+  <div class="note">Whole-catalog TVT by <code>primary_genre_cms</code> × variant — <b>all titles</b>, not just the held-back set. Click any column header to sort.</div>
+  <div id="ogTable"></div>
+</div>
+
+<div class="tab-panel" id="tab-ogs">
+  <div class="note">Whole-catalog TVT by genre × viewer segment × variant (<b>all titles</b>). Grouped by genre; ordered by TVT within genre. Cells with &lt;1 TVT hour omitted. Ratio uses the net-loss scale (below 100% = net loss in that genre×segment slice). <b>Welch t / p / BH-FDR</b> test whether mean per-exposed-device TVT differs between arms within that genre×segment (mean over the full segment arm — non-viewers count as zeros); BH-FDR is corrected across all genre×segment cells.</div>
+  <div id="ogsTable"></div>
+</div>
+<div class="tab-panel" id="tab-decomp">
+  <div class="summary-box"><b>Where does the net loss actually land?</b> The whole-catalog ratio is a single net number; this tab decomposes it into the three channels that produce it, <b>arm-normalized</b> so the hold arm and Control sit on the same device base (hold TVT scaled ×0.9996 = 3,405,839 ÷ 3,407,280 exposed devices).
+  <b>A. Direct held-title loss</b> = lost TVT on the 27 held-back titles themselves.
+  <b>B. Substitution gains</b> = extra TVT that non-held titles picked up.
+  <b>C. Cannibalization</b> = TVT that non-held titles <i>lost</i> (demand that leaked away instead of redistributing).
+  <b>NET = A + B + C</b>, and reconciles to the whole-catalog Net Δ.
+  The headline metric is the <b>refill rate = (B + C) ÷ |A|</b>: how much of the hole the rest of the catalog refills. A higher refill rate = a smaller residual net loss for the same-sized hole.</div>
+  <div class="decomp-flow">
+    <div class="decomp-card loss"><div class="val">-205,688</div><div class="lbl">A · Direct held-title loss</div><div class="sub">hole dug: 205,688 hrs</div></div>
+    <div class="decomp-op">+</div>
+    <div class="decomp-card gain"><div class="val">+519,051</div><div class="lbl">B · Substitution gains</div><div class="sub">non-held titles up</div></div>
+    <div class="decomp-op">+</div>
+    <div class="decomp-card loss"><div class="val">-271,170</div><div class="lbl">C · Cannibalization</div><div class="sub">non-held titles down</div></div>
+    <div class="decomp-op">=</div>
+    <div class="decomp-card net"><div class="val">+42,193</div><div class="lbl">NET Δ (whole catalog)</div><div class="sub">refill 120.5% · +247,882 hrs back</div></div>
+  </div>
+  <div class="note">Held-back titles (arm-normalized): hold 66,732 hrs vs control 272,421 hrs. Refill rate = (B + C) ÷ |A| = <b>120.5%</b> of the direct hole recovered by the rest of the catalog.</div>
+
+  <div class="decomp-h3">Genre composition of the net delta</div>
+  <div class="note">Each genre's contribution split into held-title loss / substitution / cannibalization / net. Ordered most-negative net first, so the genres where demand <b>leaked</b> (net-negative) surface at the top — the opposite of genres that <b>absorbed</b> substitution (net-positive). <b>B/A</b> and <b>C/A</b> express that genre's substitution and cannibalization as a share of its own direct hole <b>|A|</b> — the per-genre refill components (they sum to the genre's refill rate). Shown only for genres that hold a title (A ≠ 0); "—" where the genre has no held-back title.</div>
+  <div id="decGenreTable"></div>
+
+  <div class="decomp-h3">Top substituting titles (non-held gainers)</div>
+  <div class="note">The 20 non-held titles that picked up the most TVT under the holdback — where the freed demand redistributed. Δ is arm-normalized hold − control.</div>
+  <div id="decSubsTable"></div>
+
+  <div class="decomp-h3">Top cannibalizing titles (non-held losers)</div>
+  <div class="note">The 20 non-held titles that <i>lost</i> the most TVT — demand that leaked away rather than redistributing (e.g. live franchise sequels stranded when their anchors were held). Δ is arm-normalized hold − control (negative).</div>
+  <div id="decCannibTable"></div>
+</div>
+<div class="tab-panel" id="tab-decomp-pv">
+  <div class="summary-box"><b>The same A/B/C decomposition, restricted to <span style="color:#0d7d74;">power viewers</span>.</b> Only devices classified <code>power_viewer</code> at first exposure (≥8 visit-days in the last 28d <b>and</b> ≥4 TVT hrs per visit-day) contribute here. <b>Arm-normalized to the power-viewer arms</b> (hold TVT scaled ×0.9986 = 453,723 ÷ 454,360 power-viewer devices) so the channels still sum exactly to this segment's net Δ.
+  <b>A. Direct held-title loss</b> = power-viewer TVT lost on the 27 held-back titles.
+  <b>B. Substitution gains</b> / <b>C. Cannibalization</b> = non-held titles power viewers watched more / less of.
+  <b>NET = A + B + C</b> for the power-viewer segment.
+  Power viewers are the heavy-usage tier — comparing their refill rate to the whole-catalog one shows whether the freed demand redistributes <i>more</i> or <i>less</i> readily for the most engaged users.</div>
+  <div class="decomp-flow">
+    <div class="decomp-card loss"><div class="val">-157,549</div><div class="lbl">A · Direct held-title loss</div><div class="sub">hole dug: 157,549 hrs</div></div>
+    <div class="decomp-op">+</div>
+    <div class="decomp-card gain"><div class="val">+523,892</div><div class="lbl">B · Substitution gains</div><div class="sub">non-held titles up</div></div>
+    <div class="decomp-op">+</div>
+    <div class="decomp-card loss"><div class="val">-369,394</div><div class="lbl">C · Cannibalization</div><div class="sub">non-held titles down</div></div>
+    <div class="decomp-op">=</div>
+    <div class="decomp-card net"><div class="val">-3,050</div><div class="lbl">NET Δ (power viewers)</div><div class="sub">refill 98.1% · +154,499 hrs back</div></div>
+  </div>
+  <div class="note">Held-back titles, power viewers only (arm-normalized): hold 51,093 hrs vs control 208,642 hrs. Refill rate = (B + C) ÷ |A| = <b>98.1%</b> of the power-viewer hole recovered by the rest of the catalog.</div>
+
+  <div class="decomp-h3">Genre composition of the net delta — power viewers</div>
+  <div class="note">Per-genre held-title loss / substitution / cannibalization / net for power viewers only, ordered most-negative net first. <b>B/A</b> and <b>C/A</b> are the per-genre refill components (share of that genre's own direct hole |A|); "—" where the genre has no held-back title.</div>
+  <div id="decGenrePvTable"></div>
+
+  <div class="decomp-h3">Top substituting titles — power viewers</div>
+  <div class="note">Non-held titles power viewers picked up the most TVT on. Δ is arm-normalized hold − control.</div>
+  <div id="decSubsPvTable"></div>
+
+  <div class="decomp-h3">Top cannibalizing titles — power viewers</div>
+  <div class="note">Non-held titles power viewers <i>lost</i> the most TVT on. Δ is arm-normalized hold − control (negative).</div>
+  <div id="decCannibPvTable"></div>
+</div>
+
+<script>
+const DATA = {"qA": {"columns": ["program_name", "genre", "hold_viewers", "control_viewers", "total_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["The Legend of Tarzan", "action", "15239", "47667", "62906", "16692", "53565", "70258", "31.0", "7.4"], ["Infinite", "action", "10186", "57271", "67457", "10067", "58596", "68664", "17.0", "7.2"], ["The Mummy", "action", "11174", "39536", "50710", "13817", "51644", "65461", "27.0", "6.9"], ["American Gangster", "drama", "8443", "34226", "42669", "12002", "52170", "64172", "23.0", "6.8"], ["Superbad", "comedy", "32341", "30433", "62774", "32520", "30831", "63351", "105.0", "6.7"], ["Jurassic World", "sci-fi", "9560", "34724", "44284", "10903", "43896", "54799", "25.0", "5.8"], ["Welcome Home Roscoe Jenkins", "comedy", "6261", "31979", "38240", "7736", "43712", "51448", "18.0", "5.4"], ["Love Don't Cost a Thing", "comedy", "9883", "42231", "52114", "9104", "41929", "51033", "22.0", "5.4"], ["Jurassic World: Fallen Kingdom", "sci-fi", "7744", "32394", "40138", "8766", "41407", "50173", "21.0", "5.3"], ["Coming to America", "comedy", "9517", "26844", "36361", "10757", "32158", "42916", "33.0", "4.5"], ["Casino", "drama", "6029", "21100", "27129", "8185", "30272", "38457", "27.0", "4.1"], ["Save the Last Dance", "drama", "5871", "22373", "28244", "6920", "27561", "34481", "25.0", "3.6"], ["A Thin Line Between Love and Hate", "comedy", "4804", "20880", "25684", "5155", "24621", "29776", "21.0", "3.1"], ["The Replacements", "comedy", "4270", "18707", "22977", "5163", "23889", "29052", "22.0", "3.1"], ["Sleepers", "drama", "5469", "17727", "23196", "6979", "20037", "27016", "35.0", "2.8"], ["Fried Green Tomatoes", "drama", "3087", "13781", "16868", "4345", "20293", "24638", "21.0", "2.6"], ["Boyz N the Hood", "drama", "6073", "17114", "23187", "5826", "18450", "24276", "32.0", "2.6"], ["Sicario: Day of the Soldado", "action", "4801", "16390", "21191", "4569", "15279", "19849", "30.0", "2.1"], ["Get Rich or Die Tryin'", "drama", "3585", "14332", "17917", "3563", "15798", "19360", "23.0", "2.0"], ["What Lies Beneath", "drama", "2879", "12383", "15262", "3354", "14413", "17767", "23.0", "1.9"], ["Rambo", "action", "4784", "14692", "19476", "3853", "12662", "16514", "30.0", "1.7"], ["Rambo: Last Blood", "action", "4111", "15263", "19374", "3331", "13017", "16347", "26.0", "1.7"], ["First Blood", "action", "3982", "11967", "15949", "3715", "11581", "15296", "32.0", "1.6"], ["Dreamer: Inspired by a True Story", "drama", "2252", "9990", "12242", "2688", "11078", "13766", "24.0", "1.5"], ["Ghost", "drama", "2347", "9420", "11767", "2647", "11114", "13762", "24.0", "1.5"], ["For Richer Or Poorer", "comedy", "2109", "8572", "10681", "2557", "10396", "12953", "25.0", "1.4"], ["American Me", "drama", "3064", "10561", "13625", "2749", "9590", "12339", "29.0", "1.3"]]}, "qB": {"columns": ["genre", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["drama", "45851", "156804", "59258", "230776", "290035", "26.0", "30.6"], ["comedy", "66058", "154257", "72992", "207535", "280527", "35.0", "29.6"], ["action", "50183", "169266", "56045", "216344", "272389", "26.0", "28.7"], ["sci-fi", "14916", "50133", "19670", "85303", "104972", "23.0", "11.1"]]}, "qC": {"columns": ["ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct"], "rows": [["retained", "85311", "242121", "95592", "337269", "432861", "28.0", "45.7"], ["power_viewer", "36949", "97074", "69543", "252352", "321895", "28.0", "34.0"], ["new", "20421", "48215", "19880", "65066", "84946", "31.0", "9.0"], ["reactivated", "15559", "40195", "15977", "54632", "70608", "29.0", "7.4"], ["unknown", "7531", "23671", "6974", "30640", "37613", "23.0", "4.0"]]}, "qD": {"columns": ["genre", "ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_tvt_hrs", "ratio_hold_vs_control_pct"], "rows": [["action", "retained", "26748", "90363", "27194", "102054", "129248", "27.0"], ["action", "power_viewer", "10491", "34781", "16477", "64117", "80594", "26.0"], ["action", "new", "6006", "19435", "5615", "21941", "27557", "26.0"], ["action", "reactivated", "4679", "15860", "4760", "18718", "23478", "25.0"], ["action", "unknown", "2259", "8827", "1999", "9514", "11513", "21.0"], ["comedy", "retained", "31929", "78548", "31853", "92545", "124398", "34.0"], ["comedy", "power_viewer", "15353", "37244", "24696", "72663", "97358", "34.0"], ["comedy", "new", "9088", "16591", "7666", "17384", "25050", "44.0"], ["comedy", "reactivated", "6637", "14035", "6116", "16040", "22156", "38.0"], ["comedy", "unknown", "3051", "7839", "2661", "8904", "11565", "30.0"], ["drama", "retained", "24627", "85073", "28194", "107718", "135912", "26.0"], ["drama", "power_viewer", "11106", "37095", "20422", "81214", "101636", "25.0"], ["drama", "new", "4514", "14607", "4709", "17498", "22206", "27.0"], ["drama", "reactivated", "3669", "12074", "4061", "14779", "18839", "27.0"], ["drama", "unknown", "1935", "7955", "1873", "9567", "11440", "20.0"], ["sci-fi", "retained", "7150", "24195", "8351", "34951", "43303", "24.0"], ["sci-fi", "power_viewer", "4192", "14782", "7948", "34359", "42307", "23.0"], ["sci-fi", "new", "1977", "5786", "1890", "8243", "10133", "23.0"], ["sci-fi", "reactivated", "1091", "3388", "1040", "5095", "6135", "20.0"], ["sci-fi", "unknown", "506", "1982", "441", "2654", "3095", "17.0"]]}, "qPSt": {"columns": ["Title", "Genre", "Hold TVT (hrs)", "Search", "HomePage", "Deeplink", "CollectionPage", "autoplay", "(blank)", "DetailsPage", "VideoPlayerPage", "MyStuff", "YMAL", "Other"], "rows": [["A Thin Line Between Love and Hate", "comedy", 5155, 28.0, 31.1, 8.7, 0.8, 15.0, 3.2, 3.7, 3.2, 1.5, 4.2, 0.5], ["American Gangster", "drama", 12002, 15.4, 27.3, 16.2, 11.5, 12.9, 3.9, 4.4, 3.5, 1.3, 2.9, 0.5], ["American Me", "drama", 2749, 31.5, 27.3, 16.6, 2.4, 6.2, 3.6, 4.3, 3.6, 1.3, 2.3, 0.9], ["Boyz N the Hood", "drama", 5826, 25.6, 20.5, 18.8, 7.2, 6.2, 10.2, 3.0, 4.2, 1.4, 2.6, 0.4], ["Casino", "drama", 8184, 18.0, 24.9, 21.4, 7.0, 10.7, 4.6, 4.5, 4.2, 2.0, 2.1, 0.6], ["Coming to America", "comedy", 10757, 11.0, 16.7, 5.9, 6.2, 5.9, 36.8, 2.9, 11.7, 1.1, 1.6, 0.4], ["Dreamer: Inspired by a True Story", "drama", 2688, 15.5, 21.9, 20.7, 2.9, 22.4, 2.5, 4.0, 4.5, 2.7, 2.6, 0.3], ["First Blood", "action", 3715, 28.3, 18.0, 19.1, 10.9, 4.0, 7.9, 3.3, 5.1, 2.0, 1.0, 0.5], ["For Richer Or Poorer", "comedy", 2558, 14.4, 26.1, 20.1, 5.1, 17.7, 2.6, 3.5, 3.1, 4.0, 2.3, 1.0], ["Fried Green Tomatoes", "drama", 4346, 15.1, 20.6, 17.0, 2.2, 29.9, 2.5, 3.9, 3.2, 2.2, 2.6, 0.7], ["Get Rich or Die Tryin'", "drama", 3563, 27.3, 26.9, 8.5, 8.9, 9.9, 3.9, 4.6, 4.3, 1.4, 3.5, 0.7], ["Ghost", "drama", 2650, 25.9, 23.3, 10.3, 7.9, 16.9, 3.0, 4.2, 4.2, 2.6, 1.3, 0.5], ["Infinite", "action", 10067, 9.4, 21.6, 11.0, 12.9, 31.6, 2.5, 3.9, 2.9, 2.2, 1.6, 0.5], ["Jurassic World", "sci-fi", 10903, 17.0, 22.3, 21.6, 9.0, 15.2, 3.6, 3.2, 3.0, 1.6, 2.7, 0.7], ["Jurassic World: Fallen Kingdom", "sci-fi", 8765, 13.9, 22.4, 16.9, 10.7, 22.2, 2.7, 3.4, 2.9, 1.8, 2.5, 0.6], ["Love Don't Cost a Thing", "comedy", 9105, 25.2, 21.6, 9.2, 4.2, 25.4, 3.7, 3.7, 2.7, 1.5, 2.3, 0.4], ["Rambo", "action", 3853, 17.9, 18.3, 26.4, 9.4, 8.5, 7.0, 2.7, 5.2, 1.7, 2.3, 0.6], ["Rambo: Last Blood", "action", 3328, 19.8, 24.3, 10.3, 19.4, 8.1, 4.5, 4.2, 4.8, 1.6, 2.0, 1.0], ["Save the Last Dance", "drama", 6919, 25.7, 18.8, 11.4, 9.0, 21.1, 2.9, 3.8, 3.1, 1.7, 2.1, 0.4], ["Sicario: Day of the Soldado", "action", 4568, 15.9, 19.5, 25.1, 13.0, 4.4, 9.8, 3.1, 5.2, 1.9, 1.4, 0.6], ["Sleepers", "drama", 6978, 16.6, 24.3, 18.4, 16.7, 4.7, 5.8, 4.3, 4.8, 2.9, 1.4, 0.3], ["Superbad", "comedy", 32520, 5.2, 49.3, 4.5, 1.6, 24.0, 3.2, 3.6, 3.9, 0.3, 3.4, 1.0], ["The Legend of Tarzan", "action", 16692, 10.3, 12.1, 14.9, 5.9, 17.4, 23.5, 2.5, 10.6, 1.3, 1.2, 0.4], ["The Mummy", "action", 13817, 21.3, 21.8, 21.1, 5.9, 13.9, 3.5, 3.7, 3.1, 3.0, 2.1, 0.6], ["The Replacements", "comedy", 5162, 15.8, 25.3, 13.0, 10.4, 19.7, 3.1, 4.2, 3.3, 2.8, 1.7, 0.8], ["Welcome Home Roscoe Jenkins", "comedy", 7736, 16.1, 25.6, 10.0, 6.5, 25.6, 4.3, 3.8, 2.9, 1.1, 3.7, 0.5], ["What Lies Beneath", "drama", 3354, 12.4, 17.9, 10.0, 15.1, 32.4, 2.2, 3.4, 2.9, 1.9, 1.3, 0.4]]}, "qPSo": {"columns": ["Page Source", "Hold TVT (hrs)", "Share of Hold %", "Control TVT (hrs)", "Grand Total (hrs)", "Ratio Hold \u00f7 Control %", "Share of Total %"], "rows": [["HomePage", 53946, 25.9, 315208, 369154, 17, 38.9], ["autoplay", 36055, 17.3, 242353, 278408, 15, 29.4], ["Deeplink", 28466, 13.7, 32891, 61357, 87, 6.5], ["Search", 32623, 15.7, 25705, 58328, 127, 6.2], ["VideoPlayerPage", 9548, 4.6, 28711, 38259, 33, 4.0], ["(blank)", 15128, 7.3, 20961, 36089, 72, 3.8], ["DetailsPage", 7496, 3.6, 26320, 33817, 28, 3.6], ["YMAL", 4918, 2.4, 28155, 33073, 17, 3.5], ["CollectionPage", 15210, 7.3, 11918, 27128, 128, 2.9], ["MyStuff", 3305, 1.6, 3096, 6402, 107, 0.7], ["Other", 1270, 0.6, 4641, 5909, 27, 0.6]]}, "qOG": {"columns": ["genre", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_hrs", "ratio_hold_vs_control_pct", "share_of_total_pct", "Welch t", "p-value", "p (BH-FDR)", "Significant?"], "rows": [["comedy", "1124873", "1135341", "4610157", "4654224", "9264381", "99.1", "17.4", -3.01, 0.002652794776153211, 0.008681873812865054, "yes (FDR)"], ["drama", "1223974", "1245703", "4493710", "4586718", "9080428", "98.0", "17.1", -7.36, 1.780797731498751e-13, 1.602717958348876e-12, "yes (FDR)"], ["kids & family", "656154", "645700", "3381402", "3317249", "6698650", "101.9", "12.6", 4.44, 9.177388665237984e-06, 4.129824899357093e-05, "yes (FDR)"], ["action", "738018", "767225", "2130708", "2221727", "4352435", "95.9", "8.2", -12.05, 0.0, 0.0, "yes (FDR)"], ["documentary", "461183", "454707", "1758949", "1732647", "3491596", "101.5", "6.6", 2.77, 0.0055381691139686495, 0.01661450734190595, "yes (FDR)"], ["reality", "363746", "361359", "1739320", "1737719", "3477039", "100.1", "6.5", 0.09, 0.928814644621325, 0.9363217465331276, "no"], ["horror", "726570", "714165", "1638741", "1602539", "3241280", "102.3", "6.1", 5.55, 2.88787078694952e-08, 1.732722472169712e-07, "yes (FDR)"], ["thriller", "722385", "707569", "1466640", "1420881", "2887521", "103.2", "5.4", 9.45, 0.0, 0.0, "yes (FDR)"], ["crime", "408248", "398559", "1189419", "1160387", "2349806", "102.5", "4.4", 4.41, 1.0527990635056383e-05, 4.2111962540225534e-05, "yes (FDR)"], ["sci-fi", "430012", "437837", "843461", "883448", "1726909", "95.5", "3.2", -10.08, 0.0, 0.0, "yes (FDR)"], ["entertainment", "335895", "331920", "725258", "725955", "1451214", "99.9", "2.7", -0.16, 0.8726701718758156, 0.9358483703646812, "no"], ["western", "208130", "200820", "560699", "533743", "1094442", "105.1", "2.1", 6.31, 2.7856428275185863e-10, 2.005662835813382e-09, "yes (FDR)"], ["animation", "108308", "107520", "392677", "386826", "779503", "101.5", "1.5", 1.39, 0.16518400049185855, 0.37166400110668174, "no"], ["fantasy", "232907", "226883", "361714", "358992", "720706", "100.8", "1.4", 1.06, 0.2896318292023563, 0.5213372925642414, "no"], ["romance", "176296", "173933", "305927", "302330", "608258", "101.2", "1.1", 1.41, 0.15954136179480516, 0.37166400110668174, "no"], ["adventure", "158428", "154832", "242285", "233218", "475503", "103.9", "0.9", 4.25, 2.13441658762914e-05, 7.683899715464904e-05, "yes (FDR)"], ["news", "80631", "79958", "207705", "211023", "418728", "98.4", "0.8", -1.14, 0.25482606274802766, 0.4962343684569371, "no"], ["mystery", "69961", "69357", "149030", "147552", "296582", "101.0", "0.6", 0.58, 0.5591212450518106, 0.7636879669257851, "no"], ["lifestyle", "51021", "50877", "100051", "102825", "202876", "97.3", "0.4", -1.47, 0.1405225747194776, 0.361343763564371, "no"], ["anime", "35107", "34182", "82921", "81342", "164263", "101.9", "0.3", 0.79, 0.4296295315025409, 0.6892093511206167, "no"], ["sport", "137882", "137104", "76932", "77960", "154892", "98.7", "0.3", -0.66, 0.5124415436270815, 0.7379158228229974, "no"], ["war", "34916", "32992", "47132", "43776", "90908", "107.7", "0.2", 4.86, 1.159527672101035e-06, 5.963285170805323e-06, "yes (FDR)"], ["music", "18823", "18536", "27756", "27801", "55558", "99.8", "0.1", -0.08, 0.9363217465331275, 0.9363217465331276, "no"], ["holiday", "12378", "12452", "18686", "18801", "37487", "99.4", "0.1", -0.33, 0.7451659107945614, 0.8941990929534737, "no"], ["talk show", "4726", "4651", "16948", "16772", "33720", "101.1", "0.1", 0.2, 0.8387227012008249, 0.9358483703646812, "no"], ["game show", "5174", "5294", "10642", "11140", "21782", "95.5", "0.0", -1.12, 0.2619014722411612, 0.4962343684569371, "no"], ["musicals", "8737", "8589", "9747", "9499", "19246", "102.6", "0.0", 0.77, 0.4403281965492829, 0.6892093511206167, "no"], ["ambient", "2527", "2358", "6045", "6485", "12530", "93.2", "0.0", -1.21, 0.2251899466147731, 0.4768728281254018, "no"], ["science & nature", "3546", "3547", "5751", "5703", "11454", "100.9", "0.0", 0.15, 0.88385679423331, 0.9358483703646812, "no"], ["(unknown)", "105927", "105265", "4689", "4500", "9189", "104.2", "0.0", 0.49, 0.6273329538288246, 0.789095098035576, "no"], ["adult", "15308", "15375", "4371", "4509", "8880", "97.0", "0.0", -0.85, 0.3965122852380927, 0.6797353461224446, "no"], ["foreign/international", "7612", "7508", "3827", "3566", "7394", "107.3", "0.0", 2.11, 0.03512117370062673, 0.09725863486327402, "borderline"], ["lgbt", "10582", "10578", "2601", "2623", "5224", "99.1", "0.0", -0.26, 0.7928382512634258, 0.9207153885639783, "no"], ["biography", "700", "708", "504", "474", "978", "106.4", "0.0", 0.73, 0.46447290479888137, 0.6967093571983222, "no"], ["independent", "510", "494", "122", "131", "253", "93.0", "0.0", -0.56, 0.5727659751943388, 0.7636879669257851, "no"], ["mockumentary", "9", "7", "3", "2", "5", "161.8", "0.0", 0.47, 0.635659940084214, 0.789095098035576, "no"]]}, "qOGS": {"columns": ["genre", "ga28d_segment", "hold_viewers", "control_viewers", "hold_tvt_hrs", "control_tvt_hrs", "grand_total_hrs", "ratio_hold_vs_control_pct", "Welch t", "p-value", "p (BH-FDR)", "Significant?"], "rows": [["(unknown)", "power_viewer", "18747", "18647", "2288", "2145", "4433", "106.7", 0.38, 0.7020147748215346, 0.8762737614793623, "no"], ["(unknown)", "retained", "66195", "65810", "1953", "1850", "3803", "105.6", 1.01, 0.3119368584661868, 0.5840519903196689, "no"], ["(unknown)", "new", "9867", "9911", "200", "207", "407", "96.7", -0.15, 0.8777045194162816, 0.9523596272124857, "no"], ["(unknown)", "unknown", "5922", "5820", "114", "187", "301", "60.9", -1.9, 0.057584778483930066, 0.19872394143473904, "no"], ["(unknown)", "reactivated", "5196", "5077", "134", "111", "245", "120.3", 0.68, 0.49721311316739847, 0.7353740161131271, "no"], ["action", "power_viewer", "174143", "176748", "1056218", "1072972", "2129190", "98.4", -2.93, 0.0033511180536283103, 0.02457486572660761, "yes (FDR)"], ["action", "retained", "414793", "431415", "807888", "856954", "1664841", "94.3", -14.6, 0.0, 0.0, "yes (FDR)"], ["action", "new", "64977", "68908", "127277", "139534", "266811", "91.2", -7.4, 1.3589129821411916e-13, 4.783373697136995e-12, "yes (FDR)"], ["action", "reactivated", "45344", "49307", "71085", "79741", "150825", "89.1", -7.86, 3.9968028886505635e-15, 1.758593271006248e-13, "yes (FDR)"], ["action", "unknown", "38761", "40847", "68240", "72527", "140767", "94.1", -4.32, 1.5914705062014534e-05, 0.00021546062237804293, "yes (FDR)"], ["adult", "retained", "9856", "9929", "2176", "2123", "4299", "102.5", 0.57, 0.5678138084406421, 0.8191412318487953, "no"], ["adult", "power_viewer", "2141", "2124", "1648", "1766", "3414", "93.3", -0.93, 0.3533693317127089, 0.6084254886557082, "no"], ["adult", "new", "1835", "1839", "295", "305", "600", "96.5", -0.31, 0.7596367629094678, 0.8994797780833537, "no"], ["adult", "unknown", "675", "698", "134", "171", "305", "78.4", -1.89, 0.05901200694420283, 0.19909261812843856, "no"], ["adult", "reactivated", "801", "785", "119", "143", "261", "83.4", -0.94, 0.3456428451170528, 0.608331407406013, "no"], ["adventure", "power_viewer", "43680", "42353", "122991", "118129", "241120", "104.1", 2.63, 0.008621903379474105, 0.04895016112217557, "yes (FDR)"], ["adventure", "retained", "86078", "84433", "91351", "87435", "178786", "104.5", 4.0, 6.20812852434316e-05, 0.0007284204135229307, "yes (FDR)"], ["adventure", "new", "13199", "12910", "13565", "13010", "26576", "104.3", 1.49, 0.1360110518125821, 0.33247145998631183, "no"], ["adventure", "reactivated", "8552", "8197", "7812", "8035", "15847", "97.2", -0.78, 0.4349225833620065, 0.6896069790244428, "no"], ["adventure", "unknown", "6919", "6939", "6567", "6608", "13175", "99.4", -0.13, 0.8928371505117054, 0.9523596272124857, "no"], ["ambient", "power_viewer", "913", "851", "3471", "3981", "7451", "87.2", -1.64, 0.10176307615079949, 0.27177996131467264, "no"], ["ambient", "retained", "1222", "1189", "1971", "1960", "3931", "100.6", 0.06, 0.9532366323167885, 0.9831993700005366, "no"], ["ambient", "reactivated", "147", "106", "244", "175", "420", "139.2", 1.27, 0.20291644638261808, 0.41049763865908945, "no"], ["ambient", "new", "146", "124", "158", "222", "380", "71.2", -1.44, 0.15008996058053925, 0.34306276704123256, "no"], ["ambient", "unknown", "99", "88", "201", "148", "349", "136.2", 0.98, 0.32549303199860025, 0.5976592086448674, "no"], ["animation", "power_viewer", "27306", "27203", "237094", "231488", "468582", "102.4", 1.47, 0.142412098398629, 0.3341937242421161, "no"], ["animation", "retained", "58336", "57842", "112279", "112173", "224453", "100.1", 0.0, 0.9988713898449486, 0.9988713898449486, "no"], ["animation", "new", "10043", "10063", "19751", "19095", "38845", "103.4", 0.96, 0.33915526579329835, 0.6029426947436415, "no"], ["animation", "reactivated", "7328", "7098", "13113", "12585", "25698", "104.2", 0.88, 0.3806068047666282, 0.6379695013231101, "no"], ["animation", "unknown", "5295", "5314", "10439", "11485", "21924", "90.9", -2.07, 0.03842132278972965, 0.16100363835696235, "borderline"], ["anime", "power_viewer", "4668", "4538", "37067", "36957", "74025", "100.3", 0.04, 0.9713197495357908, 0.9831993700005366, "no"], ["anime", "retained", "18854", "18348", "31054", "29827", "60881", "104.1", 1.33, 0.18291769970668503, 0.3974508043009452, "no"], ["anime", "new", "5884", "5799", "8629", "8538", "17167", "101.1", 0.23, 0.8164273743007293, 0.9315789558926383, "no"], ["anime", "reactivated", "3520", "3291", "3614", "3320", "6934", "108.8", 0.92, 0.35888405501683507, 0.6084254886557082, "no"], ["anime", "unknown", "2181", "2206", "2557", "2699", "5256", "94.7", -0.62, 0.5380192957271706, 0.7825735210577026, "no"], ["biography", "retained", "382", "402", "218", "228", "446", "95.4", -0.41, 0.6843951951609726, 0.8728518431038491, "no"], ["biography", "power_viewer", "222", "186", "238", "183", "421", "129.8", 1.88, 0.05995402705004116, 0.19909261812843856, "no"], ["biography", "new", "35", "68", "16", "36", "52", "42.6", -2.39, 0.016802703145400333, 0.08214654871084608, "borderline"], ["biography", "reactivated", "29", "23", "19", "11", "30", "179.4", 1.29, 0.19808209699313784, 0.4053773147766542, "no"], ["biography", "unknown", "32", "29", "14", "16", "29", "90.2", -0.23, 0.8204246486554485, 0.9315789558926383, "no"], ["comedy", "power_viewer", "237598", "239125", "2590655", "2611755", "5202410", "99.2", -1.95, 0.051412011418129344, 0.1895713003157725, "no"], ["comedy", "retained", "627075", "633120", "1466474", "1477435", "2943909", "99.3", -2.04, 0.04166545617297679, 0.17053768108009104, "borderline"], ["comedy", "new", "107787", "108944", "246261", "249091", "495352", "98.9", -0.77, 0.44397415143133556, 0.6976736665349559, "no"], ["comedy", "reactivated", "88947", "89973", "165941", "171740", "337681", "96.6", -2.63, 0.008568105119242109, 0.04895016112217557, "yes (FDR)"], ["comedy", "unknown", "63466", "64179", "140826", "144203", "285029", "97.7", -1.76, 0.07892025899729127, 0.23542314548344515, "no"], ["crime", "power_viewer", "118660", "116524", "656480", "643109", "1299589", "102.1", 2.29, 0.022001419094518138, 0.10465539893608627, "borderline"], ["crime", "retained", "220827", "215413", "403297", "392963", "796260", "102.6", 3.52, 0.00042421928096647576, 0.0039296101815841965, "yes (FDR)"], ["crime", "new", "28451", "27729", "54830", "53184", "108014", "103.1", 1.48, 0.13870620598688266, 0.3328983669455522, "no"], ["crime", "unknown", "20993", "20364", "38540", "36805", "75344", "104.7", 2.13, 0.033271911105882346, 0.14639640886588232, "borderline"], ["crime", "reactivated", "19317", "18529", "36272", "34326", "70598", "105.7", 1.98, 0.048157481916678124, 0.18481992053284046, "borderline"], ["documentary", "power_viewer", "113106", "112056", "1030801", "1018968", "2049768", "101.2", 1.31, 0.19094096720362952, 0.40014751044656405, "no"], ["documentary", "retained", "259340", "256049", "554585", "544584", "1099169", "101.8", 2.58, 0.009783994580292221, 0.05381197019160722, "borderline"], ["documentary", "new", "34327", "33793", "66266", "66754", "133020", "99.3", -0.21, 0.8349540521356549, 0.9318779544444522, "no"], ["documentary", "unknown", "25648", "24950", "57338", "55325", "112664", "103.6", 1.74, 0.08189787006933669, 0.2362954939705452, "no"], ["documentary", "reactivated", "28762", "27859", "49959", "47016", "96975", "106.3", 2.45, 0.014237026525654395, 0.07159190481471925, "borderline"], ["drama", "power_viewer", "247017", "250088", "2305102", "2327785", "4632886", "99.0", -2.48, 0.013298815085809768, 0.07092701379098543, "borderline"], ["drama", "retained", "709339", "722602", "1685840", "1738031", "3423872", "97.0", -9.68, 0.0, 0.0, "yes (FDR)"], ["drama", "new", "105498", "107560", "215988", "222914", "438902", "96.9", -2.83, 0.004710915642925695, 0.03316484612619689, "yes (FDR)"], ["drama", "reactivated", "90837", "93201", "144483", "151667", "296150", "95.3", -4.26, 2.0401000189185226e-05, 0.00025646971666404283, "yes (FDR)"], ["drama", "unknown", "71283", "72252", "142296", "146321", "288617", "97.2", -2.46, 0.013806242548430658, 0.071467608485994, "borderline"], ["entertainment", "power_viewer", "83204", "82160", "449907", "452094", "902001", "99.5", -0.5, 0.6141721599052004, 0.8443770188736811, "no"], ["entertainment", "retained", "184821", "182529", "199759", "200733", "400491", "99.5", -0.53, 0.5980711974911475, 0.8443770188736811, "no"], ["entertainment", "new", "31253", "31007", "39866", "39532", "79398", "100.8", 0.36, 0.7155898255238997, 0.8857247181957658, "no"], ["entertainment", "unknown", "17048", "16734", "18277", "17400", "35677", "105.0", 1.31, 0.19116851693202097, 0.40014751044656405, "no"], ["entertainment", "reactivated", "19569", "19490", "17450", "16196", "33646", "107.7", 1.75, 0.08069341958491094, 0.2362954939705452, "no"], ["fantasy", "power_viewer", "56299", "55425", "151053", "148080", "299133", "102.0", 1.39, 0.16537527499281213, 0.3684309923890498, "no"], ["fantasy", "retained", "121421", "118072", "147294", "146662", "293956", "100.4", 0.44, 0.6622462399791584, 0.8633728758246807, "no"], ["fantasy", "new", "24481", "24018", "28663", "29602", "58265", "96.8", -1.58, 0.11392678251463706, 0.29059585105182784, "no"], ["fantasy", "reactivated", "19315", "18500", "22032", "22330", "44362", "98.7", -0.73, 0.46356285070600056, 0.7156759800373342, "no"], ["fantasy", "unknown", "11391", "10868", "12671", "12319", "24990", "102.9", 1.19, 0.23372523714028226, 0.452040019084502, "no"], ["foreign/international", "power_viewer", "1712", "1671", "1763", "1597", "3359", "110.4", 1.77, 0.07617611393321888, 0.231155104349078, "no"], ["foreign/international", "retained", "4681", "4731", "1583", "1584", "3167", "99.9", -0.04, 0.9720266498868941, 0.9831993700005366, "no"], ["foreign/international", "new", "628", "576", "204", "193", "398", "105.5", 0.47, 0.6380803608534067, 0.8443770188736811, "no"], ["foreign/international", "unknown", "314", "285", "147", "98", "244", "150.1", 2.0, 0.04562579718843951, 0.18250318875375804, "borderline"], ["foreign/international", "reactivated", "277", "245", "131", "94", "225", "139.0", 1.93, 0.05403302820406841, 0.19407781559012327, "no"], ["game show", "retained", "2932", "2966", "4875", "4998", "9873", "97.5", -0.52, 0.6001852981550906, 0.8443770188736811, "no"], ["game show", "power_viewer", "851", "832", "3387", "3469", "6856", "97.6", -0.27, 0.7903347187369096, 0.9151244111690533, "no"], ["game show", "reactivated", "586", "663", "1123", "1343", "2465", "83.6", -1.62, 0.1057339895491114, 0.27366444353887653, "no"], ["game show", "new", "470", "472", "753", "766", "1519", "98.2", -0.12, 0.9019366839775096, 0.9562702191568777, "no"], ["game show", "unknown", "335", "361", "505", "564", "1069", "89.5", -0.69, 0.48797635832637076, 0.7314210803009839, "no"], ["holiday", "power_viewer", "5370", "5379", "11313", "11397", "22710", "99.3", -0.31, 0.7583612580272425, 0.8994797780833537, "no"], ["holiday", "retained", "5973", "6041", "6199", "6338", "12537", "97.8", -0.82, 0.4098488127644424, 0.6679017689494616, "no"], ["holiday", "unknown", "456", "424", "455", "421", "876", "108.1", 0.79, 0.42980289085078427, 0.6876846253612549, "no"], ["holiday", "new", "341", "385", "410", "432", "842", "94.7", -0.42, 0.6781230053112686, 0.8711653206918486, "no"], ["holiday", "reactivated", "238", "223", "309", "213", "521", "145.1", 1.82, 0.06937107416044519, 0.21802337593282775, "no"], ["horror", "power_viewer", "159125", "157187", "782294", "766511", "1548806", "102.1", 2.79, 0.00521204642959705, 0.03528154506188773, "yes (FDR)"], ["horror", "retained", "416699", "409918", "657568", "642757", "1300325", "102.3", 4.83, 1.3685312925115767e-06, 2.610084604626195e-05, "yes (FDR)"], ["horror", "new", "63799", "62151", "88675", "86684", "175358", "102.3", 1.82, 0.0684956564627941, 0.21802337593282775, "no"], ["horror", "unknown", "41775", "40807", "59571", "57266", "116838", "104.0", 2.74, 0.00606266697798441, 0.03810819243304486, "yes (FDR)"], ["horror", "reactivated", "45172", "44102", "50632", "49320", "99953", "102.7", 1.44, 0.1487051980245675, 0.34306276704123256, "no"], ["independent", "retained", "391", "387", "72", "84", "156", "86.1", -0.98, 0.3261964499746224, 0.5976592086448674, "no"], ["independent", "power_viewer", "78", "59", "43", "38", "81", "112.8", 0.46, 0.6462580449476036, 0.8488165366475988, "no"], ["independent", "unknown", "23", "21", "3", "4", "8", "78.5", -0.34, 0.7310057178145397, 0.8857247181957658, "no"], ["independent", "new", "14", "20", "3", "4", "7", "89.8", -0.14, 0.8902564646967528, 0.9523596272124857, "no"], ["independent", "reactivated", "4", "7", "0", "1", "2", "20.5", -0.84, 0.402124130623015, 0.6614378223331835, "no"], ["kids & family", "power_viewer", "160225", "158812", "1959737", "1919331", "3879068", "102.1", 3.14, 0.00167171553346801, 0.0140105682804938, "yes (FDR)"], ["kids & family", "retained", "352345", "345770", "1033784", "1015970", "2049754", "101.8", 3.01, 0.0026411035671183303, 0.02021018381794896, "yes (FDR)"], ["kids & family", "new", "60477", "59348", "168047", "167208", "335254", "100.5", 0.51, 0.6071816729102797, 0.8443770188736811, "no"], ["kids & family", "reactivated", "49048", "47895", "128726", "123753", "252479", "104.0", 2.27, 0.023289785217511128, 0.1078684789021568, "borderline"], ["kids & family", "unknown", "34059", "33875", "91109", "90987", "182095", "100.1", 0.15, 0.8845323611515437, 0.9523596272124857, "no"], ["lgbt", "retained", "7214", "7246", "1555", "1499", "3054", "103.7", 0.86, 0.3905991820508641, 0.6485420381221895, "no"], ["lgbt", "power_viewer", "1102", "1118", "698", "769", "1467", "90.8", -1.24, 0.21557516610013394, 0.4311503322002679, "no"], ["lgbt", "new", "1211", "1182", "165", "171", "336", "96.5", -0.3, 0.7614914030364757, 0.8994797780833537, "no"], ["lgbt", "unknown", "540", "493", "101", "102", "202", "98.7", -0.09, 0.9321561390222264, 0.9765445265947134, "no"], ["lgbt", "reactivated", "515", "539", "82", "82", "164", "99.0", -0.05, 0.9605035713444845, 0.9831993700005366, "no"], ["lifestyle", "power_viewer", "14154", "14059", "55999", "57910", "113909", "96.7", -1.19, 0.23236660620819305, 0.452040019084502, "no"], ["lifestyle", "retained", "29029", "28904", "35505", "35062", "70567", "101.3", 0.51, 0.6098993691981818, 0.8443770188736811, "no"], ["lifestyle", "new", "3078", "3129", "3169", "3626", "6794", "87.4", -1.63, 0.10346168981865378, 0.27177996131467264, "no"], ["lifestyle", "reactivated", "2425", "2537", "2693", "3177", "5871", "84.8", -1.68, 0.09309814907383052, 0.2600837180475265, "no"], ["lifestyle", "unknown", "2335", "2248", "2685", "3051", "5736", "88.0", -1.5, 0.133335181775581, 0.33052101397890504, "no"], ["mockumentary", "retained", "7", "7", "3", "2", "5", "161.8", 0.47, 0.6359763032240839, 0.8443770188736811, "no"], ["music", "power_viewer", "5060", "4965", "14234", "14380", "28614", "99.0", -0.27, 0.7834510522603404, 0.9131614913762909, "no"], ["music", "retained", "10830", "10717", "10783", "10935", "21718", "98.6", -0.48, 0.6278153358337557, 0.8443770188736811, "no"], ["music", "reactivated", "956", "946", "965", "909", "1874", "106.2", 0.48, 0.6330705410896593, 0.8443770188736811, "no"], ["music", "new", "1130", "1106", "910", "840", "1750", "108.3", 0.7, 0.48648291605147875, 0.7314210803009839, "no"], ["music", "unknown", "847", "802", "863", "738", "1601", "117.0", 1.48, 0.13996863155665262, 0.3328983669455522, "no"], ["musicals", "power_viewer", "2451", "2328", "4880", "4680", "9560", "104.3", 0.73, 0.46843622382656536, 0.7169110903780479, "no"], ["musicals", "retained", "4536", "4504", "3574", "3561", "7135", "100.4", 0.07, 0.9438329445706617, 0.9829266168309849, "no"], ["musicals", "new", "733", "724", "608", "535", "1143", "113.5", 1.43, 0.15350388030679696, 0.34636772992302906, "no"], ["musicals", "reactivated", "616", "639", "378", "376", "754", "100.3", 0.02, 0.9823413139016937, 0.9879546928382749, "no"], ["musicals", "unknown", "401", "394", "307", "346", "653", "88.6", -0.8, 0.420877729921302, 0.6795823895976987, "no"], ["mystery", "power_viewer", "20166", "19838", "82647", "80189", "162835", "103.1", 1.08, 0.2790996227227771, 0.533929713034878, "no"], ["mystery", "retained", "39743", "39612", "52915", "54099", "107014", "97.8", -1.3, 0.19325305902248835, 0.40014751044656405, "no"], ["mystery", "new", "4461", "4415", "6200", "6140", "12340", "101.0", 0.21, 0.8343238424165342, 0.9318779544444522, "no"], ["mystery", "unknown", "3207", "3174", "4409", "4365", "8775", "101.0", 0.18, 0.8551731526819928, 0.9466067602014511, "no"], ["mystery", "reactivated", "2384", "2318", "2859", "2759", "5618", "103.6", 0.43, 0.670241768177767, 0.8673716999947573, "no"], ["news", "power_viewer", "18537", "18282", "113858", "116153", "230011", "98.0", -0.93, 0.35143606468252875, 0.6084254886557082, "no"], ["news", "retained", "43671", "43485", "74426", "74954", "149380", "99.3", -0.49, 0.6218363592384346, 0.8443770188736811, "no"], ["news", "new", "8804", "8695", "10641", "10126", "20767", "105.1", 1.05, 0.2933288989102927, 0.5551170560022743, "no"], ["news", "reactivated", "5651", "5596", "4555", "5011", "9566", "90.9", -1.22, 0.22069138932653054, 0.43642342158954356, "no"], ["news", "unknown", "3968", "3900", "4225", "4779", "9004", "88.4", -1.79, 0.07424114104192592, 0.22923580391892914, "no"], ["reality", "power_viewer", "90487", "89716", "977197", "977535", "1954733", "100.0", -0.21, 0.8365722545580878, 0.9318779544444522, "no"], ["reality", "retained", "204663", "203370", "580837", "579622", "1160459", "100.2", 0.17, 0.8665738479009364, 0.9504560913860829, "no"], ["reality", "new", "28309", "28000", "82905", "80352", "163257", "103.2", 1.63, 0.10277837367060672, 0.27177996131467264, "no"], ["reality", "reactivated", "21794", "21728", "50965", "52697", "103662", "96.7", -1.32, 0.18758886291164023, 0.40014751044656405, "no"], ["reality", "unknown", "18493", "18545", "47415", "47513", "94928", "99.8", -0.04, 0.9702794380991435, 0.9831993700005366, "no"], ["romance", "power_viewer", "38670", "37935", "147786", "146851", "294637", "100.6", 0.35, 0.7254882855284666, 0.8857247181957658, "no"], ["romance", "retained", "101949", "100738", "121382", "119327", "240708", "101.7", 1.7, 0.0890695128094876, 0.25284248797531966, "no"], ["romance", "new", "14947", "14953", "14376", "14697", "29073", "97.8", -0.65, 0.5172786448068731, 0.7586753457167473, "no"], ["romance", "reactivated", "11415", "11240", "11740", "11390", "23130", "103.1", 0.97, 0.33278751390452843, 0.5976592086448674, "no"], ["romance", "unknown", "9315", "9067", "10644", "10065", "20709", "105.7", 1.83, 0.06716217624722631, 0.21802337593282775, "no"], ["sci-fi", "power_viewer", "100121", "102393", "359809", "376152", "735961", "95.7", -5.35, 8.817284058437735e-08, 2.216917134692916e-06, "yes (FDR)"], ["sci-fi", "retained", "234925", "239703", "347459", "363607", "711066", "95.6", -8.25, 2.220446049250313e-16, 1.3026616822268503e-14, "yes (FDR)"], ["sci-fi", "new", "43140", "43738", "65136", "69749", "134885", "93.4", -4.56, 5.05196907596428e-06, 8.083150521542848e-05, "yes (FDR)"], ["sci-fi", "reactivated", "29596", "29504", "41374", "42774", "84149", "96.7", -1.95, 0.051701263722483404, 0.1895713003157725, "no"], ["sci-fi", "unknown", "22230", "22499", "29683", "31166", "60849", "95.2", -2.66, 0.007799001421967766, 0.04733187069883886, "yes (FDR)"], ["science & nature", "power_viewer", "1282", "1244", "3417", "3222", "6639", "106.0", 0.69, 0.4903845879290687, 0.7314210803009839, "no"], ["science & nature", "retained", "1838", "1920", "1892", "2013", "3904", "94.0", -0.92, 0.35952415238746394, 0.6084254886557082, "no"], ["science & nature", "new", "152", "161", "154", "240", "394", "64.1", -1.35, 0.17822432423673495, 0.3920935133208169, "no"], ["science & nature", "unknown", "145", "120", "200", "136", "335", "147.1", 1.51, 0.12977831578344645, 0.3262997653983796, "no"], ["science & nature", "reactivated", "129", "102", "90", "92", "182", "97.4", -0.09, 0.9270822824514273, 0.9765445265947134, "no"], ["sport", "power_viewer", "27446", "27066", "38096", "40961", "79057", "93.0", -2.11, 0.03464771096896602, 0.1487316373301956, "borderline"], ["sport", "retained", "73334", "73350", "27700", "26388", "54088", "105.0", 1.9, 0.05735887907882575, 0.19872394143473904, "no"], ["sport", "new", "18526", "18415", "5435", "5555", "10989", "97.8", -0.28, 0.7821349627035323, 0.9131614913762909, "no"], ["sport", "reactivated", "10923", "10906", "3088", "2833", "5922", "109.0", 0.97, 0.3296309522427283, 0.5976592086448674, "no"], ["sport", "unknown", "7653", "7367", "2613", "2223", "4836", "117.5", 1.97, 0.04830520650290149, 0.18481992053284046, "borderline"], ["talk show", "power_viewer", "1744", "1633", "10995", "11103", "22098", "99.0", -0.16, 0.8694513108702235, 0.9504560913860829, "no"], ["talk show", "retained", "2182", "2218", "4386", "4257", "8643", "103.0", 0.4, 0.6911314266460302, 0.8751016625158369, "no"], ["talk show", "unknown", "234", "233", "595", "549", "1144", "108.4", 0.38, 0.7017762766769655, 0.8762737614793623, "no"], ["talk show", "new", "350", "323", "571", "426", "997", "134.2", 1.63, 0.10209086908770981, 0.27177996131467264, "no"], ["talk show", "reactivated", "216", "244", "401", "437", "838", "91.7", -0.34, 0.7347489139578511, 0.8857247181957658, "no"], ["thriller", "power_viewer", "167378", "164726", "684470", "665340", "1349810", "102.9", 4.81, 1.4830026162648835e-06, 2.610084604626195e-05, "yes (FDR)"], ["thriller", "retained", "417146", "409294", "605424", "588136", "1193560", "102.9", 7.13, 1.0291767438275201e-12, 3.0189184485607257e-11, "yes (FDR)"], ["thriller", "new", "55198", "53088", "74403", "70077", "144480", "106.2", 4.83, 1.3760885808622447e-06, 2.610084604626195e-05, "yes (FDR)"], ["thriller", "reactivated", "43509", "42449", "51248", "48749", "99997", "105.1", 3.4, 0.0006855684824302877, 0.0060330026453865315, "yes (FDR)"], ["thriller", "unknown", "39154", "38012", "51095", "48579", "99674", "105.2", 3.91, 9.043475707581905e-05, 0.0009947823278340095, "yes (FDR)"], ["war", "retained", "20906", "19888", "21418", "20375", "41793", "105.1", 2.75, 0.005881716078782295, 0.03810819243304486, "yes (FDR)"], ["war", "power_viewer", "8572", "8054", "20499", "18358", "38857", "111.7", 3.9, 9.628898195002122e-05, 0.000996874166070808, "yes (FDR)"], ["war", "new", "2373", "2216", "2445", "2375", "4820", "102.9", 0.53, 0.5939198415254128, 0.8443770188736811, "no"], ["war", "unknown", "1712", "1495", "1553", "1483", "3036", "104.7", 0.74, 0.4621880285445479, 0.7156759800373342, "no"], ["war", "reactivated", "1353", "1339", "1217", "1185", "2402", "102.7", 0.35, 0.7268207120373276, 0.8857247181957658, "no"], ["western", "power_viewer", "54242", "52934", "290039", "273378", "563417", "106.1", 4.48, 7.487612937895349e-06, 0.0001098183230891318, "yes (FDR)"], ["western", "retained", "109062", "104778", "195885", "189242", "385127", "103.5", 3.66, 0.00024777434984968316, 0.0024226825318635686, "yes (FDR)"], ["western", "new", "20631", "19921", "35673", "33904", "69578", "105.2", 2.14, 0.03195945449004034, 0.1442272818012077, "borderline"], ["western", "reactivated", "14264", "13424", "22923", "20907", "43830", "109.6", 3.02, 0.0025546983380131394, 0.02021018381794896, "yes (FDR)"], ["western", "unknown", "9931", "9763", "16179", "16311", "32490", "99.2", -0.24, 0.8100500549943106, 0.9315789558926383, "no"]]}, "decGenre": {"columns": ["Genre", "Held \u0394 (hrs)", "Substitution (hrs)", "B/A", "Cannibalization (hrs)", "C/A", "Net \u0394 (hrs)", "# Held Titles"], "rows": [["drama", -78587, 90160, 114.7, -49913, -63.5, -38340, 6], ["action", -65211, 54908, 84.2, -20023, -30.7, -30327, 3], ["sci-fi", -32644, 23957, 73.4, -5834, -17.9, -14521, 1], ["fantasy", 0, 3697, null, -7408, null, -3711, 0], ["lifestyle", 0, 2028, null, -3493, null, -1466, 0], ["game show", 0, 0, null, -243, null, -243, 0], ["sport", 0, 1726, null, -1928, null, -202, 0], ["adult", 0, 149, null, -310, null, -161, 0], ["ambient", 0, 102, null, -138, null, -36, 0], ["mockumentary", 0, 0, null, 0, null, 0, 0], ["independent", 0, 6, null, -3, null, 3, 0], ["lgbt", 0, 99, null, -73, null, 26, 0], ["biography", 0, 30, null, 0, null, 30, 0], ["entertainment", 0, 7447, null, -7415, null, 32, 0], ["holiday", 0, 335, null, -292, null, 43, 0], ["musicals", 0, 214, null, -145, null, 69, 0], ["talk show", 0, 559, null, -407, null, 152, 0], ["foreign/international", 0, 270, null, -60, null, 210, 0], ["science & nature", 0, 335, null, -98, null, 237, 0], ["news", 0, 3902, null, -3581, null, 320, 0], ["(unknown)", 0, 730, null, -403, null, 327, 0], ["music", 0, 1274, null, -865, null, 409, 0], ["war", 0, 2094, null, -528, null, 1565, 0], ["anime", 0, 3855, null, -1892, null, 1963, 0], ["mystery", 0, 3920, null, -1833, null, 2087, 0], ["romance", 0, 7208, null, -3896, null, 3312, 0], ["animation", 0, 6796, null, -3347, null, 3448, 0], ["reality", 0, 35278, null, -31671, null, 3607, 0], ["adventure", 0, 7975, null, -3486, null, 4490, 0], ["crime", 0, 17408, null, -9826, null, 7582, 0], ["documentary", 0, 43828, null, -35789, null, 8039, 0], ["western", 0, 12136, null, -2572, null, 9564, 0], ["horror", 0, 27863, null, -16279, null, 11584, 0], ["comedy", -29246, 82161, 280.9, -32506, -111.1, 20409, 2], ["thriller", 0, 35699, null, -11013, null, 24686, 0], ["kids & family", 0, 40903, null, -13899, null, 27004, 0]]}, "decSubs": {"columns": ["Title", "Genre", "Control TVT (hrs)", "Hold TVT (hrs)", "\u0394 (hrs)"], "rows": [["Men in Black", "sci-fi", 49257, 54556, 5298], ["Real Steel", "sci-fi", 55952, 60828, 4876], ["Fast & Furious Presents: Hobbs & Shaw", "action", 182893, 187322, 4429], ["White House Down", "thriller", 34273, 38349, 4076], ["The PJs", "comedy", 42286, 45672, 3386], ["Men in Black II", "sci-fi", 34571, 37944, 3373], ["The A-Team", "action", 31718, 34933, 3215], ["I (Almost) Got Away With It", "reality", 33614, 36657, 3042], ["The Help", "drama", 160710, 163628, 2918], ["The Guardian", "drama", 55717, 58588, 2871], ["The Rifleman", "western", 21461, 24236, 2775], ["12 Rounds", "action", 33077, 35773, 2696], ["Forensic Files", "documentary", 47184, 49836, 2652], ["Hazel", "comedy", 14215, 16856, 2642], ["The Steve Harvey Show", "comedy", 37956, 40373, 2416], ["Uncle Drew", "comedy", 24295, 26677, 2383], ["Like Nastya", "kids & family", 86483, 88789, 2306], ["You Don't Mess with the Zohan", "comedy", 19439, 21552, 2113], ["Hell's Kitchen", "reality", 36956, 39056, 2100], ["Teen Titans", "action", 45997, 48069, 2072]]}, "decCannib": {"columns": ["Title", "Genre", "Control TVT (hrs)", "Hold TVT (hrs)", "\u0394 (hrs)"], "rows": [["The Mummy Returns", "fantasy", 37763, 33016, -4747], ["Empire", "drama", 314807, 311345, -3462], ["After the First 48", "documentary", 19302, 17192, -2110], ["Hoarders", "reality", 11776, 10055, -1721], ["Nikita", "action", 28893, 27351, -1542], ["Taken", "action", 49037, 47564, -1474], ["SSundee", "reality", 6520, 5149, -1370], ["Third Watch", "entertainment", 5752, 4453, -1299], ["American Pickers", "reality", 31221, 29922, -1299], ["Anger Management", "comedy", 24604, 23560, -1043], ["Whose Line Is It Anyway? (2013)", "comedy", 6931, 5898, -1034], ["Doc", "drama", 10088, 9093, -995], ["TCD True Crime", "reality", 22833, 21843, -990], ["MeatEater", "reality", 6523, 5553, -970], ["Lie to Me", "drama", 13110, 12170, -941], ["Broken Destiny", "drama", 6663, 5767, -896], ["Animaniacs", "kids & family", 17683, 16790, -893], ["The Following", "crime", 8447, 7570, -877], ["Diff'rent Strokes", "comedy", 18600, 17725, -875], ["Between the Cheats", "crime", 14473, 13627, -846]]}, "decGenrePv": {"columns": ["Genre", "Held \u0394 (hrs)", "Substitution (hrs)", "B/A", "Cannibalization (hrs)", "C/A", "Net \u0394 (hrs)", "# Held Titles"], "rows": [["drama", -50567, 87952, 173.9, -64536, -127.6, -27151, 9], ["action", -47663, 46494, 97.5, -24264, -50.9, -25433, 7], ["sci-fi", -26421, 15518, 58.7, -8380, -31.7, -19283, 2], ["comedy", -32898, 74773, 227.3, -51763, -157.3, -9887, 4], ["sport", 0, 1489, null, -3878, null, -2389, 0], ["news", 0, 5129, null, -7494, null, -2366, 0], ["lifestyle", 0, 3269, null, -5561, null, -2291, 0], ["entertainment", 0, 9840, null, -10275, null, -435, 0], ["music", 0, 1220, null, -1478, null, -258, 0], ["talk show", 0, 311, null, -434, null, -123, 0], ["adult", 0, 127, null, -232, null, -105, 0], ["game show", 0, 106, null, -173, null, -67, 0], ["lgbt", 0, 66, null, -111, null, -45, 0], ["mockumentary", 0, 0, null, 0, null, 0, 0], ["independent", 0, 6, null, -3, null, 3, 0], ["ambient", 0, 277, null, -236, null, 40, 0], ["musicals", 0, 189, null, -148, null, 42, 0], ["holiday", 0, 506, null, -460, null, 47, 0], ["biography", 0, 54, null, 0, null, 54, 0], ["(unknown)", 0, 567, null, -442, null, 125, 0], ["foreign/international", 0, 216, null, -66, null, 150, 0], ["science & nature", 0, 379, null, -127, null, 251, 0], ["reality", 0, 42990, null, -42715, null, 276, 0], ["anime", 0, 3052, null, -2256, null, 796, 0], ["fantasy", 0, 3956, null, -3031, null, 926, 0], ["war", 0, 1939, null, -557, null, 1381, 0], ["romance", 0, 7014, null, -5079, null, 1935, 0], ["adventure", 0, 8057, null, -5171, null, 2886, 0], ["animation", 0, 7151, null, -4204, null, 2947, 0], ["mystery", 0, 5588, null, -2357, null, 3231, 0], ["documentary", 0, 53981, null, -46330, null, 7650, 0], ["horror", 0, 30615, null, -21565, null, 9051, 0], ["crime", 0, 24916, null, -14777, null, 10140, 0], ["western", 0, 13851, null, -3653, null, 10198, 0], ["thriller", 0, 26934, null, -13783, null, 13150, 0], ["kids & family", 0, 45358, null, -23856, null, 21502, 0]]}, "decSubsPv": {"columns": ["Title", "Genre", "Control TVT (hrs)", "Hold TVT (hrs)", "\u0394 (hrs)"], "rows": [["The Bernie Mac Show", "comedy", 113226, 117526, 4300], ["In the Heat of the Night", "crime", 86928, 90778, 3851], ["My Little Pony: Friendship Is Magic", "kids & family", 47606, 50791, 3185], ["Forensic Files", "documentary", 33575, 36495, 2920], ["Ancient Aliens", "documentary", 34119, 37027, 2908], ["The Rifleman", "western", 15690, 18459, 2768], ["The PJs", "comedy", 26403, 29073, 2670], ["The A-Team", "action", 20456, 22920, 2464], ["Hazel", "comedy", 8845, 11184, 2338], ["Justice League", "action", 11158, 13259, 2100], ["Dark Shadows", "drama", 5748, 7681, 1933], ["I (Almost) Got Away With It", "reality", 24707, 26604, 1897], ["Clifford", "kids & family", 33168, 34979, 1811], ["Hell's Kitchen", "reality", 22808, 24575, 1767], ["The Steve Harvey Show", "comedy", 28946, 30670, 1724], ["Like Nastya", "kids & family", 56890, 58567, 1677], ["Cocaine Sisters", "crime", 34266, 35867, 1602], ["Teen Titans", "action", 24273, 25775, 1502], ["Midsomer Murders", "mystery", 22589, 24019, 1430], ["The Pink Panther Show", "comedy", 3342, 4771, 1429]]}, "decCannibPv": {"columns": ["Title", "Genre", "Control TVT (hrs)", "Hold TVT (hrs)", "\u0394 (hrs)"], "rows": [["Empire", "drama", 258047, 252965, -5082], ["Everybody Hates Chris", "comedy", 401757, 397852, -3905], ["Courage the Cowardly Dog", "comedy", 80779, 78426, -2354], ["American Pickers", "reality", 22935, 21180, -1755], ["Taken", "action", 36812, 35105, -1707], ["Columbo", "crime", 58427, 56790, -1638], ["Anger Management", "comedy", 17644, 16202, -1442], ["Dexter's Laboratory", "kids & family", 24784, 23354, -1430], ["Animaniacs", "kids & family", 11477, 10055, -1422], ["After the First 48", "documentary", 12081, 10700, -1381], ["Good Times", "comedy", 114426, 113113, -1313], ["Tom and Jerry Theatricals", "kids & family", 117421, 116126, -1295], ["Jesus of Nazareth", "drama", 8509, 7252, -1257], ["Little Women: Atlanta", "reality", 9417, 8180, -1237], ["The Hughleys", "comedy", 8965, 7737, -1228], ["Doc", "drama", 6728, 5556, -1171], ["Whose Line Is It Anyway? (2013)", "comedy", 3968, 2816, -1152], ["The Parent 'Hood", "comedy", 11548, 10466, -1081], ["Hoarders", "reality", 7139, 6058, -1081], ["SSundee", "reality", 3083, 2053, -1029]]}};
+
+function ratioClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 40) return 'background:#f8d7da;';
+  if (n <= 70) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return v;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+}
+
+function renderTable(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const textCols = opts.textCols || [0];
+  const ratioCols = opts.ratioCols || [];
+  const pctCols = opts.pctCols || [];
+  let sortIdx = opts.defaultSort != null ? opts.defaultSort : null;
+  let sortDir = opts.defaultDir || 'desc';
+
+  function build() {
+    let data = rows.slice();
+    if (sortIdx !== null) {
+      data.sort((a,b) => {
+        let x=a[sortIdx], y=b[sortIdx];
+        const nx=parseFloat(x), ny=parseFloat(y);
+        if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+        if (x<y) return sortDir==='asc'?-1:1;
+        if (x>y) return sortDir==='asc'?1:-1;
+        return 0;
+      });
+    }
+    let h = '<table><thead><tr>';
+    cols.forEach((c,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+      h += `<th class="${cls}" onclick="window.__sort_${containerId}(${i})">${c}${arrow}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      r.forEach((v,i) => {
+        const cls = textCols.includes(i)?'txt':'';
+        let disp = fmt(v);
+        if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+        if (ratioCols.includes(i)) {
+          const rc = ratioClass(v);
+          disp = `<span class="ratio-cell" style="${rc}">${v===null||v===''?'—':fmt(v)+'%'}</span>`;
+        }
+        h += `<td class="${cls}">${disp}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    document.getElementById(containerId).innerHTML = h;
+  }
+  window['__sort_'+containerId] = function(i) {
+    if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+    build();
+  };
+  build();
+}
+
+function renderGrouped(containerId, cols, rows, ratioCols) {
+  let h = '<table><thead><tr>';
+  cols.forEach((c,i) => h += `<th class="${i===0?'txt':''}">${c}</th>`);
+  h += '</tr></thead><tbody>';
+  let cur = null;
+  rows.forEach(r => {
+    if (r[0] !== cur) {
+      cur = r[0];
+      h += `<tr class="genre-hdr"><td colspan="${cols.length}">${cur}</td></tr>`;
+    }
+    h += '<tr>';
+    r.forEach((v,i) => {
+      if (i===0) { h += `<td class="txt" style="padding-left:22px;">${v}</td>`; return; }
+      if (ratioCols.includes(i)) {
+        h += `<td><span class="ratio-cell" style="${ratioClass(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`;
+      } else h += `<td>${fmt(v)}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById(containerId).innerHTML = h;
+}
+
+renderTable('titleTable', DATA.qA.columns, DATA.qA.rows, {
+  textCols:[0,1], ratioCols:[8], pctCols:[9], defaultSort:7, defaultDir:'desc'
+});
+renderTable('genreTable', DATA.qB.columns, DATA.qB.rows, {
+  textCols:[0], ratioCols:[6], pctCols:[7], defaultSort:5, defaultDir:'desc'
+});
+renderTable('segTable', DATA.qC.columns, DATA.qC.rows, {
+  textCols:[0], ratioCols:[6], pctCols:[7], defaultSort:5, defaultDir:'desc'
+});
+renderGrouped('gsTable', DATA.qD.columns, DATA.qD.rows, [7]);
+renderTable('psTable', DATA.qPSo.columns, DATA.qPSo.rows, {
+  textCols:[0], ratioCols:[5], pctCols:[2,6], defaultSort:4, defaultDir:'desc'
+});
+renderTable('psTitleTable', DATA.qPSt.columns, DATA.qPSt.rows, {
+  textCols:[0,1], pctCols:[3,4,5,6,7,8,9,10,11,12,13], defaultSort:2, defaultDir:'desc'
+});
+
+// ---- whole-catalog tables: net-loss color scale (distinct from the title scope) ----
+function ratioClassNet(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 99) return 'background:#f8d7da;';
+  if (n <= 101) return 'background:#fff3cd;';
+  return 'background:#d4edda;';
+}
+function fmtSci(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  if (!isFinite(n)) return '—';
+  if (n === 0) return '0';
+  if (n >= 0.001) return n.toLocaleString(undefined,{minimumFractionDigits:3,maximumFractionDigits:3});
+  return n.toExponential(1);
+}
+function sigStyle(v) {
+  if (v === 'yes (FDR)') return 'background:#d4edda;font-weight:600;';
+  if (v === 'borderline') return 'background:#fff3cd;';
+  return '';
+}
+// Overall-by-genre: cols genre, hold_v, ctrl_v, hold_hrs, ctrl_hrs, grand, ratio,
+// share, welch_t, p, p_bh, sig  (idx 0..11)
+(function() {
+  const cols = DATA.qOG.columns, rows = DATA.qOG.rows;
+  const textCols = [0, 11], ratioCol = 6, pctCols = [7], sciCols = [9, 10];
+  let sortIdx = 5, sortDir = 'desc';
+  function build() {
+    let data = rows.slice();
+    data.sort((a,b) => {
+      let x=a[sortIdx], y=b[sortIdx];
+      const nx=parseFloat(x), ny=parseFloat(y);
+      if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+      if (x<y) return sortDir==='asc'?-1:1;
+      if (x>y) return sortDir==='asc'?1:-1;
+      return 0;
+    });
+    let h = '<table><thead><tr>';
+    cols.forEach((c,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+      h += `<th class="${cls}" onclick="window.__sortOG(${i})">${c}${arrow}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      r.forEach((v,i) => {
+        const cls = textCols.includes(i)?'txt':'';
+        let disp = fmt(v);
+        if (pctCols.includes(i) && v!==null && v!=='') disp = fmt(v)+'%';
+        if (sciCols.includes(i)) disp = fmtSci(v);
+        if (i===ratioCol) {
+          h += `<td><span class="ratio-cell" style="${ratioClassNet(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`;
+          return;
+        }
+        if (i===11) { h += `<td class="${cls}" style="${sigStyle(v)}">${v}</td>`; return; }
+        h += `<td class="${cls}">${disp}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    document.getElementById('ogTable').innerHTML = h;
+  }
+  window.__sortOG = function(i) {
+    if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+    build();
+  };
+  build();
+})();
+// Overall genre × segment: grouped by genre, ratio col 7, net-loss scale.
+// Cols now include Welch t (8), p (9), p_bh (10), Significant? (11).
+(function() {
+  const cols = DATA.qOGS.columns, rows = DATA.qOGS.rows;
+  const ratioCol = 7, sciCols = [9, 10], sigCol = 11;
+  let h = '<table><thead><tr>';
+  cols.forEach((c,i) => h += `<th class="${i===0||i===1?'txt':''}">${c}</th>`);
+  h += '</tr></thead><tbody>';
+  let cur = null;
+  rows.forEach(r => {
+    if (r[0] !== cur) {
+      cur = r[0];
+      h += `<tr class="genre-hdr"><td colspan="${cols.length}">${cur}</td></tr>`;
+    }
+    h += '<tr>';
+    r.forEach((v,i) => {
+      if (i===0) { h += `<td class="txt" style="padding-left:22px;">${v}</td>`; return; }
+      if (i===1) { h += `<td class="txt">${v}</td>`; return; }
+      if (i===ratioCol) {
+        h += `<td><span class="ratio-cell" style="${ratioClassNet(v)}">${v===null||v===''?'—':fmt(v)+'%'}</span></td>`;
+      } else if (sciCols.includes(i)) {
+        h += `<td>${fmtSci(v)}</td>`;
+      } else if (i===sigCol) {
+        h += `<td class="txt" style="${sigStyle(v)}">${v}</td>`;
+      } else h += `<td>${fmt(v)}</td>`;
+    });
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('ogsTable').innerHTML = h;
+})();
+
+
+// ---- net-decomposition tables: delta color scale (loss red / gain green) ----
+function deltaClass(v) {
+  if (v === null || v === undefined || v === '') return '';
+  const n = parseFloat(v);
+  if (n < 0) return 'background:#f8d7da;';
+  if (n > 0) return 'background:#d4edda;';
+  return '';
+}
+function renderDecomp(containerId, cols, rows, opts) {
+  opts = opts || {};
+  const textCols = opts.textCols || [0];
+  const deltaCols = opts.deltaCols || [];
+  const pctCols = opts.pctCols || [];
+  let sortIdx = opts.defaultSort != null ? opts.defaultSort : null;
+  let sortDir = opts.defaultDir || 'asc';
+  function build() {
+    let data = rows.slice();
+    if (sortIdx !== null) {
+      data.sort((a,b) => {
+        let x=a[sortIdx], y=b[sortIdx];
+        const nx=parseFloat(x), ny=parseFloat(y);
+        if (!textCols.includes(sortIdx) && isFinite(nx) && isFinite(ny)) { x=nx; y=ny; }
+        if (x<y) return sortDir==='asc'?-1:1;
+        if (x>y) return sortDir==='asc'?1:-1;
+        return 0;
+      });
+    }
+    let h = '<table><thead><tr>';
+    cols.forEach((c,i) => {
+      const cls = textCols.includes(i)?'txt':'';
+      const arrow = sortIdx===i ? (sortDir==='asc'?' ▲':' ▼') : '';
+      h += `<th class="${cls}" onclick="window.__sort_${containerId}(${i})">${c}${arrow}</th>`;
+    });
+    h += '</tr></thead><tbody>';
+    data.forEach(r => {
+      h += '<tr>';
+      r.forEach((v,i) => {
+        const cls = textCols.includes(i)?'txt':'';
+        if (deltaCols.includes(i)) {
+          h += `<td><span class="ratio-cell" style="${deltaClass(v)}">${v===null||v===''?'—':fmt(v)}</span></td>`;
+        } else if (pctCols.includes(i)) {
+          h += `<td>${v===null||v===''?'—':fmt(v)+'%'}</td>`;
+        } else h += `<td class="${cls}">${fmt(v)}</td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table>';
+    document.getElementById(containerId).innerHTML = h;
+  }
+  window['__sort_'+containerId] = function(i) {
+    if (sortIdx===i) sortDir = sortDir==='asc'?'desc':'asc';
+    else { sortIdx=i; sortDir = textCols.includes(i)?'asc':'desc'; }
+    build();
+  };
+  build();
+}
+if (DATA.decGenre) renderDecomp('decGenreTable', DATA.decGenre.columns, DATA.decGenre.rows,
+  { textCols:[0], deltaCols:[1,2,4,6], pctCols:[3,5], defaultSort:6, defaultDir:'asc' });
+if (DATA.decSubs) renderDecomp('decSubsTable', DATA.decSubs.columns, DATA.decSubs.rows,
+  { textCols:[0,1], deltaCols:[4], defaultSort:4, defaultDir:'desc' });
+if (DATA.decCannib) renderDecomp('decCannibTable', DATA.decCannib.columns, DATA.decCannib.rows,
+  { textCols:[0,1], deltaCols:[4], defaultSort:4, defaultDir:'asc' });
+
+
+if (DATA.decGenrePv) renderDecomp('decGenrePvTable', DATA.decGenrePv.columns, DATA.decGenrePv.rows,
+  { textCols:[0], deltaCols:[1,2,4,6], pctCols:[3,5], defaultSort:6, defaultDir:'asc' });
+if (DATA.decSubsPv) renderDecomp('decSubsPvTable', DATA.decSubsPv.columns, DATA.decSubsPv.rows,
+  { textCols:[0,1], deltaCols:[4], defaultSort:4, defaultDir:'desc' });
+if (DATA.decCannibPv) renderDecomp('decCannibPvTable', DATA.decCannibPv.columns, DATA.decCannibPv.rows,
+  { textCols:[0,1], deltaCols:[4], defaultSort:4, defaultDir:'asc' });
+
+
+function showTab(btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.tab).classList.add('active');
+}
+function showScope(scope) {
+  // Toggle scope-switch button state.
+  document.querySelectorAll('.scope-switch-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.scope === scope));
+  // Show only this scope's tab buttons.
+  const tabs = document.querySelector('.tabs');
+  tabs.classList.remove('scope-title', 'scope-overall', 'scope-why');
+  tabs.classList.add('scope-' + scope);
+  // Swap the scope header (KPI row + banner + legend).
+  document.querySelectorAll('.scope-hdr').forEach(h => h.classList.remove('active'));
+  const hdr = document.getElementById('hdr-' + scope);
+  if (hdr) hdr.classList.add('active');
+  // Auto-select the first tab of the newly-shown scope.
+  const first = document.querySelector('.tab-btn[data-scope="' + scope + '"]');
+  if (first) showTab(first);
+}
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => showTab(btn));
+});
+document.querySelectorAll('.scope-switch-btn').forEach(btn => {
+  btn.addEventListener('click', () => showScope(btn.dataset.scope));
+});
+</script>
+</body>
+</html>
