@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>v12 vs v10e — Treated Contamination Screen Impact (Movies, Aug 8–14 2026)</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+       max-width:1000px;margin:0 auto;padding:2rem 1.5rem 4rem;color:#1a1a1a;line-height:1.5}
+  h1{font-size:1.55rem;margin:0 0 .3rem;color:#1B3A5C}
+  h2{font-size:1.1rem;margin:2.2rem 0 .6rem;color:#1B3A5C;border-bottom:1px solid #e3e3e3;padding-bottom:.25rem}
+  .sub{color:#666;font-size:.82rem;margin:0 0 1.4rem}
+  .verdict{background:#F4F8F5;border-left:4px solid #1D9E75;padding:.85rem 1rem;margin:1.2rem 0;font-size:.93rem}
+  .warn{background:#FDF6F2;border-left:4px solid #D85A30;padding:.85rem 1rem;margin:1.2rem 0;font-size:.88rem}
+  .note{background:#FAFAFA;border-left:3px solid #bbb;padding:.75rem 1rem;margin:1.1rem 0;font-size:.83rem;color:#444}
+  table{border-collapse:collapse;width:100%;font-size:.85rem;margin:.6rem 0 1rem}
+  th{background:#F2F5F8;text-align:right;padding:6px 9px;border-bottom:2px solid #d8dee5;font-weight:600;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:5px 9px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}
+  tr.tot td{font-weight:700;background:#FBFCFD;border-top:1px solid #c9d2da}
+  .up{color:#12805E}.dn{color:#B4531F}.mut{color:#888}
+  code{background:#F4F4F6;padding:1px 4px;border-radius:3px;font-size:.88em}
+  ul{margin:.4rem 0 .9rem;padding-left:1.2rem;font-size:.9rem}
+  li{margin:.25rem 0}
+</style>
+</head>
+<body>
+
+<h1>v12 vs v10e — impact of the treated contamination screen</h1>
+<p class="sub">Movies &middot; top-2000 US titles &middot; <b>Aug 8&ndash;14 2026 events</b> &middot; Organic Discovery &middot; US only &middot;
+Variant C matching (not re-run) &middot; delta build: <code>Incr TVT = &Sigma;(&Delta;/viewer &times; viewers &times; per-title weight)</code><br>
+Baseline <code>10e_deltaresults_8Aug_14Aug.html</code> (<code>v10e_a14</code>, 7d post, unscreened) vs
+<code>v12_28d_deltaresults.html</code> (<code>v12</code>, screened) &middot; generated 2026-09-28</p>
+
+<p class="verdict"><b>Verdict: the screen is close to a null result on movies.</b>
+Removing matched treated viewers with prior on-title viewing (7d pre for Power&nbsp;/&nbsp;Retained, 28d for
+New&nbsp;/&nbsp;Reactivated) drops <b>6.2% of pairs</b> and <b>7.1% of the extrapolation base</b>, and total 7d
+Incr TVT falls <b>5.0%</b> &mdash; almost entirely from the smaller viewer base. The per-viewer effect actually
+rises <b>+2.5%</b>. v10e was <b>not materially biased</b> by the missing screen. v12's real contribution is the
+<b>28-day post window</b>, not a corrected headline.</p>
+
+<h2>Like-for-like: 7-day post, identical universe</h2>
+<p class="sub" style="margin:-.3rem 0 .6rem">Same events, same 1,955 titles, same 98.25M hrs of actual Aug 8&ndash;14 US movie TVT.
+Both runs recompute their own winsorization percentiles, viewer counts and de-dup weights on their own pair set.</p>
+
+<table>
+<thead><tr><th>7-day post</th><th>v10e (unscreened)</th><th>v12 (screened)</th><th>change</th></tr></thead>
+<tbody>
+<tr><td>Incr TVT</td><td>45.95M hrs</td><td><b>43.67M hrs</b></td><td class="dn">&minus;5.0%</td></tr>
+<tr><td>Rate (Incr &divide; actual TVT)</td><td>46.8%</td><td><b>44.4%</b></td><td class="dn">&minus;2.4 pp</td></tr>
+<tr><td>Matched pairs</td><td>16,614,613</td><td>15,591,212</td><td class="dn">&minus;6.2%</td></tr>
+<tr><td>Viewer base</td><td>66.45M</td><td>61.72M</td><td class="dn">&minus;7.1%</td></tr>
+<tr><td>Incr hrs / viewer</td><td>0.691</td><td><b>0.708</b></td><td class="up">+2.5%</td></tr>
+<tr><td>Sig-positive cells</td><td>3,116 / 6,464 (48%)</td><td>3,126 / 6,423 (49%)</td><td class="up">+1 pp</td></tr>
+<tr><td>Median title Rate</td><td>26.4%</td><td>25.4%</td><td class="dn">&minus;1.0 pp</td></tr>
+<tr><td>Titles with negative Incr</td><td>127</td><td>121</td><td class="up">&minus;6</td></tr>
+<tr><td>Incr IVT</td><td>&minus;4.04M hrs</td><td>&minus;4.51M hrs</td><td class="mut">&minus;0.47M</td></tr>
+</tbody>
+</table>
+
+<h2>By segment — the two effects split and cancel</h2>
+<table>
+<thead><tr><th>Segment</th><th>pairs</th><th>viewers</th><th>median &Delta;/viewer</th><th>cells that rose</th><th>Incr TVT (7d)</th></tr></thead>
+<tbody>
+<tr><td>Active non-power (Retained)</td><td class="dn">&minus;6.2%</td><td class="dn">&minus;7.3%</td><td class="up">1.433 &rarr; 1.499 (+4.6%)</td><td>67%</td><td>25.25M &rarr; 24.05M</td></tr>
+<tr><td>Power Viewer</td><td class="dn">&minus;6.1%</td><td class="dn">&minus;6.9%</td><td class="dn">1.676 &rarr; 1.639 (&minus;2.2%)</td><td>50%</td><td>9.48M &rarr; 8.90M</td></tr>
+<tr><td>New (M1)</td><td class="dn">&minus;7.7%</td><td class="dn">&minus;9.2%</td><td class="up">2.868 &rarr; 3.056 (+6.6%)</td><td>63%</td><td>6.09M &rarr; 5.83M</td></tr>
+<tr><td>Non-active (Reactivated)</td><td class="dn">&minus;2.7%</td><td class="dn">&minus;3.5%</td><td class="dn">2.857 &rarr; 2.842 (&minus;0.5%)</td><td>42%</td><td>5.12M &rarr; 4.90M</td></tr>
+</tbody>
+</table>
+
+<p class="sub" style="margin:-.5rem 0 0">Screened-out re-watchers had a <i>lower</i> delta than clean first-timers in Retained and New
+(removing them helps) and a <i>slightly higher</i> one in Power and Reactivated (removing them hurts). Both are within a few
+percent and offset. Per-(title&nbsp;&times;&nbsp;segment) de-dup weights are unchanged to 3 dp
+(median Retained 0.299, Power 0.128, New 0.300&rarr;0.301, Reactivated 0.452&rarr;0.455); <b>0 of 6,423 cells</b> fall back to
+the pooled <code>SEG_WEIGHT</code>.</p>
+
+<p class="warn"><b>Contradicts the spec's stated rationale.</b> <code>MATCHING_SPEC.md</code> predicted the
+treated/control asymmetry <i>inflates</i> the measured on-title effect. Empirically it does the opposite and by a
+negligible amount. The screen mattered for <b>series</b> (v11); for <b>movies</b> it does not &mdash; 7-day movie
+re-watching is rare (6% of pairs) and behaviourally close enough to first-watching to carry no distinct signal.
+Amend the spec rather than leaving the prediction standing.</p>
+
+<h2>Title level — nothing reorders</h2>
+<table>
+<thead><tr><th>Title</th><th>v10e Incr (7d)</th><th>v12 Incr (7d)</th><th>change</th><th>Rate</th></tr></thead>
+<tbody>
+<tr><td>Rush Hour</td><td>2.301M</td><td>2.217M</td><td class="dn">&minus;3.6%</td><td>95.6% &rarr; 92.1%</td></tr>
+<tr><td>Rush Hour 2</td><td>1.941M</td><td>1.849M</td><td class="dn">&minus;4.7%</td><td>102.0% &rarr; 97.2%</td></tr>
+<tr><td>Rush Hour 3</td><td>1.346M</td><td>1.297M</td><td class="dn">&minus;3.6%</td><td>97.4% &rarr; 93.9%</td></tr>
+<tr><td>Friday</td><td>0.984M</td><td>0.911M</td><td class="dn">&minus;7.4%</td><td>70.4% &rarr; 65.2%</td></tr>
+<tr><td>Trolls</td><td>0.886M</td><td>0.816M</td><td class="dn">&minus;7.9%</td><td>73.3% &rarr; 67.5%</td></tr>
+<tr><td>Tyler Perry's Diary of a Mad Black Woman</td><td>0.830M</td><td>0.782M</td><td class="dn">&minus;5.8%</td><td>60.2% &rarr; 56.7%</td></tr>
+<tr><td>Cloudy With a Chance of Meatballs 2</td><td>0.821M</td><td>0.769M</td><td class="dn">&minus;6.3%</td><td>82.8% &rarr; 77.6%</td></tr>
+<tr><td>Next Friday</td><td>0.759M</td><td>0.706M</td><td class="dn">&minus;7.0%</td><td>81.2% &rarr; 75.5%</td></tr>
+<tr><td>The Little Rascals</td><td>0.692M</td><td>0.668M</td><td class="dn">&minus;3.5%</td><td>80.1% &rarr; 77.3%</td></tr>
+<tr><td>Twilight</td><td>0.689M</td><td>0.642M</td><td class="dn">&minus;6.8%</td><td>63.4% &rarr; 59.0%</td></tr>
+</tbody>
+</table>
+<p class="sub" style="margin:-.5rem 0 0">Every top title moves &minus;3% to &minus;8%. No sign flips. Rate distribution shifts down
+about a point throughout: p5 &minus;2.0&rarr;&minus;1.8, p50 26.4&rarr;25.4, p95 58.6&rarr;56.3, max 113.1&rarr;109.7.</p>
+
+<h2>The one real cost: coverage in thin segments</h2>
+<p style="font-size:.9rem;margin:.3rem 0 .6rem"><b>41 (title &times; segment) cells</b> fall below the 30-pair floor and
+disappear &mdash; <b>27 New (M1)</b>, <b>14 Reactivated</b>, zero from Retained or Power Viewer. 6,464 cells &rarr; 6,423.
+The segments where the screen buys the least are the ones that pay for it.</p>
+
+<h2>What v12 actually adds: the 28-day window</h2>
+<table>
+<thead><tr><th>v12, screened pair set</th><th>7d post</th><th>28d post</th><th>ratio</th></tr></thead>
+<tbody>
+<tr class="tot"><td>Incr TVT</td><td>43.67M hrs (44.4%)</td><td>90.21M hrs (91.8%)</td><td>2.07&times;</td></tr>
+<tr><td>Incr hrs / viewer</td><td>0.708</td><td>1.462</td><td>2.07&times;</td></tr>
+<tr><td>&nbsp;&nbsp;Retained</td><td>0.756</td><td>1.481</td><td>1.96&times;</td></tr>
+<tr><td>&nbsp;&nbsp;Power Viewer</td><td>0.384</td><td>0.900</td><td>2.34&times;</td></tr>
+<tr><td>&nbsp;&nbsp;New (M1)</td><td>1.368</td><td>3.010</td><td>2.20&times;</td></tr>
+<tr><td>&nbsp;&nbsp;Reactivated</td><td>1.994</td><td>3.812</td><td>1.91&times;</td></tr>
+<tr><td>Sig-positive TVT cells</td><td>3,126 (49%)</td><td>2,231 (35%)</td><td class="dn">variance grows</td></tr>
+<tr><td>Incr IVT</td><td>&minus;4.51M hrs</td><td>&minus;15.14M hrs</td><td>3.36&times;</td></tr>
+</tbody>
+</table>
+
+<p class="warn"><b>Two 28d caveats carry over unchanged.</b>
+<b>(1)</b> The de-dup ladder's constants were calibrated to spread a <b>7-day</b> post, so over 28 days they
+over-weight &mdash; 90.21M is a <b>ceiling on the direction</b>, not a point estimate.
+<b>(2)</b> Rate is dimensionally mismatched at 28d: the denominator is the title's actual TVT over the
+<b>Aug 8&ndash;14 event week only</b>, while the numerator accumulates <b>28 days</b> per event. Hence
+<b>293 of 1,955 titles exceed 100%</b> (55 &gt;150%, 6 &gt;200%). On 7d no title exceeds 110%. Never compare Rates
+across windows. Offsetting these, the control no-contamination screen ends <b>Aug 28</b>, so controls can start the
+movie in post-days 8&ndash;28 &mdash; conservative, bounded at <b>+4.0%</b> by the <code>_sens_</code> tables.</p>
+
+<h2>Incremental IVT is negative in both runs</h2>
+<table>
+<thead><tr><th>Incr IVT (hrs)</th><th>v10e 7d</th><th>v12 7d</th><th>v12 28d</th></tr></thead>
+<tbody>
+<tr><td>Active non-power (Retained)</td><td>&minus;0.55M</td><td>&minus;0.82M</td><td>&minus;4.76M</td></tr>
+<tr><td>Power Viewer</td><td>&minus;4.76M</td><td>&minus;4.81M</td><td>&minus;13.51M</td></tr>
+<tr><td>New (M1)</td><td>+0.59M</td><td>+0.52M</td><td>+1.76M</td></tr>
+<tr><td>Non-active (Reactivated)</td><td>+0.68M</td><td>+0.60M</td><td>+1.37M</td></tr>
+<tr class="tot"><td>Total</td><td>&minus;4.04M</td><td>&minus;4.51M</td><td>&minus;15.14M</td></tr>
+</tbody>
+</table>
+<p class="sub" style="margin:-.5rem 0 0"><b>The screen does not explain it</b> &mdash; the sign and magnitude were already
+in v10e. Only 11% of cells are significantly positive on IVT at 7d (10% at 28d) versus 49% / 35% on TVT.
+Reading: an organic-discovery movie start adds watch <i>time</i> for heavy viewers but shifts it away from
+<b>intentional</b> (user-initiated) viewing. Unresolved &mdash; do not publish as a level.</p>
+
+<h2>Data provenance</h2>
+<ul>
+<li>Baseline: <code>v10e_a14_results_data.js</code> (built 2026-09-22) &mdash; <code>phase3_title_segment_{summary,simple_delta,viewers,applied_weight}_v10e_a14</code>, pooled <code>SEG_WEIGHT {0:0.317, 1:0.329, 2:0.447, 3:0.136}</code>.</li>
+<li>v12: <code>v12_28d_results_data.js</code> (rebuilt 2026-09-28 10:24) &mdash; 28d tables plus <code>phase3_window_comparison_v12_28d_{tvt,ivt}</code> for the 7d leg on the identical pair set; weights from <code>phase3_title_segment_applied_weight_v12</code> (one table serves both windows &mdash; the ladder keys on a pre-window quantity). Pooled <code>SEG_WEIGHT {0:0.318, 1:0.329, 2:0.449, 3:0.138}</code>.</li>
+<li>Both exclude the same <b>14 series-typed program IDs</b> that leak into the MOVIE universe via session-level <code>content_type</code> screening. Universes are therefore identical at 1,955 titles / 98.25M actual hrs.</li>
+<li>Reconciliation check: <code>phase3_window_comparison_v12_28d_tvt.avg_delta_per_viewer_hrs_28d_wz</code> equals <code>phase3_title_segment_simple_delta_v12_28d_tvt.avg_delta_per_viewer_hrs_wz</code> on all <b>6,423 / 6,423</b> cells &mdash; the 7d leg read from the window-comparison table is on the same estimator as the baseline's <code>simple_delta</code>.</li>
+</ul>
+
+<p class="note"><b>Not yet done:</b> <code>v12_diagnostics</code> (Notebook 5, <code>%python</code>, needs a cluster) has not run,
+so <code>phase2_scorecard_metrics_v12</code> does not exist and confidence grades on
+<code>v12_28d_deltaresults.html</code> are uncoloured. Run it plus <code>publish-diagnostics</code> to restore grading.
+Control reuse cap (&le;3) is not enforced in SQL and is inherited from v10e, which breached it at 172&times; &mdash;
+the screen removes only treated, so reuse can only fall, but the breach is unresolved.</p>
+
+</body>
+</html>
