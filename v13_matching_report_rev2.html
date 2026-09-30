@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>v13 revision 2 — Presentation-Blocked Matching, Movies Sep 1–7 2026 (match-rate gate FAILED again)</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+       max-width:1000px;margin:0 auto;padding:2rem 1.5rem 4rem;color:#1a1a1a;line-height:1.5}
+  h1{font-size:1.55rem;margin:0 0 .3rem;color:#1B3A5C}
+  h2{font-size:1.1rem;margin:2.2rem 0 .6rem;color:#1B3A5C;border-bottom:1px solid #e3e3e3;padding-bottom:.25rem}
+  h3{font-size:.95rem;margin:1.5rem 0 .4rem;color:#2C4A68}
+  .sub{color:#666;font-size:.82rem;margin:0 0 1.4rem}
+  .verdict{background:#F4F8F5;border-left:4px solid #1D9E75;padding:.85rem 1rem;margin:1.2rem 0;font-size:.93rem}
+  .warn{background:#FDF6F2;border-left:4px solid #D85A30;padding:.85rem 1rem;margin:1.2rem 0;font-size:.88rem}
+  .fail{background:#FDF2F2;border-left:4px solid #B4231F;padding:.85rem 1rem;margin:1.2rem 0;font-size:.93rem}
+  .note{background:#FAFAFA;border-left:3px solid #bbb;padding:.75rem 1rem;margin:1.1rem 0;font-size:.83rem;color:#444}
+  table{border-collapse:collapse;width:100%;font-size:.85rem;margin:.6rem 0 1rem}
+  th{background:#F2F5F8;text-align:right;padding:6px 9px;border-bottom:2px solid #d8dee5;font-weight:600;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  td{padding:5px 9px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}
+  tr.tot td{font-weight:700;background:#FBFCFD;border-top:1px solid #c9d2da}
+  tr.bad td{background:#FDF6F5}
+  tr.good td{background:#F5FAF7}
+  .up{color:#12805E}.dn{color:#B4531F}.mut{color:#888}
+  .xf{color:#B4231F;font-weight:700}.xp{color:#12805E;font-weight:700}
+  code{background:#F4F4F6;padding:1px 4px;border-radius:3px;font-size:.88em}
+  ul{margin:.4rem 0 .9rem;padding-left:1.2rem;font-size:.9rem}
+  li{margin:.25rem 0}
+  .kpi{display:flex;gap:.7rem;margin:1.1rem 0 1.3rem;flex-wrap:wrap}
+  .kpi div{flex:1;min-width:150px;background:#F8FAFC;border:1px solid #e3e8ee;border-radius:5px;padding:.6rem .8rem}
+  .kpi .v{font-size:1.32rem;font-weight:700;color:#1B3A5C;font-variant-numeric:tabular-nums}
+  .kpi .l{font-size:.74rem;color:#667;margin-top:.1rem;line-height:1.3}
+</style>
+</head>
+<body>
+
+<h1>v13 revision 2 &mdash; the supply fix worked, and the gate still failed</h1>
+<p class="sub">Movies &middot; <b>top-500</b> US titles &middot; <b>Sep 1&ndash;7 2026 events</b> &middot; Organic Discovery &middot; US only &middot;
+<b>1.5% treated</b> (<code>device_hash_num &lt; 15</code>) / <b>3% control</b> (<code>&lt; 30</code>) &middot; matching only &mdash; no post-period stage<br>
+Frozen Variant C + a <b>9th exact CEM block: presentation</b> (<code>had_pres</code>) &middot;
+warehouse <code>d91490098e4494d5</code> &middot; generated 2026-09-30<br>
+Sibling of <code>v13_matching_report.html</code> (revision 1), which is preserved unchanged. Every number here was
+re-measured on the warehouse against the revision-2 tables; nothing is carried over or projected.</p>
+
+<div class="kpi">
+  <div><div class="v xf">36.71%</div><div class="l">overall match rate<br>gate &ge; 80% &middot; was 32.70%</div></div>
+  <div><div class="v xf">32.79%</div><div class="l"><code>pres=1</code> match rate<br>78% of the cohort &middot; was 28.92%</div></div>
+  <div><div class="v xf">50.66%</div><div class="l"><code>pres=0</code> match rate<br>was 44.63%</div></div>
+  <div><div class="v xf">14&times;</div><div class="l">max control reuse<br>cap &le; 3 &middot; was 33&times;</div></div>
+  <div><div class="v">96,792</div><div class="l">matched pairs<br>from 263,685 treated</div></div>
+</div>
+
+<p class="fail"><b>Revision 2 did exactly what it was designed to do, and it was not close to enough.</b> The two
+changes &mdash; treated cut to 1.5% while control stayed at 3%, and the universe cut from top-2000 to top-500
+&mdash; were aimed at the <i>cell-supply</i> channel. Measured: control devices per (title &times; date) in the
+<code>pres=1</code> stratum rose <b>4.2&times;</b> (966 &rarr; 4,104 at the median), in-cell controls per treated
+rose <b>~1.5&times;</b>, and the empty-cell rate roughly <b>halved</b>. The overall match rate moved
+<b>32.70% &rarr; 36.71%</b> &mdash; <b>+4.0 pp against a 43 pp shortfall</b>. The reason is in &sect;3: the
+dominant loss channel is the propensity caliper, which consumes a near-constant <b>37&ndash;50%</b> of treated in
+every stratum and <b>is not a supply problem</b>. Per the locked decision: report and stop.</p>
+
+<div class="verdict"><b>What this pair of runs now establishes, that revision 1 alone could not.</b> Revision 1 left
+open the possibility that the shortfall was a sampling artefact &mdash; fix the supply, clear the gate. Revision 2
+is the controlled test of that hypothesis and it <b>falsifies it</b>: a 4.2&times; supply increase bought 4 pp.
+The binding constraint is the treated&ndash;control propensity overlap (&sect;4), where the medians sit
+<b>0.93&ndash;1.44 logits</b> apart against a &plusmn;0.2 caliper. No sampling change inside this design reaches
+80%.</p>
+
+<h2>What changed between the two revisions</h2>
+<table>
+<tr><th></th><th>revision 1</th><th>revision 2</th><th>intent</th></tr>
+<tr><td>Universe</td><td>top 2,000 movies</td><td><b>top 500</b> (<code>tvt_rank &lt;= 500</code>)</td><td>fewer, denser cells</td></tr>
+<tr><td>Treated sample</td><td>3% (<code>&lt; 30</code>)</td><td><b>1.5%</b> (<code>&lt; 15</code>)</td><td>halve demand</td></tr>
+<tr><td>Control sample</td><td>3% (<code>&lt; 30</code>)</td><td>3% (<code>&lt; 30</code>) &mdash; unchanged</td><td>hold supply &rarr; ~2&times; controls/treated</td></tr>
+<tr><td>Control post-window screen</td><td>defective</td><td>fixed</td><td>remove contaminated controls</td></tr>
+<tr><td>Treated prior-viewing screen</td><td>flat 7d</td><td>flat 7d &mdash; unchanged</td><td>&mdash;</td></tr>
+</table>
+<p class="note">The 1.5%/3% asymmetry is deliberate and must not be "aligned": both sides stay inside the 3%
+viewpres cohort, so <code>had_pres</code> is observed on both, while the treated side is nested at half the rate.
+It reproduces v10e's 50%-treated / 100%-control nesting. A treated viewer can still legitimately serve as a
+control for a <i>different</i> title, since eligibility excludes only the (viewer, title) pairs they were treated on.</p>
+
+<h2>Cohort sizes &mdash; rows and bodies</h2>
+<table>
+<tr><th></th><th>rows</th><th>distinct devices</th><th>rows per device</th></tr>
+<tr><td>treated</td><td>263,685</td><td><b>93,911</b></td><td>2.8</td></tr>
+<tr><td>control</td><td>247,275,518</td><td><b>482,734</b></td><td><b>512</b></td></tr>
+</table>
+<p style="font-size:.88rem">The control device count is <b>essentially unchanged from revision 1</b> (482,749 &rarr;
+482,734) &mdash; as expected, since the control hash filter did not move. Rows fell 477.7M &rarr; 247.3M purely
+because the universe went from 2,000 titles to 500. Treated fell 709,637 &rarr; 263,685 rows (224,306 &rarr; 93,911
+devices) from the 1.5% cut <i>and</i> the smaller universe together.</p>
+
+<h3>By <code>pres</code> stratum</h3>
+<table>
+<tr><th><code>pres</code></th><th>treated rows</th><th>treated devices</th><th>control rows</th><th>control devices</th><th>ctl rows / trt row</th></tr>
+<tr><td>0</td><td>57,745</td><td>26,416</td><td>226,461,803</td><td>482,733</td><td class="mut">3,921</td></tr>
+<tr class="bad"><td>1</td><td>205,940</td><td>87,925</td><td>20,813,715</td><td>386,403</td><td class="dn">101</td></tr>
+</table>
+<p style="font-size:.88rem">Still a row ratio, and still inflated by the control side's title fan-out &mdash; but
+the honest reading is the device line: <b>386,403 control bodies</b> supply all 20.8M <code>pres=1</code> control
+rows (~54 title-days each), against 87,925 treated bodies. Revision 1's equivalent was 393,544 bodies against
+209,837 treated. So the <b>bodies-per-treated-body ratio improved 1.88 &rarr; 4.40</b>, a genuine 2.3&times;, which
+is the 1.5% cut delivering precisely what it promised.</p>
+
+<h3>Control devices per (title &times; event_date) &mdash; the grain the matcher works in</h3>
+<table>
+<tr><th><code>pres</code></th><th>(title &times; date) cells</th><th>p10 devices</th><th>p50 devices</th><th>p90 devices</th><th>rev-1 p50</th><th>gain</th></tr>
+<tr><td>0</td><td>3,345</td><td>12,241</td><td><b>81,077</b></td><td>108,734</td><td class="mut">14,858</td><td class="up">5.5&times;</td></tr>
+<tr class="good"><td>1</td><td>3,335</td><td>549</td><td><b>4,104</b></td><td>14,643</td><td class="mut">966</td><td class="up"><b>4.2&times;</b></td></tr>
+</table>
+<p style="font-size:.88rem">Both strata occupy ~3,340 of the 3,500 possible (500 titles &times; 7 days) cells. The
+<code>pres=1</code> median went from 966 devices to <b>4,104</b>, and the <code>pres=0</code>/<code>pres=1</code>
+ratio narrowed from <b>15&times;</b> to <b>3.0&times;</b>. Two effects compound: the top-500 titles are the
+merchandised ones, so a far higher share of scored devices were also <i>presented</i> them; and the smaller
+universe concentrates the same 386K bodies into a fifth as many cells. <b>This is the single clearest evidence
+that revision 2's supply thesis was correct on its own terms.</b></p>
+
+<h2>Gate results</h2>
+<table>
+<tr><th>Gate</th><th>Target</th><th>Measured (rev 2)</th><th>rev 1</th><th>Result</th></tr>
+<tr class="bad"><td>Match rate, <code>pres = 1</code></td><td>&ge; 80%</td><td><b>32.79%</b></td><td class="mut">28.92%</td><td class="xf">FAIL</td></tr>
+<tr class="bad"><td>Match rate, <code>pres = 0</code></td><td>&ge; 80%</td><td><b>50.66%</b></td><td class="mut">44.63%</td><td class="xf">FAIL</td></tr>
+<tr class="bad"><td>Match rate, overall</td><td>&ge; 80%</td><td><b>36.71%</b></td><td class="mut">32.70%</td><td class="xf">FAIL</td></tr>
+<tr class="bad"><td>Cells at &ge;80% match (<code>n_treated&ge;30</code>)</td><td>&ge; 80% of cells</td><td><b>0.32%</b> &mdash; 5 of 1,583 cells</td><td class="mut">&mdash;</td><td class="xf">FAIL</td></tr>
+<tr class="bad"><td>Control reuse</td><td>&le; 3 per control</td><td><b>max 14</b>; 2,497 of 66,966 controls (3.73%) over cap; 11,838 pairs (12.2%) involve an over-cap control; <b>4,347 excess pairs (4.49%)</b>; median 1, p99 5, mean 1.45</td><td class="mut">max 33; 11.67% over cap</td><td class="xf">FAIL <span class="mut">(much milder)</span></td></tr>
+<tr><td>Block held (<code>t.had_pres = c.had_pres</code>)</td><td>0 violations</td><td><b>0</b> <span class="mut">(re-joined to <code>phase2_controls_v13</code>, not just read off the pairs column)</span></td><td class="mut">0</td><td class="xp">PASS</td></tr>
+<tr><td><code>had_pres</code> never NULL</td><td>0</td><td><b>0</b> on treated, controls, and pairs</td><td class="mut">0</td><td class="xp">PASS</td></tr>
+<tr><td>Caliper <code>|&Delta;logit| &le; 0.2</code></td><td>100%</td><td><b>100%</b> (max 0.199998, mean 0.0739); <b>74.47%</b> in the preferred <code>&le; 0.1</code> tier</td><td class="mut">100%; 73.22% tier-1</td><td class="xp">PASS</td></tr>
+<tr><td><code>pct_at_cap</code> (TVT bins)</td><td>not materially worse</td><td>Power <b>7.47%</b> &middot; New 4.15% &middot; Retained 3.75% &middot; Reactivated 1.70%</td><td class="mut">&mdash;</td><td class="xp">PASS</td></tr>
+<tr><td><code>|SMD|</code> pre-TVT</td><td>&le; 0.10</td><td class="mut">not measured &mdash; needs step 5</td><td class="mut">&mdash;</td><td class="mut">&mdash;</td></tr>
+<tr><td><code>|SMD|</code> pre-IVT</td><td>&le; 0.10</td><td class="mut">not measured &mdash; needs step 5</td><td class="mut">&mdash;</td><td class="mut">&mdash;</td></tr>
+</table>
+<p style="font-size:.88rem"><b>The bins are not the problem.</b> <code>pct_at_cap</code> maxes out at 7.5% on Power
+Viewer, so the TVT covariate is not being compressed by the cap &mdash; which also means a coarser sweep config
+(<code>C_coarse</code>, <code>C_vcoarse</code>) has little headroom to recover match rate by merging bins. The
+frozen <code>C_frozen</code> bins are doing their job; the loss is elsewhere.</p>
+
+<h3>Match rate by stratum</h3>
+<table>
+<tr><th><code>pres</code></th><th>segment</th><th>treated</th><th>pairs</th><th>match %</th><th>rev-1 match %</th><th>distinct controls used</th><th>avg reuse</th></tr>
+<tr><td>0</td><td>Retained</td><td>23,149</td><td>14,010</td><td>60.52</td><td class="mut">53.42</td><td>11,993</td><td>1.17</td></tr>
+<tr><td>0</td><td>New (M1)</td><td>2,918</td><td>1,323</td><td>45.34</td><td class="mut">38.77</td><td>1,112</td><td>1.19</td></tr>
+<tr class="bad"><td>0</td><td>Reactivated</td><td>2,899</td><td>384</td><td class="dn"><b>13.25</b></td><td class="mut">12.04</td><td>359</td><td>1.07</td></tr>
+<tr><td>0</td><td>Power Viewer</td><td>28,779</td><td>13,538</td><td>47.04</td><td class="mut">41.07</td><td>10,024</td><td>1.35</td></tr>
+<tr><td>1</td><td>Retained</td><td>106,654</td><td>44,326</td><td>41.56</td><td class="mut">36.37</td><td>33,812</td><td>1.31</td></tr>
+<tr><td>1</td><td>New (M1)</td><td>12,513</td><td>3,794</td><td>30.32</td><td class="mut">25.24</td><td>2,831</td><td>1.34</td></tr>
+<tr><td>1</td><td>Reactivated</td><td>7,894</td><td>1,959</td><td>24.82</td><td class="mut">21.31</td><td>1,715</td><td>1.14</td></tr>
+<tr class="bad"><td>1</td><td><b>Power Viewer</b></td><td><b>78,879</b></td><td>17,458</td><td class="dn"><b>22.13</b></td><td class="mut">19.93</td><td>11,995</td><td>1.46</td></tr>
+<tr class="tot"><td colspan="2">total</td><td>263,685</td><td>96,792</td><td>36.71</td><td class="mut">32.70</td><td>66,966</td><td>1.45</td></tr>
+</table>
+<p style="font-size:.88rem">Every stratum improved, by <b>+1.2 to +7.1 pp</b>. The ranking is unchanged: worst is
+<code>pres=1</code> Power Viewer at 22.13%, holding <b>29.9% of the entire treated cohort</b> &mdash; the same
+structural position it held in revision 1. Largest gain went to <code>pres=0</code> Retained (+7.1 pp), the
+stratum that was already healthiest.</p>
+
+<h3>Analysis cells surviving the <code>n_pairs &ge; 30</code> floor</h3>
+<table>
+<tr><th>(title &times; segment &times; <code>pres</code>) cells</th><th>count</th><th>share</th></tr>
+<tr><td>total occupied</td><td>3,705</td><td class="mut">&mdash;</td></tr>
+<tr><td>with <code>n_treated &ge; 30</code></td><td>1,583</td><td class="mut">42.7%</td></tr>
+<tr class="bad"><td><b>with <code>n_pairs &ge; 30</code></b> (usable for analysis)</td><td><b>723</b></td><td class="dn"><b>19.5%</b></td></tr>
+<tr><td>median pairs per occupied cell</td><td>5</td><td class="mut">&mdash;</td></tr>
+</table>
+<p style="font-size:.88rem">Planning finding 7 predicted ~29 pairs per cell and warned the title-grain table would
+be "mostly empty by arithmetic, not by failure." Measured median is <b>5</b>. Even if the gate had passed, the
+<b>title &times; segment cut is not publishable</b> at this cohort size &mdash; segment grain pooled across titles
+is the only trustworthy reading, exactly as the plan required.</p>
+
+<h2>Why the match rate is still low &mdash; the re-measured decomposition</h2>
+
+<h3>1. The blocking variable's marginals are 9&times; apart</h3>
+<table>
+<tr><th>side</th><th>rows</th><th><code>pres=1</code> rows</th><th>share</th><th>rev 1</th></tr>
+<tr><td>treated</td><td>263,685</td><td>205,940</td><td class="dn"><b>78.10%</b></td><td class="mut">75.95%</td></tr>
+<tr><td>control</td><td>247,275,518</td><td>20,813,715</td><td class="dn"><b>8.42%</b></td><td class="mut">6.78%</td></tr>
+</table>
+<p style="font-size:.9rem">Both sides rose &mdash; the top-500 universe is more heavily merchandised, so
+presentation is more common on both treated and control. The <b>ratio improved from 11.2&times; to 9.3&times;</b>,
+which is real but second-order. Exact-blocking still points <b>78% of demand at 8.4% of supply</b>. Presentation
+is a <i>cause</i> of viewing, so the treated cohort is intrinsically enriched in "was shown the title" &mdash; the
+block is partially confounded with the treatment itself, and that does not change with sampling.</p>
+<p class="note"><b>The 78.10% is a universe effect, not a defect, and the control for that claim is
+<code>had_pres_strict</code>:</b> it measured <b>42.67%</b> on top-500 against the 43.2% top-2000 benchmark &mdash;
+i.e. it <i>reproduced</i>. So the entire 62.6% &rarr; 78.1% shift lives in the <code>+12h</code> post-anchor tail,
+which is where merchandised titles differ most. Do not read 78.1% as a broken flag.</p>
+
+<h3>2. Exact-cell fragmentation &mdash; this is the channel revision 2 fixed</h3>
+<p style="font-size:.88rem;margin:.2rem 0 .5rem">Replicating step3_4's 10-key exact block verbatim from
+<code>sql/v13_step3_4.sql:50&ndash;179</code>, counting control rows per occupied treated cell:</p>
+<table>
+<tr><th><code>pres</code></th><th>segment</th><th>treated</th><th>% empty cell</th><th>rev-1 % empty</th><th>median ctl/cell</th><th>ctl/treated</th><th>rev-1 ctl/treated</th></tr>
+<tr class="good"><td>0</td><td>Retained</td><td>23,149</td><td class="up">2.07</td><td class="mut">5.04</td><td>49</td><td>109.2</td><td class="mut">71.1</td></tr>
+<tr class="good"><td>0</td><td>New (M1)</td><td>2,918</td><td class="up">8.22</td><td class="mut">14.69</td><td>16</td><td>53.0</td><td class="mut">34.5</td></tr>
+<tr class="bad"><td>0</td><td>Reactivated</td><td>2,899</td><td class="dn"><b>59.57</b></td><td class="mut">61.04</td><td class="dn"><b>0</b></td><td>43.1</td><td class="mut">30.3</td></tr>
+<tr class="good"><td>0</td><td>Power Viewer</td><td>28,779</td><td class="up">5.69</td><td class="mut">11.08</td><td>14</td><td>21.8</td><td class="mut">15.1</td></tr>
+<tr class="good"><td>1</td><td>Retained</td><td>106,654</td><td class="up">11.57</td><td class="mut">17.94</td><td>8</td><td>26.1</td><td class="mut">10.2</td></tr>
+<tr><td>1</td><td>New (M1)</td><td>12,513</td><td>24.53</td><td class="mut">32.93</td><td>3</td><td>16.0</td><td class="mut">7.3</td></tr>
+<tr class="bad"><td>1</td><td>Reactivated</td><td>7,894</td><td class="dn"><b>53.46</b></td><td class="mut">57.77</td><td class="dn"><b>0</b></td><td>12.0</td><td class="mut">5.7</td></tr>
+<tr class="bad"><td>1</td><td>Power Viewer</td><td>78,879</td><td class="dn"><b>28.33</b></td><td class="mut">36.19</td><td>2</td><td>3.8</td><td class="mut">2.6</td></tr>
+</table>
+<p style="font-size:.9rem"><b>Every empty-cell rate fell and every in-cell supply figure rose</b> &mdash;
+<code>pres=0</code> empty-cell roughly halved (Retained 5.0&rarr;2.1, Power 11.1&rarr;5.7), <code>pres=1</code> fell
+~25% relative (Power 36.2&rarr;28.3, Retained 17.9&rarr;11.6), and in-cell controls per treated rose ~1.5&times;
+across the board (<code>pres=1</code> Retained 10.2&rarr;26.1 is the biggest mover). The intervention landed.
+<b>Reactivated barely moved</b> (61.0&rarr;59.6, 57.8&rarr;53.5) and still has a <b>median of zero</b> in-cell
+controls &mdash; the framework's documented structural limit, unreachable by sampling.</p>
+<p style="font-size:.9rem">Block-attributable empty-cell cost (<code>pres=1</code> minus <code>pres=0</code> within
+segment): Retained <b>+9.5</b>, New <b>+16.3</b>, Power Viewer <b>+22.6</b>, Reactivated <b>&minus;6.1</b>.
+Revision 1's figures were +12.9 / +18.2 / +25.1 / &minus;3.3. So the block is <i>slightly</i> cheaper on a denser
+universe, and the sign pattern is unchanged &mdash; including the negative on Reactivated, where the stratum is
+already exhausted before the block applies.</p>
+
+<h3>3. Splitting the shortfall &mdash; the caliper is the binding channel</h3>
+<p style="font-size:.88rem;margin:.2rem 0 .5rem">Caliper loss is the residual,
+<code>100 &minus; match% &minus; empty-cell%</code>. The decomposition is exact because the caliper sits in a
+<code>WHERE</code> <i>after</i> the exact-block <code>INNER JOIN</code>.</p>
+<table>
+<tr><th><code>pres</code></th><th>segment</th><th>matched</th><th>lost: empty cell</th><th>lost: caliper</th><th>rev-1 caliper</th></tr>
+<tr><td>0</td><td>Retained</td><td>60.5%</td><td>2.1%</td><td class="dn"><b>37.4%</b></td><td class="mut">41.5%</td></tr>
+<tr><td>0</td><td>New (M1)</td><td>45.3%</td><td>8.2%</td><td class="dn"><b>46.4%</b></td><td class="mut">46.5%</td></tr>
+<tr><td>0</td><td>Reactivated</td><td>13.2%</td><td>59.6%</td><td>27.2%</td><td class="mut">26.9%</td></tr>
+<tr><td>0</td><td>Power Viewer</td><td>47.0%</td><td>5.7%</td><td class="dn"><b>47.3%</b></td><td class="mut">47.9%</td></tr>
+<tr><td>1</td><td>Retained</td><td>41.6%</td><td>11.6%</td><td class="dn"><b>46.9%</b></td><td class="mut">45.7%</td></tr>
+<tr><td>1</td><td>New (M1)</td><td>30.3%</td><td>24.5%</td><td class="dn"><b>45.2%</b></td><td class="mut">41.8%</td></tr>
+<tr><td>1</td><td>Reactivated</td><td>24.8%</td><td>53.5%</td><td>21.7%</td><td class="mut">20.9%</td></tr>
+<tr><td>1</td><td>Power Viewer</td><td>22.1%</td><td>28.3%</td><td class="dn"><b>49.5%</b></td><td class="mut">43.9%</td></tr>
+</table>
+<p class="fail"><b>This table is the result of the run.</b> The caliper tax is a near-constant
+<b>37&ndash;50%</b> in every stratum, <code>pres=0</code> and <code>pres=1</code> alike &mdash; and it is
+<b>essentially identical to revision 1's 42&ndash;48%</b> despite the 4.2&times; supply increase. In three strata
+it went <i>up</i>, because more in-cell candidates now survive to be tested against the caliper and fail there
+instead of failing earlier as empty cells. <b>Supply loss converted into caliper loss.</b> That is why a
+4.2&times; improvement in control density produced only +4 pp of match rate, and it is the mechanism that rules
+out further sampling work as a route to 80%.</p>
+
+<h3>4. The caliper channel is a propensity-overlap problem &mdash; re-confirmed on the full pool</h3>
+<p style="font-size:.88rem;margin:.2rem 0 .5rem">Logit percentiles, treated vs control.
+<span class="mut">Unlike revision 1 &mdash; which had to fall back to a 5% sub-sample of the control pool after a
+full-pool run timed out at 3,600s &mdash; these are computed over <b>all 247,275,518 control rows and all 263,685
+treated rows</b> using <code>APPROX_PERCENTILE</code>. No sub-sampling. The smaller universe made the exact
+measurement affordable, so this table is strictly better evidence than its revision-1 counterpart.</span></p>
+<table>
+<tr><th><code>pres</code></th><th>segment</th><th>t&nbsp;p10</th><th>t&nbsp;p50</th><th>t&nbsp;p90</th><th>c&nbsp;p10</th><th>c&nbsp;p50</th><th>c&nbsp;p90</th><th>median shift</th><th>caliper widths</th></tr>
+<tr><td>0</td><td>Retained</td><td>&minus;1.280</td><td>&minus;0.433</td><td>0.689</td><td>&minus;3.393</td><td>&minus;1.876</td><td>&minus;0.836</td><td class="dn"><b>1.443</b></td><td class="dn">7.2</td></tr>
+<tr><td>0</td><td>New (M1)</td><td>&minus;1.370</td><td>&minus;0.544</td><td>0.879</td><td>&minus;3.106</td><td>&minus;1.711</td><td>&minus;0.810</td><td class="dn"><b>1.167</b></td><td class="dn">5.8</td></tr>
+<tr><td>0</td><td>Reactivated</td><td>&minus;1.408</td><td>&minus;0.536</td><td>0.743</td><td>&minus;2.978</td><td>&minus;1.667</td><td>&minus;0.771</td><td class="dn"><b>1.131</b></td><td class="dn">5.7</td></tr>
+<tr><td>0</td><td>Power Viewer</td><td>&minus;1.401</td><td>&minus;0.537</td><td>0.437</td><td>&minus;3.467</td><td>&minus;1.878</td><td>&minus;0.809</td><td class="dn"><b>1.341</b></td><td class="dn">6.7</td></tr>
+<tr><td>1</td><td>Retained</td><td>&minus;1.187</td><td>0.063</td><td>1.547</td><td>&minus;2.603</td><td>&minus;1.171</td><td>&minus;0.164</td><td class="dn"><b>1.234</b></td><td class="dn">6.2</td></tr>
+<tr><td>1</td><td>New (M1)</td><td>&minus;1.258</td><td>&minus;0.156</td><td>1.627</td><td>&minus;2.366</td><td>&minus;1.184</td><td>&minus;0.343</td><td class="dn"><b>1.027</b></td><td class="dn">5.1</td></tr>
+<tr><td>1</td><td>Reactivated</td><td>&minus;1.206</td><td>&minus;0.050</td><td>1.710</td><td>&minus;2.184</td><td>&minus;0.981</td><td>&minus;0.064</td><td class="dn"><b>0.931</b></td><td class="dn">4.7</td></tr>
+<tr><td>1</td><td>Power Viewer</td><td>&minus;1.258</td><td>&minus;0.118</td><td>1.012</td><td>&minus;2.664</td><td>&minus;1.227</td><td>&minus;0.197</td><td class="dn"><b>1.109</b></td><td class="dn">5.5</td></tr>
+</table>
+<p style="font-size:.9rem">The treated median sits <b>0.93&ndash;1.44 logits above</b> the control median in every
+stratum &mdash; <b>4.7 to 7.2 caliper-widths</b> against a &plusmn;0.2 caliper. The matchable region is only where
+the treated <i>bottom</i> decile overlaps the control <i>top</i> decile (<code>pres=0</code> Retained: treated p10
+&minus;1.280 vs control p90 &minus;0.836 &mdash; the overlap is a sliver). Revision 1's sub-sampled estimate gave
+0.91&ndash;1.38; the exact figures are 0.93&ndash;1.44. <b>The sub-sample was not misleading, and the geometry did
+not move when the universe and sample changed.</b></p>
+<div class="warn"><b>This remains a framework-level property, not a v13 quirk.</b> The overlap gap is expected
+&mdash; the ML score's job is to predict viewing, so viewers score higher than non-viewers by construction. But it
+means the caliper has <i>always</i> been matching inside a thin overlap tail. v10e cleared 83.8% on that same tail
+only because a 100% control sample put enough <b>bodies</b> in it. Revision 2 put 4.2&times; more bodies into each
+cell and the tail still could not fill, because the cell and the tail are different constraints and only the
+first one was relaxed.</div>
+<p style="font-size:.9rem">The revision-1 inversion reproduces: <b>median shift is smaller for <code>pres=1</code>
+(0.93&ndash;1.23) than <code>pres=0</code> (1.13&ndash;1.44).</b> Conditioning on presentation <i>improves</i>
+propensity overlap &mdash; presentation and high score are both "the ranker surfaced this" &mdash; while costing far
+more in cell supply. The block helps the channel it was not aimed at and hurts the one it was.</p>
+
+<h3>5. The <code>had_pres_strict</code> residual &mdash; an unblocked imbalance worth naming</h3>
+<table>
+<tr><th>on the 96,792 matched pairs</th><th><code>had_pres_strict = 1</code></th></tr>
+<tr><td>treated side</td><td><b>37.90%</b></td></tr>
+<tr class="bad"><td>control side</td><td class="dn"><b>45.65%</b></td></tr>
+<tr><td>gap</td><td class="dn"><b>+7.75 pp</b> (control higher)</td></tr>
+</table>
+<p style="font-size:.88rem"><code>had_pres_strict</code> (presentation strictly before the anchor) is
+<b>deliberately not blocked</b> &mdash; only <code>had_pres</code> is. So this gap is a free diagnostic, and it
+points the opposite way from what a naive reading would expect: <b>matched controls are <i>more</i> likely than
+their treated partners to have had a strictly-prior presentation.</b> The mechanism is the <code>+12h</code> tail
+&mdash; a treated viewer's <code>had_pres</code> can be satisfied by a presentation logged <i>after</i> their
+<code>event_ts</code>, whereas a control anchored at midnight has less post-anchor room inside the same window. It
+is a concrete measurement of the post-treatment contamination the plan flagged as a caveat, now quantified on final
+pairs rather than only on the preflight: roughly <b>62% of treated <code>had_pres=1</code> flags are not strictly
+prior</b>. Any causal reading of the block must carry this.</p>
+
+<h2>Caliper sensitivity &mdash; what relaxing the ML caliper would actually buy</h2>
+
+<p>Measured, not extrapolated. For every one of the 263,685 treated rows, the distance to its
+<b>nearest in-cell control with no caliper applied at all</b>
+(<code>core_dev.dsa.v13_caliper_mindist</code>, uncapped <code>LEFT JOIN</code> on the same ten exact keys, then
+<code>MIN(ABS(&Delta;logit))</code>). Match rate at caliper <i>k</i> is then the share with
+<code>min_d &le; k</code>. The 0.2 row reproduces <b>36.70743%</b> &mdash; identical to the pipeline's own
+<code>36.71%</code> &mdash; which validates the construction, since the caliper is a post-join <code>WHERE</code>
+and a treated row matches iff its nearest in-cell control is inside the ceiling.</p>
+
+<table>
+<tr><th>Caliper</th><th>Overall</th><th>pres=1<br><span style="font-weight:400;font-size:11px">(the gate)</span></th><th>pres=0</th>
+<th>p1 Power</th><th>p1 Retained</th><th>p1 New (M1)</th><th>p1 Reactivated</th>
+<th>Matched pairs</th><th>&le;0.1 tier</th><th>Mean &Delta;logit<br>of matches</th></tr>
+<tr style="background:#f3f3f3;"><td><b>0.2 &mdash; current</b></td><td><b>36.71%</b></td><td><b>32.79%</b></td><td>50.66%</td>
+<td>22.13%</td><td>41.56%</td><td>30.32%</td><td>24.82%</td><td>96,792</td><td>74.47%</td><td>0.063</td></tr>
+<tr><td>0.3</td><td>42.77%</td><td>38.60%</td><td>57.66%</td><td>28.30%</td><td>47.44%</td><td>35.28%</td><td>27.43%</td><td>112,787</td><td>63.91%</td><td>0.089</td></tr>
+<tr><td>0.4</td><td>47.52%</td><td>43.19%</td><td>62.98%</td><td>33.22%</td><td>52.02%</td><td>39.37%</td><td>29.42%</td><td>125,308</td><td>57.52%</td><td>0.115</td></tr>
+<tr><td>0.5</td><td>51.29%</td><td>46.86%</td><td>67.10%</td><td>37.29%</td><td>55.60%</td><td>42.67%</td><td>31.05%</td><td>135,251</td><td>53.29%</td><td>0.140</td></tr>
+<tr><td>0.6</td><td>54.64%</td><td>50.06%</td><td>70.96%</td><td>40.85%</td><td>58.73%</td><td>45.46%</td><td>32.24%</td><td>144,065</td><td>50.03%</td><td>0.165</td></tr>
+<tr><td>0.7</td><td>57.58%</td><td>52.94%</td><td>74.12%</td><td>44.05%</td><td>61.55%</td><td>48.04%</td><td>33.18%</td><td>&mdash;</td><td>&mdash;</td><td>0.189</td></tr>
+<tr><td>0.8</td><td>60.15%</td><td>55.51%</td><td>76.68%</td><td>46.93%</td><td>64.04%</td><td>50.36%</td><td>34.27%</td><td>158,601</td><td>45.45%</td><td>0.213</td></tr>
+<tr><td>0.9</td><td>62.45%</td><td>57.84%</td><td>78.90%</td><td>49.56%</td><td>66.27%</td><td>52.57%</td><td>35.04%</td><td>&mdash;</td><td>&mdash;</td><td>0.237</td></tr>
+<tr><td>1.0</td><td>64.50%</td><td>59.91%</td><td>80.87%</td><td>51.92%</td><td>68.24%</td><td>54.44%</td><td>35.85%</td><td>170,070</td><td>42.38%</td><td>0.259</td></tr>
+<tr class="dim"><td>1.5</td><td>71.80%</td><td>67.60%</td><td>86.79%</td><td>60.41%</td><td>75.75%</td><td>61.26%</td><td>39.45%</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr class="dim"><td>2.0</td><td>76.23%</td><td>72.44%</td><td>89.73%</td><td>65.42%</td><td>80.64%</td><td>66.26%</td><td>41.55%</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr class="dim"><td>3.0</td><td>80.43%</td><td>77.19%</td><td>92.01%</td><td>69.82%</td><td>85.70%</td><td>71.62%</td><td>44.68%</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr class="dim"><td>5.0</td><td>82.36%</td><td>79.41%</td><td>92.88%</td><td>71.54%</td><td>88.19%</td><td>75.11%</td><td>46.35%</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+<tr style="background:#fff4f4;"><td><b>&infin; &mdash; no caliper</b></td><td><b>82.53%</b></td><td><b>79.62%</b></td><td>92.93%</td>
+<td>71.67%</td><td>88.43%</td><td>75.47%</td><td>46.54%</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+</table>
+
+<p class="fail"><b>The gate is unreachable by caliper relaxation. Removing the caliper entirely &mdash; an
+infinite ceiling, matching on the nine exact blocks alone &mdash; yields 79.62% on <code>pres=1</code>, which
+still misses 80%.</b> The asymptote is set by the 17.47% of treated whose exact cell contains no control at
+any distance (46,054 rows), and 17.47% + 79.62%-of-the-rest is all there is. Every caliper value in the table
+is a trade of balance for volume that never arrives at the target.</p>
+
+<p>Three things the curve says, beyond the headline:</p>
+
+<ul>
+<li><b>The first 0.1 of relaxation is the cheapest and it is still not enough.</b> 0.2&rarr;0.3 buys +6.07 pp
+overall (+5.81 pp on <code>pres=1</code>) &mdash; the largest single increment in the table. Returns then decay
+monotonically: +4.75, +3.77, +3.34, +2.94, +2.57, +2.31, +2.04 pp. Getting <code>pres=1</code> merely to 60%
+takes a caliper of <b>1.0 &mdash; five times the current ceiling</b>. Getting <i>overall</i> to 80% takes
+<b>3.0, fifteen times</b>, and <code>pres=1</code> is at 77.19% even there.</li>
+<li><b>Balance degrades faster than volume improves.</b> The <code>&le;0.1</code> tier-1 share &mdash; the
+fraction of pairs the stepwise rank actually prefers &mdash; falls <b>74.47% &rarr; 42.38%</b> by caliper 1.0,
+and mean pair distance rises <b>0.063 &rarr; 0.259, a 4.1&times; widening</b>. The pairs added by relaxation are
+much worse than the ones already there: newly-admitted pairs average <b>0.247</b> logits apart at caliper 0.3,
+<b>0.332</b> at 0.5 and <b>0.519</b> at 1.0. For scale, the treated&ndash;control median logit shift measured in
+&sect;4 is <b>0.93&ndash;1.44</b> &mdash; so a caliper of 1.0 admits most of the raw offset the score exists to
+remove, and the design stops adjusting on propensity in any meaningful sense.</li>
+<li><b>Reactivated is structural, as it was in v10e.</b> Its <code>pres=1</code> ceiling is <b>46.54%</b> at
+infinite caliper &mdash; 24.82% today. No caliper reaches even 50%. This is the same
+~73%-tops-out control-supply limit documented for the frozen framework, made worse by the 1.5% treated cut and
+the presentation block. Power Viewer tops out at 71.67%; only Retained (88.43%) has a ceiling above the gate.</li>
+</ul>
+
+<p><b>This table is a diagnostic, not a proposal.</b> The locked decision in the plan is explicit &mdash; <i>&ldquo;no
+bin loosening, no caliper widening, no softening the block into a rank key&rdquo;</i> &mdash; and the measurement
+independently argues the same way: the one caliper that clears the gate does not exist, and every value that
+moves the number materially also destroys the balance the caliper is there to protect. Reported because
+&ldquo;would a wider caliper have fixed it&rdquo; is the first question anyone will ask of the 36.71%, and it now
+has a measured answer of <b>no</b> rather than an assumed one.</p>
+
+<h2>What revision 2 bought, in one line</h2>
+<p class="verdict"><b>+4.0 pp of match rate and a 19&times; reduction in reuse-cap breach severity, for a
+4.2&times; supply increase.</b> Empty-cell loss fell 3&ndash;8 pp per stratum; caliper loss absorbed most of it and
+rose in three strata. The reuse breach dropped from max 33&times; / 11.67% of controls to max 14&times; / 3.73%,
+with excess pairs down from 77,075-involved to <b>4,347 excess (4.49% of pairs)</b> &mdash; the one gate that is now
+close to defensible. <b>Nothing in the revision touched the propensity-overlap geometry, which is where 37&ndash;50%
+of every stratum is lost.</b></p>
+
+<h2>Pipeline status</h2>
+<table>
+<tr><th>#</th><th>File</th><th>Status</th><th>Output (revision 2)</th></tr>
+<tr><td>1</td><td><code>sql/v13_step1_2.sql</code></td><td class="xp">ran</td><td><code>top2000_titles_v13</code> (<b>500</b> &mdash; name now a misnomer) &middot; <code>ml_ranking_scores_v13</code> (8,765,868,057 rows / 16,614,390 devices) &middot; <code>phase2_treated_v13</code> (263,685)</td></tr>
+<tr><td>2</td><td><code>sql/v13_control_pool.sql</code></td><td class="xp">ran</td><td><code>phase2_control_base_v13</code> &middot; <code>phase2_controls_v13</code> (247,275,518 / 482,734 devices)</td></tr>
+<tr class="bad"><td>3</td><td><code>sql/v13_sweep.sql</code></td><td class="xf">VOID</td><td><code>v13_sweep_frontier</code> &mdash; 8 rows, <code>config_id = '{{CONFIG_ID}}'</code>, all <code>seg_match_rate_pct = 0.0</code>, NULL SMDs; written 02:33Z <b>before</b> revision 2</td></tr>
+<tr><td>4</td><td><code>sql/v13_step3_4.sql</code></td><td class="xp">ran</td><td><code>phase2_matched_pairs_v13</code> (96,792)</td></tr>
+<tr><td>5</td><td><code>sql/v13_balance_diagnostics.sql</code></td><td class="mut">not run</td><td class="mut">&mdash; (this is why both SMD gates are unmeasured)</td></tr>
+<tr><td>6</td><td><code>notebooks/v13_diagnostics.py</code></td><td class="mut">not run</td><td class="mut">needs a <b>cluster</b>, not the SQL warehouse</td></tr>
+</table>
+<p class="note"><b>This report is not the 9-check / 2-gate diagnostics scorecard</b>, and it does not stand in for
+it. That dashboard is step 6 and needs <code>phase2_balance_diagnostics_v13</code> and
+<code>phase2_psm_diagnostics_v13</code>, neither of which exists &mdash; so there are no SMD, variance-ratio, or
+per-(title &times; segment) grade inputs anywhere on this page. Nothing is imputed in their place.
+<b>The sweep being void means Variant C was never validated on this population</b>; step3_4 hardcodes it and does
+not read the frontier (verified: 0 references), so the void sweep could not corrupt the match &mdash; it leaves the
+variant choice unevidenced.</p>
+
+<h2>Known defects and caveats</h2>
+<ul>
+<li><b><code>v13_sweep.sql</code> output is void and the file is broken.</b> Lines 312&ndash;314 gate the variant
+switch on <code>'{{VARIANT}}'</code>; unsubstituted, all three disjuncts are constant <code>FALSE</code>, making
+the exact-block <code>INNER JOIN</code> unsatisfiable &mdash; hence zero pairs, 0.0% rates and NULL SMDs on every
+frontier row. Re-running requires substituting <code>{{CONFIG_ID}}</code> / <code>{{VARIANT}}</code> per config,
+editing the <code>&gt;&gt;&gt; TVT BUCKET &lt;&lt;&lt;</code> CASE in <b>both</b> copies, and a one-off
+<code>DELETE ... WHERE config_id = '{{CONFIG_ID}}'</code> with the literal placeholder text to purge the 8 void
+rows (a real config's DELETE will not match them). Note &sect;2's <code>pct_at_cap</code> finding: coarser bins
+have little headroom, so a sweep is unlikely to close a 43 pp gap.</li>
+<li><b><code>top2000_titles_v13</code> now holds 500 rows.</b> The table name was not changed with the universe.
+Renaming touches 11 files; left as-is deliberately for this run, but it will mislead anyone reading the schema
+cold.</li>
+<li><b>Redundant sample filter at <code>v13_control_pool.sql:154</code></b> &mdash;
+<code>ABS(HASH(ml.device_id)) % 1000 &lt; 30</code> applied after <code>device_hash_num &lt; 30</code> is already
+enforced upstream. Harmless but costs a little supply in the starved stratum. Removing it requires a control-pool
+rebuild.</li>
+<li><b>The post-window contamination gate was not independently re-verified here.</b>
+<code>n_controls_with_post_on_title</code> must read <b>0</b>; its value is in the
+<code>v13_control_pool</code> notebook cell output, not re-measured for this report. Treat as unconfirmed on this
+page.</li>
+<li><b>The <code>+12h</code> post-anchor caveat is now quantified</b> (&sect;5) rather than only flagged: ~62% of
+treated <code>had_pres=1</code> flags are not strictly prior to <code>event_ts</code>, and matched controls carry
+<i>more</i> strictly-prior presentation than treated by 7.75 pp.</li>
+</ul>
+
+<h2>Open items</h2>
+<h3>Decisions</h3>
+<ul>
+<li><b>Run steps 5&ndash;6 to publish the real 9-check report documenting the failure?</b> That report is the
+stated deliverable of the plan. Needs <code>v13_balance_diagnostics.sql</code> (SQL warehouse) then
+<code>notebooks/v13_diagnostics.py</code> (<b>cluster</b>; clear stale <code>.pkl</code> from
+<code>dbfs:/FileStore/phase2_diagnostics_v13</code> before refitting). It would also finally measure the two SMD
+gates, which are the only gates still unread.</li>
+<li><b>Is a presentation-blocked design viable at all?</b> Revision 2 is the evidence that the answer is not
+"more supply." Two options change the arithmetic rather than tweaking it:
+  <ul>
+  <li><b>Presentation as a term inside the propensity score</b> rather than an exact block. Keeps the information,
+  stops fragmenting cells, and &mdash; per &sect;4's inversion, where <code>pres=1</code> has <i>better</i> overlap
+  &mdash; may improve the caliper channel rather than just dodging the cell channel. This is the option the
+  measurements point at. It is a different design, not a loosening, and needs its own spec + sweep.</li>
+  <li><b>A 100%-sample presentation source.</b> The &divide;33 on controls is forced solely by
+  <code>viewpres_vidsession_sample</code> being 3%. But &sect;3 now shows supply is <i>not</i> the binding channel,
+  so this is the weaker of the two &mdash; it would raise in-cell counts again and convert more of the loss into
+  caliper loss.</li>
+  </ul></li>
+<li><b>Widening the caliper is not on this list</b> and is explicitly ruled out by the plan ("no bin loosening, no
+caliper widening, no softening the block into a rank key"). &sect;4 is also the reason it would not be a fix but a
+corruption: at a 0.93&ndash;1.44 median shift, a caliper wide enough to clear 80% would be pairing treated with
+controls 5&ndash;7 caliper-widths away in propensity.</li>
+</ul>
+<h3>Verifications still outstanding</h3>
+<ul>
+<li>Both <code>|SMD|</code> gates (pre-TVT, pre-IVT) &mdash; blocked on step 5.</li>
+<li>The control post-window contamination gate reading <b>0</b> &mdash; in the notebook output, not re-measured here.</li>
+<li>Both <code>pres_ts</code> truncation guards (<code>MIN &gt; 2026-08-24</code>, <code>MAX &lt; 2026-09-09</code>;
+treated MAX ~Sep 8 12:00, control MAX ~Sep 7 12:00 &mdash; the expected asymmetry confirming each side used its own
+anchor) &mdash; in the step1_2 / control_pool notebook output.</li>
+<li>Whether <code>ml_ranking_scores_v13</code> was stable across the step3_4 write. Revision 1 had a rebuild land
+<i>after</i> the pairs table was written; confirm via <code>DESCRIBE HISTORY</code> that no such reordering
+happened this time.</li>
+</ul>
+
+<h2>Reproducing these numbers</h2>
+<p style="font-size:.88rem">All read-only, warehouse <code>d91490098e4494d5</code>. Cohort sizes, gates, caliper
+quality, reuse, <code>pct_at_cap</code>, the strict residual and the overlap percentiles come from
+<code>phase2_treated_v13</code> / <code>phase2_controls_v13</code> / <code>phase2_matched_pairs_v13</code>
+directly. The exact-cell supply table (&sect;2) requires replicating four bucket CASEs
+(<code>tvt_bucket</code>, <code>sessions_bucket_v10e</code>, <code>platform_super_bucket</code>, and the
+<code>w_tvt</code> / <code>w_ivt</code> segment-conditional window selectors) &mdash; <b>copy them verbatim from
+<code>sql/v13_step3_4.sql:50&ndash;179</code>; do not retype from memory</b>, since
+<code>phase2_controls_v13</code> stores raw features and applies the buckets only at match time. The overlap
+percentiles use <code>APPROX_PERCENTILE</code> over the full pool with no sub-sampling.</p>
+
+</body>
+</html>
