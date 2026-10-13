@@ -536,6 +536,31 @@ body {
 
 
 /* ---- shared ---- */
+.howto{border:1px solid var(--border);border-radius:8px;background:var(--bg-band);margin:4px 0 14px;padding:10px 14px}
+.howto summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--text)}
+.howto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 22px;margin-top:8px}
+.howto h4{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)}
+.howto p,.howto li{font-size:12px;line-height:1.5;color:var(--text);margin:0}
+.howto ul{margin:0;padding-left:16px}.howto li{margin-bottom:3px}
+.howto .pos{color:#1D9E75;font-weight:600}.howto .neg{color:#D85A30;font-weight:600}
+.howto-ex{margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.howto-ex p{margin:6px 0 0}
+.howto-tbl{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 6px;background:var(--bg)}
+.howto-tbl th{background:#1B3A5C;color:#fff;text-align:left;padding:5px 8px;font-weight:600}
+.howto-tbl td{padding:5px 8px;border-top:1px solid var(--border);color:var(--text)}
+.howto-tbl tbody tr:nth-child(even){background:var(--bg-row-alt)}
+.howto-ex{overflow-x:auto}
+.howto-cap{font-size:11px;font-style:italic;color:var(--text-muted)!important}
+.howto-hint{font-weight:400;color:var(--text-muted)}
+#page-rank .howto{margin:0 0 10px;padding:8px 14px}
+#page-rank .filter-bar{padding:8px 14px;margin-bottom:10px}
+#page-rank .kpi-row{margin-bottom:8px}
+#page-rank .kpi-card{padding:10px 12px}
+#page-rank .kpi-card .value{font-size:24px}
+#page-rank .kpi-card .label{margin-top:2px;font-size:12px}
+#page-rank .kpi-card .delta{margin-top:2px;font-size:11px}
+#rankTabs{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+#rankTabs .rank-toolbar{margin:0 0 0 auto;display:flex;gap:8px;padding-bottom:4px}
 .note{font-size:12px;color:var(--text-muted);margin:8px 2px 14px;line-height:1.55}.note b{color:var(--text)}
 .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700}
 .pill.movie{background:#DCEBFB;color:#1F5FA8}.pill.series{background:#F1DDFA;color:#7A1AA8}
@@ -593,7 +618,7 @@ body {
   <div class="dash-header__spacer"></div>
   <div class="dash-toolbar"><button class="btn" id="themeBtn">Dark</button></div>
 </header>
-<p class="note">Events Sep 1–7 2026 · 7-day post window · Organic Discovery · US · movies and series pooled (every program ≥ 10,000 TVT hrs that week). Content type and genre (<code>primary_genre_cms</code>) come from <code>dsac_program_info</code>.</p>
+
 
 <nav class="tab-bar" id="pageTabs">
   <button class="active" data-page="rank">Content Ranking</button>
@@ -602,8 +627,34 @@ body {
 
 <!-- ================= CONTENT RANKING ================= -->
 <div class="page active" id="page-rank">
-  <p class="note"><b>Discovery Incr TVT = Σ<sub>segments</sub> (net Δ/viewer × full-US segment viewers × de-dup weight)</b>; <b>Discovery Incrementality Rate (DIR) = Discovery Incr TVT ÷ actual title TVT (Sep 1–7)</b> — the only rate; there is no additive-proportional rate. <b>Search + Deeplink TVT</b> is the title's actual Sep 1–7 viewing from sessions started on the Search page or from an external deeplink — the sessions the organic-discovery estimate excludes — and is counted as fully incremental; <b>Total Incr TVT = Discovery Incr TVT + Search + Deeplink TVT</b>. Net Δ/viewer is the matched treated−control post-window view time, on-title + off-title, winsorized. The weight is the per-(title × segment) pre-TVT de-dup weight (Step 9 §4); <span style="color:#c77">*</span> = pooled segment fallback. Cells with n_pairs &lt; 100 are thin; &lt; 30 are not published. Methodology: <code>v10e_weight_methodology.html</code>.</p>
-  <div class="dash-toolbar rank-toolbar"><button class="btn" id="xlsxBtn">Download .xlsx</button><button class="btn" id="csvBtn">Export CSV</button></div>
+  <details class="howto">
+    <summary>How to read this dashboard <span class="howto-hint">— definitions + worked example (Out of Time vs In the Heat of the Night)</span></summary>
+    <div class="howto-grid">
+      <div><h4>What it measures</h4><p>Hours of viewing a title <b>adds</b> to Tubi, versus what viewers would have watched anyway. Matched treated viewers (watched the title) are compared with similar control viewers over a 7-day post window. Cohort: Sep 1–7 2026, US, Organic Discovery, titles ≥ 10K TVT hrs.</p></div>
+      <div><h4>Key numbers</h4><ul>
+        <li><b>Net Δ/viewer</b> — treated − control post-window hours (on + off title).</li>
+        <li><b>Discovery Incr TVT</b> — Δ/viewer × segment viewers × de-dup weight, summed over segments.</li>
+        <li><b>DIR</b> — Discovery Incr ÷ actual title TVT. Higher = more additive.</li>
+        <li><b>Total Incr</b> — Discovery Incr + Search/Deeplink TVT (counted as fully incremental).</li></ul></div>
+      <div><h4>Reading the signal</h4><ul>
+        <li><span class="pos">Positive</span> = title grows total viewing; <span class="neg">negative</span> = it mostly cannibalizes other titles.</li>
+        <li>[brackets] = 95% CI; a range spanning 0 is not conclusive.</li>
+        <li>Thin cells (n &lt; 100) are less reliable; n &lt; 30 not shown. <span style="color:#c77">*</span> = pooled weight fallback.</li>
+        <li><b>Single Title</b> tab shows the why: journey, substitution vs amplification.</li></ul></div>
+    </div>
+    <div class="howto-ex">
+      <h4>Worked example — two crime titles, similar viewing, very different value</h4>
+      <table class="howto-tbl">
+        <thead><tr><th>Title</th><th>Actual TVT (hrs)</th><th>Discovery Incr</th><th>DIR</th><th>+ Search/Deeplink</th><th>Total Incr</th><th>Off-title Δ/viewer</th></tr></thead>
+        <tbody>
+          <tr><td><b>Out of Time</b> (movie)</td><td>957K</td><td class="pos">945K</td><td class="pos">98.7%</td><td>14K</td><td class="pos">959K (~100%)</td><td>−1.0 to −1.4 hrs</td></tr>
+          <tr><td><b>In the Heat of the Night</b> (series)</td><td>1,177K</td><td>36K</td><td>3.1%</td><td>24K</td><td>60K (~5%)</td><td class="neg">−3.5 to −8.2 hrs</td></tr>
+        </tbody>
+      </table>
+      <p><b>Out of Time ≈ 100% incremental:</b> viewers who watched it added almost the full title hours to their total Tubi viewing — they only slightly reduced watching other titles. The estimate suggests removing it would lose roughly its full hours.</p>
+      <p><b>In the Heat of the Night — high volume, low incrementality:</b> it drove 1.18M hrs, but its viewers cut other viewing by nearly as much (substitution). Net gain is only ~36K discovery hrs, or <b>~60K hrs (~5%)</b> including Search/Deeplink. Without it, most of those hours would likely move to other titles.</p>
+    </div>
+  </details>
   <section class="filter-bar">
     <div class="filter"><label for="f_ct">Content Type</label><select id="f_ct"><option value="all">All</option></select></div>
     <div class="filter"><label for="f_genre">Genre</label><select id="f_genre"><option value="all">All</option></select></div>
@@ -618,6 +669,7 @@ body {
     <button class="active" data-tab="tvt">TVT Incrementality</button>
     <button data-tab="ivt">IVT Incrementality</button>
     <button data-tab="cmp">TVT vs IVT Δ</button>
+    <span class="rank-toolbar"><button class="btn" id="xlsxBtn">Download .xlsx</button><button class="btn" id="csvBtn">Export CSV</button></span>
   </div>
   <div class="tab-panel active" id="r-tvt"></div>
   <div class="tab-panel" id="r-ivt"></div>
@@ -9379,7 +9431,7 @@ function rank(key){const m=M[key],el=$('r-'+key);let ts=byTitle(rows(),m);
   ts.sort((a,b)=>{const x=val(a),y=val(b);if(x==null)return 1;if(y==null)return -1;return (x<y?-1:x>y?1:0)*dir*-1});
   const n=S.shown[key],vis=ts.slice(0,n),tot=totals(rows(),m);
   const th=(k,l,c='',sub='')=>{const a=sk===k?(dir>0?' ▼':' ▲'):'',p=String(l).split('<br>');p[0]+=a;return `<th class="sortable ${c}" data-k="${k}">${p.join('<br>')}${sub?`<br><span class="ci">${sub}</span>`:''}</th>`};
-  el.innerHTML=`<div class="section-band"><h2>${m.name} Incrementality — title leaderboard</h2><span class="subtitle">${ts.length.toLocaleString()} titles · Σ Discovery Incr ${fmtK(tot.inc)} hrs on ${Math.round(tot.tv).toLocaleString()} actual hrs = DIR ${pct(tot.rate)} · sorted by ${SORT_LABEL[sk]||(typeof sk==='number'?SEG[sk].l+' Incr':sk)} ${dir>0?'high → low':'low → high'}</span></div>
+  el.innerHTML=`
   <div class="tbl-scroll"><table class="tbl rank-tbl"><thead><tr><th>#</th>${th('name','Title','l')}<th class="l">Type</th><th class="l">Genre</th><th class="l">Deal</th>${th('expiry','Next<br>Expiry','l')}${th('tvt','Sep 1–7',``,`${m.name} (hrs)`)}${th('total','Total Incr','',`${m.name} (hrs)`)}${th('sd','Search +<br>Deeplink','','Sep 1–7 '+m.name+' (hrs)')}${th('incr','Discovery Incr','',`${m.name} (hrs) [95% CI]`)}${th('rate','Discovery<br>Incrementality<br>Rate (DIR)')}${SEG.map((s,i)=>`<th colspan="2" class="sortable" data-k="${i}"><span style="color:${s.c}">●</span> ${s.l}${sk===i?(dir>0?' ▼':' ▲'):''}<br><span class="ci">Δ/viewer · Incr</span></th>`).join('')}</tr></thead><tbody>`
   +vis.map((t,i)=>`<tr><td>${i+1}</td><td class="l"><a href="#" data-t="${t.tid}">${esc(t.name)}</a></td><td class="l"><span class="pill ${t.ct}">${CT_LABEL[t.ct]||t.ct}</span></td><td class="l">${esc(t.genre)}</td><td class="l">${dealPill(t.deal)}</td><td class="l" style="white-space:nowrap" title="${esc(expiryTip(t.expiry))}">${expiryTxt(t.expiry)}</td><td>${t.tvt!=null?Math.round(t.tvt).toLocaleString():'—'}</td>${totalCell(t)}<td title="Actual ${m.name} from sessions started on the Search page or from a deeplink, Sep 1–7 US — counted as fully incremental">${t.sd!=null?Math.round(t.sd).toLocaleString():'—'}</td><td class="${cls(t.incr)}"><b>${fmtK(t.incr)}</b><br><span class="ci">[${fmtK(t.incr-1.96*t.se)}, ${fmtK(t.incr+1.96*t.se)}]</span></td><td class="${cls(t.rate)}"><b>${pct(t.rate)}</b></td>${SEG.map((s,j)=>{const r=t.segs[j];return r&&r[m.d]!=null?`<td class="${r[5]?'thin':''}" title="n_pairs ${r[4].toLocaleString()} · viewers ${(r[15]||0).toLocaleString()} · weight ${wOf(r).toFixed(3)}"><span class="${cls(r[m.d])}">${fmt(r[m.d])}</span></td>${incrCell(r,m)}`:'<td class="muted">—</td><td class="muted">—</td>'}).join('')}</tr>`).join('')
   +`</tbody></table></div>`+(ts.length>n?`<button class="btn more" data-more="${key}">Show 100 more (${n} of ${ts.length})</button>`:'')
@@ -9552,7 +9604,7 @@ function openTitle(tid){if(!UNI.has(tid))return;currentTitle=tid;$('titleSelect'
 const resizeCharts=()=>Object.values(charts).forEach(c=>c&&c.resize());
 // setXTab only flips classes; showXTab/showPage also draw. Charts are drawn only once their page + sub-tab are on screen.
 function setRankTab(t){rankTab=t;
-  document.querySelectorAll('#rankTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.querySelectorAll('#rankTabs button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.querySelectorAll('#page-rank > .tab-panel').forEach(p=>p.classList.toggle('active',p.id==='r-'+t))}
 function setTitleTab(t){titleTab=t;
   document.querySelectorAll('#titleTabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
@@ -9566,7 +9618,7 @@ function showPage(p){currentPage=p;
   writeHash();window.scrollTo(0,0)}
 
 document.querySelectorAll('#pageTabs button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-document.querySelectorAll('#rankTabs button').forEach(b=>b.onclick=()=>showRankTab(b.dataset.tab));
+document.querySelectorAll('#rankTabs button[data-tab]').forEach(b=>b.onclick=()=>showRankTab(b.dataset.tab));
 document.querySelectorAll('#titleTabs button').forEach(b=>b.onclick=()=>showTitleTab(b.dataset.tab));
 $('themeBtn').onclick=()=>{const d=document.documentElement.dataset.theme==='dark';document.documentElement.dataset.theme=d?'':'dark';$('themeBtn').textContent=d?'Dark':'Light';
   scatter();markStale();ensureBuilt()};
